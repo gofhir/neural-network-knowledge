@@ -12,9 +12,9 @@
   justify-content: center;
 }
 
-/* Force sidebar visible and wider on md+ screens */
+/* Force sidebar visible and wider on md+ screens (only on docs pages with sidebar content) */
 @media (min-width: 768px) {
-  .hextra-sidebar-container {
+  .hextra-sidebar-container:not(.hx\:md\:hidden) {
     display: flex !important;
     position: sticky !important;
     width: 18rem !important;  /* 288px, default is 16rem/256px */
@@ -100,6 +100,105 @@
 
 :is(.dark) .concept-alert-advertencia {
   background: rgba(245, 158, 11, 0.1);
+}
+
+/* Feature cards - UC blue accent */
+.hextra-feature-card {
+  border-color: rgba(0, 90, 156, 0.15);
+  transition: all 0.3s ease;
+}
+
+.hextra-feature-card:hover {
+  border-color: rgba(0, 90, 156, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 90, 156, 0.1);
+  transform: translateY(-2px);
+}
+
+:is(.dark) .hextra-feature-card {
+  border-color: rgba(96, 165, 250, 0.15);
+}
+
+:is(.dark) .hextra-feature-card:hover {
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 8px 24px rgba(96, 165, 250, 0.08);
+}
+
+/* Feature card icons in UC blue */
+.hextra-feature-card h3 .hextra-icon {
+  color: #005a9c;
+}
+
+:is(.dark) .hextra-feature-card h3 .hextra-icon {
+  color: #60a5fa;
+}
+
+/* Feature card title weight */
+.hextra-feature-card h3 span:last-child {
+  font-weight: 600;
+}
+
+/* Neural network illustration - dark mode swap */
+.nn-illustration img {
+  display: block;
+}
+
+:is(.dark) .nn-illustration img[src*="neural-network.svg"] {
+  content: url("/images/neural-network-dark.svg");
+}
+
+/* Stats section */
+.stats-section {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 4rem;
+  padding-bottom: 2rem;
+  width: 100%;
+}
+
+:is(.dark) .stats-section {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.stats-grid {
+  display: flex;
+  justify-content: center;
+  gap: 4rem;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .stats-grid {
+    flex-wrap: wrap;
+    gap: 2rem;
+  }
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #005a9c;
+}
+
+:is(.dark) .stat-number {
+  color: #60a5fa;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+:is(.dark) .stat-label {
+  color: #94a3b8;
 }
 
 /* Notebook viewer */

@@ -34,6 +34,10 @@ menu:
       weight: 60
       params:
         icon: github
+    - name: Tema
+      weight: 70
+      params:
+        type: theme-toggle
 
 params:
   search:
@@ -50,12 +54,12 @@ params:
       dark: icons/logo-dark.svg
   theme:
     default: system
-    displayToggle: true
+    displayToggle: false
   page:
     width: full
   footer:
     width: full
-    displayCopyright: true
+    displayCopyright: false
     displayPoweredBy: false
 
 markup:
