@@ -1,0 +1,11 @@
+{
+  "name": "diplomado-ia-uc",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Diplomado Inteligencia Artificial - UC",
+  "scripts": {
+    "serve": "hugo server --buildDrafts --disableFastRender",
+    "build": "hugo --minify",
+    "clean": "rm -rf public/ resources/_gen/"
+  }
+}

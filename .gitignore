@@ -1,0 +1,23 @@
+# Hugo
+site/public/
+site/resources/_gen/
+site/.hugo_build.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Claude
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Large files
+*.mp4

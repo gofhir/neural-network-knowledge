@@ -1,0 +1,7 @@
+{{- $type := .Get "type" | default "clave" -}}
+{{- $icon := "💡" -}}
+{{- if eq $type "recordar" }}{{ $icon = "📌" }}{{ end -}}
+{{- if eq $type "advertencia" }}{{ $icon = "⚠️" }}{{ end -}}
+<div class="concept-alert concept-alert-{{ $type }}">
+  <span>{{ $icon }}</span> {{ .Inner | markdownify }}
+</div>

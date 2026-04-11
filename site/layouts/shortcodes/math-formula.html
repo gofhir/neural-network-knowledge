@@ -1,0 +1,17 @@
+{{- $title := .Get "title" | default "" -}}
+{{- $opts := dict "output" "htmlAndMathml" "displayMode" true -}}
+<div class="math-formula-box">
+  {{- if $title }}
+  <div class="math-title">{{ $title }}</div>
+  {{- end }}
+  <div>
+    {{- with try (transform.ToMath .Inner $opts) }}
+      {{- with .Err }}
+        {{ errorf "KaTeX error in math-formula shortcode: %s" . }}
+      {{- else }}
+        {{- .Value }}
+        {{- $.Page.Store.Set "hasMath" true }}
+      {{- end }}
+    {{- end }}
+  </div>
+</div>

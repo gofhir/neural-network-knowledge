@@ -1,0 +1,83 @@
+baseURL: "https://gofhir.github.io/neural-network-knowledge/"
+title: "Diplomado IA UC"
+defaultContentLanguage: es
+enableRobotsTXT: true
+enableGitInfo: false
+
+module:
+  hugoVersion:
+    extended: true
+    min: "0.112.0"
+  imports:
+    - path: github.com/imfing/hextra
+
+menu:
+  main:
+    - name: Fundamentos
+      pageRef: /fundamentos
+      weight: 10
+    - name: Clases
+      pageRef: /clases
+      weight: 20
+    - name: Laboratorios
+      pageRef: /laboratorios
+      weight: 30
+    - name: Papers
+      pageRef: /papers
+      weight: 40
+    - name: Buscar
+      weight: 50
+      params:
+        type: search
+    - name: GitHub
+      url: https://github.com/robertoaraneda/diplomado-ia-uc
+      weight: 60
+      params:
+        icon: github
+
+params:
+  search:
+    enable: true
+    type: flexsearch
+    flexsearch:
+      index: content
+  navbar:
+    displayTitle: true
+    displayLogo: true
+    width: full
+    logo:
+      path: icons/logo.svg
+      dark: icons/logo-dark.svg
+  theme:
+    default: system
+    displayToggle: true
+  page:
+    width: full
+  footer:
+    width: full
+    displayCopyright: true
+    displayPoweredBy: false
+
+markup:
+  goldmark:
+    extensions:
+      passthrough:
+        delimiters:
+          block:
+            - - "$$"
+              - "$$"
+            - - "\\["
+              - "\\]"
+          inline:
+            - - "$"
+              - "$"
+            - - "\\("
+              - "\\)"
+        enable: true
+    parser:
+      attribute:
+        block: true
+    renderer:
+      unsafe: true
+  highlight:
+    noClasses: false
