@@ -103,6 +103,67 @@ x^{(k+1)} = x^{(k)} - \alpha \nabla F(x^{(k)})
 **La ecuacion de Cauchy de 1847 es, en esencia, exactamente lo que `loss.backward(); optimizer.step()` hace en PyTorch hoy.** Este fue el primer algoritmo explicito de optimizacion iterativa usando informacion de derivadas.
 {{< /concept-alert >}}
 
+### Ejemplo: La ecuacion de Cauchy (1847) en codigo moderno
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+
+# La ecuacion de Cauchy: x^(k+1) = x^(k) - alpha * grad F(x^(k))
+# Minimizar F(x) = x^2 + 4*sin(x) -- exactamente lo que loss.backward() + step() hace
+
+x = torch.tensor([5.0], requires_grad=True)
+alpha = 0.1  # Paso de Cauchy
+
+for k in range(50):
+    F = x**2 + 4 * torch.sin(x)  # Funcion objetivo
+    F.backward()                   # Calcular gradiente (dF/dx)
+    with torch.no_grad():
+        x -= alpha * x.grad       # Regla de Cauchy: x = x - alpha * grad
+    x.grad.zero_()
+    if k % 10 == 0:
+        print(f"Iter {k:3d}: x = {x.item():.4f}, F(x) = {F.item():.4f}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# La ecuacion de Cauchy implementada con GradientTape
+x = tf.Variable([5.0])
+alpha = 0.1
+
+for k in range(50):
+    with tf.GradientTape() as tape:
+        F = x**2 + 4 * tf.sin(x)  # Funcion objetivo
+    grad = tape.gradient(F, x)      # Gradiente dF/dx
+    x.assign_sub(alpha * grad)      # Regla de Cauchy: x = x - alpha * grad
+    if k % 10 == 0:
+        print(f"Iter {k:3d}: x = {x.numpy()[0]:.4f}, F(x) = {F.numpy()[0]:.4f}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+
+# La ecuacion de Cauchy con diferenciacion automatica de JAX
+def F(x):
+    return x**2 + 4 * jnp.sin(x)
+
+grad_F = jax.grad(F)  # JAX genera la funcion gradiente automaticamente
+x = 5.0
+alpha = 0.1
+
+for k in range(50):
+    x = x - alpha * grad_F(x)  # Regla de Cauchy: x = x - alpha * grad
+    if k % 10 == 0:
+        print(f"Iter {k:3d}: x = {x:.4f}, F(x) = {F(x):.4f}")
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ---
 
 ## 5. Demostracion: Por que el Negativo del Gradiente es la Direccion Optima
@@ -195,6 +256,83 @@ La primera condicion asegura poder alcanzar $\theta^*$ desde cualquier punto. La
 {{< concept-alert type="recordar" >}}
 **SGD es una aplicacion directa de Robbins-Monro.** Los learning rate schedules estan motivados por estas condiciones: un LR constante viola $\sum a_n^2 < \infty$ y previene convergencia exacta.
 {{< /concept-alert >}}
+
+### Ejemplo: Condiciones de Robbins-Monro en SGD moderno
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+
+# Las condiciones de Robbins-Monro: sum(a_n) = inf, sum(a_n^2) < inf
+# Ejemplo: a_n = 1/n satisface ambas condiciones
+# Un LR constante viola sum(a_n^2) < inf -> no converge exactamente
+
+def lr_robbins_monro(n):
+    """Learning rate que cumple condiciones de Robbins-Monro."""
+    return 1.0 / (1.0 + n)  # sum(1/n) = inf, sum(1/n^2) = pi^2/6 < inf
+
+# Demostrar convergencia: minimizar f(x) = (x - 3)^2 con ruido
+x = torch.tensor([10.0])
+for n in range(1, 201):
+    ruido = torch.randn(1) * 0.5          # Gradiente ruidoso (estocastico)
+    grad = 2 * (x - 3) + ruido            # Gradiente real + ruido
+    lr = lr_robbins_monro(n)
+    x = x - lr * grad                     # Paso de Robbins-Monro
+    if n % 50 == 0:
+        print(f"n={n:3d}, lr={lr:.4f}, x={x.item():.4f} (optimo=3.0)")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Schedule que cumple condiciones de Robbins-Monro: a_n = 1/(1+n)
+schedule_rm = tf.keras.optimizers.schedules.InverseTimeDecay(
+    initial_learning_rate=1.0,
+    decay_steps=1,
+    decay_rate=1.0  # lr = 1.0 / (1 + n) -> cumple Robbins-Monro
+)
+
+# Verificar que el schedule cumple las condiciones
+suma_lr = 0.0
+suma_lr2 = 0.0
+for n in range(1, 10001):
+    lr = schedule_rm(n).numpy()
+    suma_lr += lr
+    suma_lr2 += lr ** 2
+
+print(f"sum(a_n) = {suma_lr:.2f} (debe diverger -> inf)")
+print(f"sum(a_n^2) = {suma_lr2:.4f} (debe converger < inf)")
+# LR constante: sum(a^2) = N*a^2 -> diverge, viola Robbins-Monro
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+from jax import random
+
+# Robbins-Monro: theta_{n+1} = theta_n - a_n * Y_n(theta_n)
+# con a_n = 1/(1+n), Y_n es observacion ruidosa del gradiente
+
+def paso_robbins_monro(x, n, key):
+    """Un paso del algoritmo de Robbins-Monro."""
+    ruido = random.normal(key) * 0.5
+    grad_ruidoso = 2 * (x - 3) + ruido   # Gradiente estocastico
+    lr = 1.0 / (1.0 + n)                 # Cumple ambas condiciones
+    return x - lr * grad_ruidoso
+
+x = 10.0
+key = random.PRNGKey(42)
+for n in range(1, 201):
+    key, subkey = random.split(key)
+    x = paso_robbins_monro(x, n, subkey)
+    if n % 50 == 0:
+        print(f"n={n:3d}, lr={1/(1+n):.4f}, x={x:.4f} (optimo=3.0)")
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ---
 

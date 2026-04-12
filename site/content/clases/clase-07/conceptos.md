@@ -73,6 +73,70 @@ Calcula media y varianza de cada **muestra** a traves de todos sus features.
 | **train vs eval** | Distintos (running stats) | Iguales |
 | **En PyTorch** | `nn.BatchNorm1d`, `nn.BatchNorm2d` | `nn.LayerNorm` |
 
+#### Ejemplo: BatchNorm vs LayerNorm
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torch.nn as nn
+
+batch = torch.randn(4, 8)  # 4 muestras, 8 features
+
+# BatchNorm: normaliza cada feature (columna) a traves del batch
+bn = nn.BatchNorm1d(num_features=8)
+out_bn = bn(batch)  # media~0, var~1 por columna
+
+# LayerNorm: normaliza cada muestra (fila) a traves de sus features
+ln = nn.LayerNorm(normalized_shape=8)
+out_ln = ln(batch)  # media~0, var~1 por fila
+
+# Verificar dimensiones de normalizacion
+print(out_bn.mean(dim=0))  # media por columna ~ 0 (BatchNorm)
+print(out_ln.mean(dim=1))  # media por fila ~ 0 (LayerNorm)
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+batch = tf.random.normal((4, 8))  # 4 muestras, 8 features
+
+# BatchNorm: normaliza por feature (columna)
+bn = tf.keras.layers.BatchNormalization()
+out_bn = bn(batch, training=True)
+
+# LayerNorm: normaliza por muestra (fila)
+ln = tf.keras.layers.LayerNormalization()
+out_ln = ln(batch)
+
+# Verificar dimensiones de normalizacion
+print(tf.reduce_mean(out_bn, axis=0))  # media por columna ~ 0
+print(tf.reduce_mean(out_ln, axis=1))  # media por fila ~ 0
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax.numpy as jnp
+from flax import linen as nn
+
+batch = jnp.ones((4, 8))  # 4 muestras, 8 features
+
+# BatchNorm: normaliza por feature, requiere estado mutable
+class BNModel(nn.Module):
+    @nn.compact
+    def __call__(self, x, use_running_average=False):
+        return nn.BatchNorm(use_running_average=use_running_average)(x)
+
+# LayerNorm: normaliza por muestra, sin estado
+class LNModel(nn.Module):
+    @nn.compact
+    def __call__(self, x):
+        return nn.LayerNorm()(x)
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ### 1.7 Donde poner la normalizacion
 
 ```mermaid
@@ -127,6 +191,75 @@ ENTRENAMIENTO (p=0.5):
 INFERENCIA:
   Valores:         [2.0, 4.0, 1.0, 3.0]  <- no hace NADA
 ```
+
+#### Ejemplo: Dropout en una CNN
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+
+```python
+import torch.nn as nn
+
+class CNNConDropout(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 32, 3, padding=1)
+        self.bn1 = nn.BatchNorm2d(32)
+        self.drop2d = nn.Dropout2d(p=0.25)  # Apaga CANALES completos
+        self.fc1 = nn.Linear(32 * 14 * 14, 128)
+        self.drop1d = nn.Dropout(p=0.5)     # Apaga NEURONAS individuales
+        self.fc2 = nn.Linear(128, 10)
+
+    def forward(self, x):
+        x = self.drop2d(nn.functional.relu(self.bn1(self.conv1(x))))
+        x = nn.functional.max_pool2d(x, 2)
+        x = x.view(x.size(0), -1)           # Flatten
+        x = self.drop1d(nn.functional.relu(self.fc1(x)))
+        return self.fc2(x)                   # Sin dropout en la salida
+```
+
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+
+```python
+import tensorflow as tf
+from tensorflow.keras import layers
+
+modelo = tf.keras.Sequential([
+    layers.Conv2D(32, 3, padding="same", activation="relu", input_shape=(28, 28, 1)),
+    layers.BatchNormalization(),
+    layers.SpatialDropout2D(0.25),  # Apaga CANALES completos
+    layers.MaxPooling2D(2),
+    layers.Flatten(),
+    layers.Dense(128, activation="relu"),
+    layers.Dropout(0.5),            # Apaga NEURONAS individuales
+    layers.Dense(10),               # Sin dropout en la salida
+])
+```
+
+{{< /tab >}}
+{{< tab name="JAX" >}}
+
+```python
+from flax import linen as nn
+
+class CNNConDropout(nn.Module):
+    @nn.compact
+    def __call__(self, x, training=False):
+        x = nn.Conv(32, (3, 3), padding="SAME")(x)
+        x = nn.BatchNorm(use_running_average=not training)(x)
+        x = nn.relu(x)
+        # JAX no tiene Dropout2d nativo; se usa Dropout con broadcast
+        x = nn.Dropout(rate=0.25, broadcast_dims=(1, 2))(x, deterministic=not training)
+        x = nn.max_pool(x, (2, 2), strides=(2, 2))
+        x = x.reshape((x.shape[0], -1))  # Flatten
+        x = nn.Dense(128)(x)
+        x = nn.Dropout(rate=0.5)(x, deterministic=not training)
+        return nn.Dense(10)(x)
+```
+
+{{< /tab >}}
+{{< /tabs >}}
 
 ---
 
@@ -219,3 +352,69 @@ model.eval():   Dropout DESACTIVADO, BatchNorm usa running stats
 
 SIEMPRE llamar model.eval() antes de predecir.
 ```
+
+#### Ejemplo: model.train() vs model.eval()
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+
+```python
+import torch
+
+# Entrenamiento: dropout activo, batchnorm usa stats del batch
+model.train()
+for images, labels in train_loader:
+    preds = model(images)
+    loss = loss_fn(preds, labels)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+# Evaluacion: dropout OFF, batchnorm usa running stats
+model.eval()
+with torch.no_grad():  # No calcular gradientes (ahorra memoria)
+    preds = model(test_images)
+    accuracy = (preds.argmax(1) == test_labels).float().mean()
+```
+
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+
+```python
+import tensorflow as tf
+
+# Entrenamiento: se pasa training=True internamente via model.fit()
+model.compile(optimizer="adam", loss="sparse_categorical_crossentropy")
+model.fit(train_ds, epochs=5)
+
+# Evaluacion: training=False se aplica automaticamente
+# Dropout se desactiva, BatchNorm usa running stats
+preds = model(test_images, training=False)
+# O simplemente:
+model.evaluate(test_ds)
+```
+
+{{< /tab >}}
+{{< tab name="JAX" >}}
+
+```python
+import jax
+
+# En JAX/Flax el modo se controla con parametros explicitos
+# Entrenamiento: use_running_average=False, deterministic=False
+def train_step(state, batch):
+    def loss_fn(params):
+        logits, updates = model.apply(
+            {"params": params, "batch_stats": state.batch_stats},
+            batch["image"], training=True, mutable=["batch_stats"])
+        return cross_entropy(logits, batch["label"]), updates
+    (loss, updates), grads = jax.value_and_grad(loss_fn, has_aux=True)(state.params)
+    return state.apply_gradients(grads=grads, batch_stats=updates["batch_stats"])
+
+# Inferencia: use_running_average=True, deterministic=True
+logits = model.apply({"params": params, "batch_stats": bn_stats},
+                     test_images, training=False)
+```
+
+{{< /tab >}}
+{{< /tabs >}}

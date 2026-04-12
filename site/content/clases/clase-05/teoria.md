@@ -52,6 +52,65 @@ Filtro Laplaciano:
 
 La red no usa el Laplaciano explicitamente, pero los filtros que aprende en conv1 terminan siendo matematicamente similares.
 
+### Ejemplo: Convolucion con filtro personalizado
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torch.nn.functional as F
+
+# Definir imagen de ejemplo (1 batch, 1 canal, 5x5)
+imagen = torch.rand(1, 1, 5, 5)
+
+# Filtro Laplaciano como kernel personalizado
+filtro = torch.tensor([[0., -1., 0.],
+                       [-1., 4., -1.],
+                       [0., -1., 0.]]).reshape(1, 1, 3, 3)
+
+# Aplicar convolucion manualmente
+salida = F.conv2d(imagen, filtro, padding=1)
+print("Forma de salida:", salida.shape)  # (1, 1, 5, 5)
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Definir imagen de ejemplo (1 batch, 5x5, 1 canal)
+imagen = tf.random.uniform((1, 5, 5, 1))
+
+# Filtro Laplaciano como kernel personalizado (alto, ancho, canales_in, canales_out)
+filtro = tf.constant([[0., -1., 0.],
+                      [-1., 4., -1.],
+                      [0., -1., 0.]], shape=(3, 3, 1, 1))
+
+# Aplicar convolucion manualmente
+salida = tf.nn.conv2d(imagen, filtro, strides=1, padding="SAME")
+print("Forma de salida:", salida.shape)  # (1, 5, 5, 1)
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+from jax import lax
+
+# Definir imagen de ejemplo (1 batch, 1 canal, 5x5)
+imagen = jax.random.uniform(jax.random.key(0), (1, 1, 5, 5))
+
+# Filtro Laplaciano como kernel personalizado
+filtro = jnp.array([[0., -1., 0.],
+                    [-1., 4., -1.],
+                    [0., -1., 0.]]).reshape(1, 1, 3, 3)
+
+# Aplicar convolucion con lax.conv
+salida = lax.conv(imagen, filtro, window_strides=(1, 1), padding="SAME")
+print("Forma de salida:", salida.shape)  # (1, 1, 5, 5)
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ---
 
 ## 4. Invarianza a Traslaciones
@@ -95,6 +154,82 @@ graph TD
 ```
 
 Esta jerarquia no esta impuesta: emerge porque es la estrategia mas eficiente para reducir el error de clasificacion.
+
+### Ejemplo: Visualizacion de mapas de caracteristicas
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torchvision.models as models
+import matplotlib.pyplot as plt
+
+# Cargar modelo preentrenado y una imagen de ejemplo
+modelo = models.alexnet(pretrained=True).eval()
+imagen = torch.rand(1, 3, 224, 224)  # Reemplazar con imagen real
+
+# Extraer salida de conv1
+conv1_salida = modelo.features[0](imagen)  # (1, 64, 55, 55)
+
+# Visualizar los primeros 16 mapas de caracteristicas
+fig, ejes = plt.subplots(4, 4, figsize=(8, 8))
+for i, eje in enumerate(ejes.flat):
+    eje.imshow(conv1_salida[0, i].detach().numpy(), cmap="viridis")
+    eje.axis("off")
+plt.suptitle("Mapas de caracteristicas - conv1")
+plt.show()
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+# Cargar modelo preentrenado
+modelo_base = tf.keras.applications.VGG16(weights="imagenet")
+imagen = tf.random.uniform((1, 224, 224, 3))  # Reemplazar con imagen real
+
+# Crear modelo parcial hasta la primera capa conv
+modelo_parcial = tf.keras.Model(
+    inputs=modelo_base.input,
+    outputs=modelo_base.layers[1].output  # Primera conv
+)
+conv1_salida = modelo_parcial(imagen)  # (1, 224, 224, 64)
+
+# Visualizar los primeros 16 mapas de caracteristicas
+fig, ejes = plt.subplots(4, 4, figsize=(8, 8))
+for i, eje in enumerate(ejes.flat):
+    eje.imshow(conv1_salida[0, :, :, i].numpy(), cmap="viridis")
+    eje.axis("off")
+plt.suptitle("Mapas de caracteristicas - conv1")
+plt.show()
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+from flax import linen as nn
+import matplotlib.pyplot as plt
+
+# Definir capa convolucional simple
+capa_conv = nn.Conv(features=16, kernel_size=(3, 3))
+imagen = jax.random.uniform(jax.random.key(0), (1, 224, 224, 3))
+
+# Inicializar parametros y obtener salida
+params = capa_conv.init(jax.random.key(1), imagen)
+conv1_salida = capa_conv.apply(params, imagen)  # (1, 222, 222, 16)
+
+# Visualizar los primeros 16 mapas de caracteristicas
+fig, ejes = plt.subplots(4, 4, figsize=(8, 8))
+for i, eje in enumerate(ejes.flat):
+    eje.imshow(conv1_salida[0, :, :, i], cmap="viridis")
+    eje.axis("off")
+plt.suptitle("Mapas de caracteristicas - conv1")
+plt.show()
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ---
 
@@ -163,6 +298,94 @@ graph TD
 | **Total** | | | **62,378,344** | |
 
 > Las capas FC concentran ~95% de los parametros, aunque son solo 3 capas.
+
+### Ejemplo: Definicion de AlexNet
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch.nn as nn
+
+class AlexNet(nn.Module):
+    def __init__(self, num_clases=1000):
+        super().__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 96, kernel_size=11, stride=4, padding=2), nn.ReLU(),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(96, 256, kernel_size=5, padding=2), nn.ReLU(),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(256, 384, kernel_size=3, padding=1), nn.ReLU(),
+            nn.Conv2d(384, 384, kernel_size=3, padding=1), nn.ReLU(),
+            nn.Conv2d(384, 256, kernel_size=3, padding=1), nn.ReLU(),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+        )
+        self.classifier = nn.Sequential(
+            nn.Linear(256 * 6 * 6, 4096), nn.ReLU(), nn.Dropout(),
+            nn.Linear(4096, 4096), nn.ReLU(), nn.Dropout(),
+            nn.Linear(4096, num_clases),
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)  # Aplanar
+        return self.classifier(x)
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+from tensorflow.keras import layers, Model
+
+def crear_alexnet(num_clases=1000):
+    """Definir AlexNet usando la API funcional de Keras."""
+    entrada = layers.Input(shape=(224, 224, 3))
+    # Capas convolucionales
+    x = layers.Conv2D(96, 11, strides=4, padding="valid", activation="relu")(entrada)
+    x = layers.MaxPool2D(pool_size=3, strides=2)(x)
+    x = layers.Conv2D(256, 5, padding="same", activation="relu")(x)
+    x = layers.MaxPool2D(pool_size=3, strides=2)(x)
+    x = layers.Conv2D(384, 3, padding="same", activation="relu")(x)
+    x = layers.Conv2D(384, 3, padding="same", activation="relu")(x)
+    x = layers.Conv2D(256, 3, padding="same", activation="relu")(x)
+    x = layers.MaxPool2D(pool_size=3, strides=2)(x)
+    # Clasificador
+    x = layers.Flatten()(x)
+    x = layers.Dense(4096, activation="relu")(x)
+    x = layers.Dropout(0.5)(x)
+    x = layers.Dense(4096, activation="relu")(x)
+    x = layers.Dropout(0.5)(x)
+    salida = layers.Dense(num_clases)(x)
+    return Model(inputs=entrada, outputs=salida)
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+from flax import linen as nn
+import jax.numpy as jnp
+
+class AlexNet(nn.Module):
+    """AlexNet implementado con Flax/Linen."""
+    num_clases: int = 1000
+
+    @nn.compact
+    def __call__(self, x, train: bool = True):
+        # Capas convolucionales
+        x = nn.relu(nn.Conv(96, kernel_size=(11, 11), strides=(4, 4))(x))
+        x = nn.max_pool(x, window_shape=(3, 3), strides=(2, 2))
+        x = nn.relu(nn.Conv(256, kernel_size=(5, 5), padding="SAME")(x))
+        x = nn.max_pool(x, window_shape=(3, 3), strides=(2, 2))
+        x = nn.relu(nn.Conv(384, kernel_size=(3, 3), padding="SAME")(x))
+        x = nn.relu(nn.Conv(384, kernel_size=(3, 3), padding="SAME")(x))
+        x = nn.relu(nn.Conv(256, kernel_size=(3, 3), padding="SAME")(x))
+        x = nn.max_pool(x, window_shape=(3, 3), strides=(2, 2))
+        # Clasificador
+        x = x.reshape((x.shape[0], -1))  # Aplanar
+        x = nn.Dense(4096)(x); x = nn.relu(x); x = nn.Dropout(0.5)(x, deterministic=not train)
+        x = nn.Dense(4096)(x); x = nn.relu(x); x = nn.Dropout(0.5)(x, deterministic=not train)
+        return nn.Dense(self.num_clases)(x)
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ---
 

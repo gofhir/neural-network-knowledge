@@ -61,6 +61,75 @@ graph TD
 
 El filtro 3x3 es el mas pequeno que captura las nociones espaciales esenciales (arriba, abajo, izquierda, derecha, centro). Dos capas de 3x3 logran el mismo campo receptivo que una capa de 5x5, con 28% menos parametros y una no-linealidad extra (ReLU entre capas).
 
+### Ejemplo: Cargar VGG-16 preentrenado
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torchvision.models as models
+import torch
+
+# Cargar VGG-16 con pesos preentrenados en ImageNet
+vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
+vgg16.eval()
+
+# Reemplazar clasificador para 10 clases (transfer learning)
+vgg16.classifier[6] = torch.nn.Linear(4096, 10)
+
+# Congelar capas convolucionales
+for param in vgg16.features.parameters():
+    param.requires_grad = False
+
+print(f"Parametros totales: {sum(p.numel() for p in vgg16.parameters()):,}")
+print(f"Parametros entrenables: {sum(p.numel() for p in vgg16.parameters() if p.requires_grad):,}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Cargar VGG-16 con pesos preentrenados en ImageNet
+base_model = tf.keras.applications.VGG16(weights="imagenet", include_top=False,
+                                          input_shape=(224, 224, 3))
+# Congelar capas convolucionales
+base_model.trainable = False
+
+# Agregar clasificador para 10 clases (transfer learning)
+model = tf.keras.Sequential([
+    base_model,
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(4096, activation="relu"),
+    tf.keras.layers.Dense(10, activation="softmax"),
+])
+
+model.summary()
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+from flax import linen as nn
+
+# Definir bloque convolucional estilo VGG
+class VGGBlock(nn.Module):
+    features: int
+    num_convs: int
+
+    @nn.compact
+    def __call__(self, x):
+        for _ in range(self.num_convs):
+            x = nn.Conv(self.features, (3, 3), padding="SAME")(x)
+            x = nn.relu(x)
+        # Max pooling 2x2 con stride 2
+        x = nn.max_pool(x, (2, 2), strides=(2, 2))
+        return x
+
+# Nota: para pesos preentrenados en JAX, usar jax-models o convertir desde PyTorch
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ---
 
 ## 4. Inception / GoogLeNet
@@ -143,6 +212,73 @@ graph TD
     + (skip connection)
 ```
 
+### Ejemplo: Bloque Residual
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torch.nn as nn
+
+class ResidualBlock(nn.Module):
+    """Bloque residual basico (ResNet-18/34)"""
+    def __init__(self, channels):
+        super().__init__()
+        self.conv1 = nn.Conv2d(channels, channels, 3, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(channels)
+        self.conv2 = nn.Conv2d(channels, channels, 3, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(channels)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        residuo = x                        # guardar entrada para skip connection
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        out += residuo                     # sumar skip connection
+        return self.relu(out)
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+def bloque_residual(x, filtros):
+    """Bloque residual basico (ResNet-18/34)"""
+    residuo = x  # guardar entrada para skip connection
+    # Primera convolucion + BN + ReLU
+    out = tf.keras.layers.Conv2D(filtros, 3, padding="same", use_bias=False)(x)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.ReLU()(out)
+    # Segunda convolucion + BN
+    out = tf.keras.layers.Conv2D(filtros, 3, padding="same", use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    # Sumar skip connection y activar
+    out = tf.keras.layers.Add()([out, residuo])
+    return tf.keras.layers.ReLU()(out)
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax.numpy as jnp
+from flax import linen as nn
+
+class ResidualBlock(nn.Module):
+    """Bloque residual basico (ResNet-18/34)"""
+    channels: int
+
+    @nn.compact
+    def __call__(self, x, train: bool = True):
+        residuo = x  # guardar entrada para skip connection
+        out = nn.Conv(self.channels, (3, 3), padding="SAME", use_bias=False)(x)
+        out = nn.BatchNorm(use_running_average=not train)(out)
+        out = nn.relu(out)
+        out = nn.Conv(self.channels, (3, 3), padding="SAME", use_bias=False)(out)
+        out = nn.BatchNorm(use_running_average=not train)(out)
+        return nn.relu(out + residuo)  # sumar skip connection y activar
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ### Decisiones de diseno
 
 - **Batch Normalization** despues de cada capa convolucional
@@ -191,6 +327,95 @@ Responde: *que region de esta imagen causo esta prediccion?*
 | Occlusion | Perturbacion | Intuitivo, pero lento |
 | RISE | Perturbacion | Robusto al ruido |
 | Extremal Perturbation | Perturbacion | Mascaras precisas |
+
+### Ejemplo: Grad-CAM
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torchvision.models as models
+import torchvision.transforms as T
+from PIL import Image
+
+# Cargar modelo y preparar imagen
+model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
+model.eval()
+img = T.Compose([T.Resize(224), T.CenterCrop(224), T.ToTensor(),
+    T.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])])(Image.open("gato.jpg")).unsqueeze(0)
+
+# Capturar activaciones y gradientes de la ultima capa conv
+activaciones, gradientes = None, None
+def hook_fw(m, i, o): global activaciones; activaciones = o.detach()
+def hook_bw(m, i, o): global gradientes; gradientes = o[0].detach()
+model.layer4[-1].register_forward_hook(hook_fw)
+model.layer4[-1].register_full_backward_hook(hook_bw)
+
+# Forward + backward sobre la clase predicha
+out = model(img)
+clase = out.argmax(1).item()
+out[0, clase].backward()
+
+# Calcular mapa de calor Grad-CAM
+pesos = gradientes.mean(dim=[2, 3], keepdim=True)  # promedio espacial
+cam = (pesos * activaciones).sum(dim=1, keepdim=True).relu()
+cam = cam / cam.max()  # normalizar entre 0 y 1
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+import numpy as np
+
+# Cargar modelo preentrenado
+model = tf.keras.applications.ResNet50(weights="imagenet")
+# Crear modelo que retorna activaciones de la ultima capa conv
+grad_model = tf.keras.Model(inputs=model.input,
+    outputs=[model.get_layer("conv5_block3_out").output, model.output])
+
+# Preparar imagen
+img = tf.keras.preprocessing.image.load_img("gato.jpg", target_size=(224, 224))
+img_array = tf.expand_dims(tf.keras.applications.resnet50.preprocess_input(
+    tf.keras.preprocessing.image.img_to_array(img)), 0)
+
+# Calcular gradientes respecto a la clase predicha
+with tf.GradientTape() as tape:
+    activaciones, predicciones = grad_model(img_array)
+    clase = tf.argmax(predicciones[0])
+    loss = predicciones[:, clase]
+gradientes = tape.gradient(loss, activaciones)
+
+# Mapa de calor Grad-CAM
+pesos = tf.reduce_mean(gradientes, axis=(1, 2))  # promedio espacial
+cam = tf.nn.relu(tf.reduce_sum(activaciones * pesos[:, tf.newaxis, tf.newaxis, :], axis=-1))
+cam = cam / tf.reduce_max(cam)  # normalizar entre 0 y 1
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+
+def grad_cam(apply_fn, params, img, capa_objetivo, clase):
+    """Grad-CAM generico para modelos JAX/Flax"""
+    # Funcion que retorna el logit de la clase objetivo
+    def logit_clase(params, img):
+        # Obtener activaciones intermedias y salida
+        activaciones, logits = apply_fn(params, img, capture_intermediates=True)
+        return logits[0, clase], activaciones[capa_objetivo]
+
+    # Gradiente del logit respecto a las activaciones
+    (_, activaciones), grad_fn = jax.value_and_grad(logit_clase, has_aux=True)
+    grads = grad_fn(params, img)
+
+    # Promedio espacial de gradientes -> pesos por canal
+    pesos = jnp.mean(grads, axis=(1, 2))
+    # Combinacion ponderada + ReLU
+    cam = jnp.maximum(jnp.sum(activaciones * pesos[None, None, :], axis=-1), 0)
+    return cam / jnp.max(cam)  # normalizar entre 0 y 1
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ### Perturbacion Extremal
 

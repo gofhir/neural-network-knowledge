@@ -62,6 +62,107 @@ Establecieron las condiciones formales de convergencia: $\sum_n a_n = \infty$ (p
 
 Reemplazaron la funcion escalon con el **sigmoid** diferenciable, haciendo la red entrenable de extremo a extremo con backpropagation. El XOR -- imposible para un perceptron -- se resolvio trivialmente con una red 2-2-1.
 
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torch.nn as nn
+
+# Datos XOR
+X = torch.tensor([[0,0],[0,1],[1,0],[1,1]], dtype=torch.float32)
+y = torch.tensor([[0],[1],[1],[0]], dtype=torch.float32)
+
+# Un perceptron simple NO puede resolver XOR
+perceptron = nn.Linear(2, 1)
+
+# Red de 2 capas SI puede resolver XOR
+red_xor = nn.Sequential(
+    nn.Linear(2, 2), nn.Sigmoid(),  # capa oculta con 2 neuronas
+    nn.Linear(2, 1), nn.Sigmoid()   # capa de salida
+)
+
+# Entrenamiento
+optimizador = torch.optim.SGD(red_xor.parameters(), lr=5.0)
+criterio = nn.BCELoss()
+for epoca in range(3000):
+    pred = red_xor(X)
+    perdida = criterio(pred, y)
+    optimizador.zero_grad()
+    perdida.backward()
+    optimizador.step()
+
+# Verificar resultado
+with torch.no_grad():
+    print("Predicciones XOR:", red_xor(X).round().flatten().tolist())
+    # Salida esperada: [0.0, 1.0, 1.0, 0.0]
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+import numpy as np
+
+# Datos XOR
+X = np.array([[0,0],[0,1],[1,0],[1,1]], dtype=np.float32)
+y = np.array([[0],[1],[1],[0]], dtype=np.float32)
+
+# Red de 2 capas que resuelve XOR
+red_xor = tf.keras.Sequential([
+    tf.keras.layers.Dense(2, activation='sigmoid', input_shape=(2,)),  # capa oculta
+    tf.keras.layers.Dense(1, activation='sigmoid')                     # capa de salida
+])
+
+red_xor.compile(optimizer=tf.keras.optimizers.SGD(learning_rate=5.0),
+                loss='binary_crossentropy')
+
+# Entrenamiento
+red_xor.fit(X, y, epochs=3000, verbose=0)
+
+# Verificar resultado
+predicciones = red_xor.predict(X, verbose=0).round().flatten()
+print("Predicciones XOR:", predicciones.tolist())
+# Salida esperada: [0.0, 1.0, 1.0, 0.0]
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+from jax import random, grad
+
+# Datos XOR
+X = jnp.array([[0,0],[0,1],[1,0],[1,1]], dtype=jnp.float32)
+y = jnp.array([[0],[1],[1],[0]], dtype=jnp.float32)
+
+# Inicializar pesos para red 2-2-1
+def init_params(key):
+    k1, k2 = random.split(key)
+    return {'W1': random.normal(k1, (2,2)), 'b1': jnp.zeros(2),
+            'W2': random.normal(k2, (2,1)), 'b2': jnp.zeros(1)}
+
+# Forward pass con sigmoid
+def forward(params, x):
+    h = jax.nn.sigmoid(x @ params['W1'] + params['b1'])  # capa oculta
+    return jax.nn.sigmoid(h @ params['W2'] + params['b2'])  # salida
+
+# Perdida BCE
+def loss_fn(params, x, y):
+    pred = forward(params, x)
+    return -jnp.mean(y * jnp.log(pred + 1e-7) + (1-y) * jnp.log(1-pred + 1e-7))
+
+# Entrenamiento con SGD manual
+params = init_params(random.PRNGKey(42))
+lr = 5.0
+for _ in range(3000):
+    grads = grad(loss_fn)(params, X, y)
+    params = {k: params[k] - lr * grads[k] for k in params}
+
+print("Predicciones XOR:", jnp.round(forward(params, X)).flatten().tolist())
+# Salida esperada: [0.0, 1.0, 1.0, 0.0]
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ### De Polyak a Adam (1964-2015)
 
 La evolucion de los optimizadores sigue un patron claro:
@@ -73,6 +174,96 @@ La evolucion de los optimizadores sigue un patron claro:
 | LR unico para todos los pesos | **AdaGrad** (2011) -- LR adaptativo |
 | AdaGrad decae a cero | **RMSProp** (2012) -- media movil exponencial |
 | Combinar lo mejor | **Adam** (2015) -- momentum + adaptividad |
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+
+# Funcion tipo Rosenbrock: f(x,y) = (1-x)^2 + 100*(y-x^2)^2
+def rosenbrock(params):
+    x, y = params
+    return (1 - x)**2 + 100 * (y - x**2)**2
+
+optimizadores = {
+    "GD":           lambda p: torch.optim.SGD(p, lr=1e-3),
+    "SGD+Momentum": lambda p: torch.optim.SGD(p, lr=1e-3, momentum=0.9),
+    "Adam":         lambda p: torch.optim.Adam(p, lr=1e-2),
+}
+
+for nombre, crear_opt in optimizadores.items():
+    params = torch.tensor([-1.0, 1.0], requires_grad=True)
+    opt = crear_opt([params])
+    for paso in range(5000):
+        opt.zero_grad()
+        perdida = rosenbrock(params)
+        perdida.backward()
+        opt.step()
+    # El minimo global esta en (1, 1)
+    print(f"{nombre:15s} -> x={params[0]:.4f}, y={params[1]:.4f}, f={rosenbrock(params):.6f}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Funcion tipo Rosenbrock
+def rosenbrock(params):
+    x, y = params[0], params[1]
+    return (1 - x)**2 + 100 * (y - x**2)**2
+
+optimizadores = {
+    "GD":           tf.keras.optimizers.SGD(learning_rate=1e-3),
+    "SGD+Momentum": tf.keras.optimizers.SGD(learning_rate=1e-3, momentum=0.9),
+    "Adam":         tf.keras.optimizers.Adam(learning_rate=1e-2),
+}
+
+for nombre, opt in optimizadores.items():
+    params = tf.Variable([-1.0, 1.0])
+    for paso in range(5000):
+        with tf.GradientTape() as tape:
+            perdida = rosenbrock(params)
+        grads = tape.gradient(perdida, [params])
+        opt.apply_gradients(zip(grads, [params]))
+    # El minimo global esta en (1, 1)
+    print(f"{nombre:15s} -> x={params[0]:.4f}, y={params[1]:.4f}, f={rosenbrock(params):.6f}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+from jax import grad
+
+# Funcion tipo Rosenbrock
+def rosenbrock(params):
+    x, y = params[0], params[1]
+    return (1 - x)**2 + 100 * (y - x**2)**2
+
+grad_fn = grad(rosenbrock)
+
+# GD, SGD+Momentum y Adam implementados manualmente
+def entrenar_gd(lr=1e-3, pasos=5000):
+    params = jnp.array([-1.0, 1.0])
+    for _ in range(pasos):
+        params = params - lr * grad_fn(params)
+    return params
+
+def entrenar_momentum(lr=1e-3, mu=0.9, pasos=5000):
+    params = jnp.array([-1.0, 1.0])
+    vel = jnp.zeros(2)  # velocidad inicial
+    for _ in range(pasos):
+        g = grad_fn(params)
+        vel = mu * vel + g
+        params = params - lr * vel
+    return params
+
+for nombre, fn in [("GD", entrenar_gd), ("SGD+Momentum", entrenar_momentum)]:
+    p = fn()
+    print(f"{nombre:15s} -> x={p[0]:.4f}, y={p[1]:.4f}, f={rosenbrock(p):.6f}")
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ---
 

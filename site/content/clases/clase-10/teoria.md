@@ -431,6 +431,69 @@ Cada cierta cantidad de epocas, **reducir** el learning rate por un factor.
 - **Warmup**: LR empieza bajo y sube gradualmente antes de aplicar decay
 - **Cyclical LR**: LR oscila entre un minimo y un maximo
 
+### Ejemplo de Learning Rate Scheduling en codigo
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+
+optimizador = torch.optim.Adam(modelo.parameters(), lr=0.1)
+
+# Step Decay: reducir LR por 0.1 cada 30 epocas
+scheduler_step = torch.optim.lr_scheduler.StepLR(optimizador, step_size=30, gamma=0.1)
+
+# Cosine Annealing: LR sigue curva coseno hasta T_max epocas
+scheduler_cosine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizador, T_max=100, eta_min=1e-6)
+
+# Bucle de entrenamiento con scheduler
+for epoca in range(100):
+    # ... entrenamiento ...
+    scheduler_cosine.step()  # Actualizar LR al final de cada epoca
+    print(f"Epoca {epoca}, LR: {optimizador.param_groups[0]['lr']:.6f}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+import math
+
+# Step Decay usando funcion personalizada
+def step_decay(epoca):
+    lr_inicial = 0.1
+    factor = 0.1
+    paso = 30
+    return lr_inicial * (factor ** (epoca // paso))
+
+scheduler_step = tf.keras.callbacks.LearningRateScheduler(step_decay)
+
+# Cosine Annealing con schedule nativo
+scheduler_cosine = tf.keras.optimizers.schedules.CosineDecay(
+    initial_learning_rate=0.1, decay_steps=1000, alpha=1e-6
+)
+optimizador = tf.keras.optimizers.Adam(learning_rate=scheduler_cosine)
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import optax
+
+# Step Decay: reducir LR por 0.1 cada 30 epocas (asumiendo 10 pasos/epoca)
+scheduler_step = optax.exponential_decay(
+    init_value=0.1, transition_steps=300, decay_rate=0.1, staircase=True
+)
+
+# Cosine Annealing: LR sigue curva coseno en 1000 pasos
+scheduler_cosine = optax.cosine_decay_schedule(
+    init_value=0.1, decay_steps=1000, alpha=1e-6
+)
+
+# Crear optimizador con schedule
+optimizador = optax.adam(learning_rate=scheduler_cosine)
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ---
 
 ## 13. Early Stopping
@@ -468,6 +531,85 @@ graph LR
 3. Guardar el modelo cada vez que la validation loss mejore (**best checkpoint**)
 4. Si la validation loss no mejora durante `patience` epocas, detener el entrenamiento
 5. Restaurar el mejor checkpoint
+
+### Ejemplo de Early Stopping en codigo
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import copy
+
+mejor_loss = float('inf')
+paciencia, contador = 5, 0
+mejor_modelo = None
+
+for epoca in range(100):
+    modelo.train()
+    # ... entrenamiento normal ...
+
+    # Evaluar en validacion
+    modelo.eval()
+    with torch.no_grad():
+        val_loss = loss_fn(modelo(x_val), y_val).item()
+
+    if val_loss < mejor_loss:
+        mejor_loss = val_loss
+        contador = 0
+        mejor_modelo = copy.deepcopy(modelo.state_dict())  # Guardar checkpoint
+    else:
+        contador += 1
+        if contador >= paciencia:
+            print(f"Early stopping en epoca {epoca}")
+            modelo.load_state_dict(mejor_modelo)  # Restaurar mejor modelo
+            break
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Callback de early stopping integrado en Keras
+early_stop = tf.keras.callbacks.EarlyStopping(
+    monitor='val_loss',    # Metrica a monitorear
+    patience=5,            # Epocas sin mejora antes de detener
+    restore_best_weights=True  # Restaurar mejor checkpoint automaticamente
+)
+
+modelo.fit(
+    x_train, y_train,
+    validation_data=(x_val, y_val),
+    epochs=100,
+    callbacks=[early_stop]  # Se detiene automaticamente
+)
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+
+mejor_loss = float('inf')
+paciencia, contador = 5, 0
+mejores_params = None
+
+for epoca in range(100):
+    # ... paso de entrenamiento con optax ...
+    val_loss = loss_fn(params, x_val, y_val)
+
+    if val_loss < mejor_loss:
+        mejor_loss = val_loss
+        contador = 0
+        mejores_params = jax.tree.map(jnp.copy, params)  # Guardar copia
+    else:
+        contador += 1
+        if contador >= paciencia:
+            print(f"Early stopping en epoca {epoca}")
+            params = mejores_params  # Restaurar mejor modelo
+            break
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ### Relacion con learning rate
 
@@ -520,6 +662,85 @@ Usa la **informacion angular** (direccion) entre gradientes consecutivos, no sol
 | **SGD + Nesterov** | No | Si (predictivo) | Mejor control cerca del optimo | Mas complejo |
 | **AdaGrad** | Si (por peso) | No | Adapta LR automaticamente | LR tiende a cero |
 | **Adam** | Si (por peso) | Si (1er y 2do momento) | Robusto, pocos hiperparametros | Puede no generalizar tan bien como SGD |
+
+### Ejemplo comparativo en codigo
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torch.nn as nn
+
+# Modelo simple para comparar optimizadores
+modelo = nn.Linear(10, 1)
+loss_fn = nn.MSELoss()
+
+# SGD basico
+opt_sgd = torch.optim.SGD(modelo.parameters(), lr=0.01)
+
+# SGD con Momentum
+opt_momentum = torch.optim.SGD(modelo.parameters(), lr=0.01, momentum=0.9)
+
+# Adam (combina momentum + learning rate adaptativo)
+opt_adam = torch.optim.Adam(modelo.parameters(), lr=0.001, betas=(0.9, 0.999))
+
+# Bucle de entrenamiento generico
+for epoca in range(100):
+    x = torch.randn(32, 10)
+    y = torch.randn(32, 1)
+    pred = modelo(x)
+    loss = loss_fn(pred, y)
+    loss.backward()
+    opt_adam.step()       # Cambiar por opt_sgd u opt_momentum para comparar
+    opt_adam.zero_grad()
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+modelo = tf.keras.layers.Dense(1, input_shape=(10,))
+
+# SGD basico
+opt_sgd = tf.keras.optimizers.SGD(learning_rate=0.01)
+
+# SGD con Momentum
+opt_momentum = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9)
+
+# Adam (combina momentum + learning rate adaptativo)
+opt_adam = tf.keras.optimizers.Adam(learning_rate=0.001)
+
+# Compilar modelo con el optimizador deseado
+modelo_completo = tf.keras.Sequential([tf.keras.layers.Dense(1, input_shape=(10,))])
+modelo_completo.compile(optimizer=opt_adam, loss='mse')
+modelo_completo.fit(tf.random.normal((100, 10)), tf.random.normal((100, 1)), epochs=10)
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+import optax
+
+# Definir tres optimizadores para comparar
+opt_sgd = optax.sgd(learning_rate=0.01)
+opt_momentum = optax.sgd(learning_rate=0.01, momentum=0.9)
+opt_adam = optax.adam(learning_rate=0.001)
+
+# Ejemplo de paso de actualizacion con Adam
+params = {"w": jnp.zeros(10)}
+opt_state = opt_adam.init(params)
+
+def loss_fn(params, x, y):
+    return jnp.mean((x @ params["w"] - y) ** 2)
+
+# Un paso de optimizacion
+grads = jax.grad(loss_fn)(params, jnp.ones((32, 10)), jnp.ones(32))
+updates, opt_state = opt_adam.update(grads, opt_state)
+params = optax.apply_updates(params, updates)
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ### Flujo de decision practico
 

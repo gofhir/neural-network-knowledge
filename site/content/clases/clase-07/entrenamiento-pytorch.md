@@ -38,6 +38,88 @@ relu = nn.ReLU()
 output = F.relu(input)
 ```
 
+#### Ejemplo: Comparacion de funciones de activacion
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+
+```python
+import torch
+import torch.nn as nn
+
+# Crear entrada de prueba con valores positivos y negativos
+x = torch.linspace(-3, 3, 100)
+
+# Comparar comportamiento de cada activacion
+activaciones = {
+    "ReLU": nn.ReLU(),
+    "LeakyReLU": nn.LeakyReLU(0.01),
+    "ELU": nn.ELU(alpha=1.0),
+    "GELU": nn.GELU(),
+    "SiLU": nn.SiLU(),  # Swish
+}
+
+for nombre, fn in activaciones.items():
+    y = fn(x)
+    # Gradiente: derivada de la activacion
+    grad = torch.autograd.grad(y.sum(), x, create_graph=True)[0] if x.requires_grad else None
+    print(f"{nombre}: min={y.min():.2f}, max={y.max():.2f}")
+```
+
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+
+```python
+import tensorflow as tf
+import numpy as np
+
+# Crear entrada de prueba
+x = tf.constant(np.linspace(-3, 3, 100), dtype=tf.float32)
+
+# Comparar cada activacion
+activaciones = {
+    "ReLU": tf.keras.activations.relu,
+    "LeakyReLU": lambda x: tf.keras.activations.relu(x, alpha=0.01),
+    "ELU": tf.keras.activations.elu,
+    "GELU": tf.keras.activations.gelu,
+    "Swish": tf.keras.activations.swish,
+}
+
+for nombre, fn in activaciones.items():
+    y = fn(x)
+    print(f"{nombre}: min={y.numpy().min():.2f}, max={y.numpy().max():.2f}")
+```
+
+{{< /tab >}}
+{{< tab name="JAX" >}}
+
+```python
+import jax
+import jax.numpy as jnp
+from jax import nn as jnn
+
+# Crear entrada de prueba
+x = jnp.linspace(-3, 3, 100)
+
+# Comparar cada activacion
+activaciones = {
+    "ReLU": jnn.relu,
+    "LeakyReLU": lambda x: jnn.leaky_relu(x, negative_slope=0.01),
+    "ELU": jnn.elu,
+    "GELU": jnn.gelu,
+    "SiLU": jnn.silu,  # Swish
+}
+
+for nombre, fn in activaciones.items():
+    y = fn(x)
+    # JAX permite calcular gradiente facilmente
+    grad_fn = jax.grad(lambda x: fn(x).sum())
+    print(f"{nombre}: min={y.min():.2f}, max={y.max():.2f}")
+```
+
+{{< /tab >}}
+{{< /tabs >}}
+
 ---
 
 ## 2. Dropout: Regularizacion
@@ -99,6 +181,79 @@ model.eval()   # Dropout DESACTIVADO
 | p = 0.1 | Transformers | Sutil |
 | p = 0.2-0.3 | Capas convolucionales | Moderado |
 | p = 0.5 | Capas fully-connected | Agresivo |
+
+#### Ejemplo: Implementacion de Inverted Dropout desde cero
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+
+```python
+import torch
+
+def inverted_dropout(x, p=0.5, training=True):
+    """Inverted Dropout: escala en entrenamiento, nada en inferencia."""
+    if not training or p == 0:
+        return x
+    # Mascara binaria: 1 con prob (1-p), 0 con prob p
+    mask = (torch.rand_like(x) > p).float()
+    # Escalar por 1/(1-p) para mantener la esperanza
+    return x * mask / (1 - p)
+
+# Demostrar que la esperanza se mantiene
+x = torch.ones(10000) * 2.0
+print(f"Original:  media = {x.mean():.4f}")
+print(f"Dropout:   media = {inverted_dropout(x, p=0.5).mean():.4f}")  # ~2.0
+print(f"Inferencia: media = {inverted_dropout(x, p=0.5, training=False).mean():.4f}")  # 2.0
+```
+
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+
+```python
+import tensorflow as tf
+
+def inverted_dropout(x, p=0.5, training=True):
+    """Inverted Dropout: escala en entrenamiento, nada en inferencia."""
+    if not training or p == 0:
+        return x
+    # Mascara binaria con probabilidad (1-p) de mantener
+    mask = tf.cast(tf.random.uniform(tf.shape(x)) > p, tf.float32)
+    # Escalar por 1/(1-p) para compensar neuronas apagadas
+    return x * mask / (1 - p)
+
+# Demostrar que la esperanza se mantiene
+x = tf.ones(10000) * 2.0
+print(f"Original:  media = {tf.reduce_mean(x):.4f}")
+print(f"Dropout:   media = {tf.reduce_mean(inverted_dropout(x, p=0.5)):.4f}")  # ~2.0
+print(f"Inferencia: media = {tf.reduce_mean(inverted_dropout(x, p=0.5, training=False)):.4f}")
+```
+
+{{< /tab >}}
+{{< tab name="JAX" >}}
+
+```python
+import jax
+import jax.numpy as jnp
+import jax.random as jr
+
+def inverted_dropout(key, x, p=0.5, training=True):
+    """Inverted Dropout: escala en entrenamiento, nada en inferencia."""
+    if not training or p == 0:
+        return x
+    # JAX requiere clave PRNG explicita (reproducibilidad)
+    mask = (jr.uniform(key, x.shape) > p).astype(jnp.float32)
+    # Escalar por 1/(1-p) para mantener la esperanza
+    return x * mask / (1 - p)
+
+# Demostrar que la esperanza se mantiene
+key = jr.PRNGKey(42)
+x = jnp.ones(10000) * 2.0
+print(f"Original:  media = {x.mean():.4f}")
+print(f"Dropout:   media = {inverted_dropout(key, x, p=0.5).mean():.4f}")  # ~2.0
+```
+
+{{< /tab >}}
+{{< /tabs >}}
 
 ---
 
@@ -186,6 +341,111 @@ for epoch in range(num_epochs):
             predictions = model(images)
             # Calcular accuracy...
 ```
+
+#### Ejemplo: Loop completo de entrenamiento CNN con MNIST
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+
+```python
+import torch
+import torch.nn as nn
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+
+# Datos: descargar MNIST y normalizar
+transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+train_ds = datasets.MNIST("data", train=True, download=True, transform=transform)
+test_ds = datasets.MNIST("data", train=False, transform=transform)
+train_loader = DataLoader(train_ds, batch_size=64, shuffle=True)
+test_loader = DataLoader(test_ds, batch_size=1000)
+
+# Red: CNN simple con BatchNorm y Dropout
+class CNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(1, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(), nn.MaxPool2d(2),
+            nn.Conv2d(32, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(), nn.MaxPool2d(2),
+            nn.Flatten(), nn.Linear(64*7*7, 128), nn.ReLU(), nn.Dropout(0.5), nn.Linear(128, 10))
+    def forward(self, x):
+        return self.net(x)
+
+model = CNN()
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+loss_fn = nn.CrossEntropyLoss()
+
+# Entrenar 5 epocas
+for epoch in range(5):
+    model.train()
+    for imgs, labels in train_loader:
+        loss = loss_fn(model(imgs), labels)
+        optimizer.zero_grad(); loss.backward(); optimizer.step()
+    # Evaluar
+    model.eval()
+    correct = sum((model(x).argmax(1) == y).sum().item() for x, y in test_loader)
+    print(f"Epoca {epoch+1}: accuracy = {correct/len(test_ds):.4f}")
+```
+
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+
+```python
+import tensorflow as tf
+from tensorflow.keras import layers
+
+# Datos: cargar MNIST y normalizar
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+x_train = x_train[..., None].astype("float32") / 255.0
+x_test = x_test[..., None].astype("float32") / 255.0
+
+# Red: CNN simple con BatchNorm y Dropout
+model = tf.keras.Sequential([
+    layers.Conv2D(32, 3, padding="same", activation="relu", input_shape=(28, 28, 1)),
+    layers.BatchNormalization(), layers.MaxPooling2D(2),
+    layers.Conv2D(64, 3, padding="same", activation="relu"),
+    layers.BatchNormalization(), layers.MaxPooling2D(2),
+    layers.Flatten(), layers.Dense(128, activation="relu"),
+    layers.Dropout(0.5), layers.Dense(10)])
+
+# Entrenar 5 epocas
+model.compile(optimizer="adam", loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              metrics=["accuracy"])
+model.fit(x_train, y_train, epochs=5, batch_size=64, validation_data=(x_test, y_test))
+```
+
+{{< /tab >}}
+{{< tab name="JAX" >}}
+
+```python
+import jax, jax.numpy as jnp
+from flax import linen as nn
+import optax
+
+# Red: CNN simple
+class CNN(nn.Module):
+    @nn.compact
+    def __call__(self, x, training=False):
+        x = nn.Conv(32, (3, 3), padding="SAME")(x)
+        x = nn.BatchNorm(use_running_average=not training)(x)
+        x = nn.relu(x); x = nn.max_pool(x, (2, 2), strides=(2, 2))
+        x = nn.Conv(64, (3, 3), padding="SAME")(x)
+        x = nn.BatchNorm(use_running_average=not training)(x)
+        x = nn.relu(x); x = nn.max_pool(x, (2, 2), strides=(2, 2))
+        x = x.reshape((x.shape[0], -1))  # Flatten
+        x = nn.Dense(128)(x); x = nn.relu(x)
+        x = nn.Dropout(rate=0.5)(x, deterministic=not training)
+        return nn.Dense(10)(x)
+
+# Inicializar parametros con entrada dummy
+model = CNN()
+variables = model.init(jax.random.PRNGKey(0), jnp.ones((1, 28, 28, 1)), training=False)
+tx = optax.adam(1e-3)
+opt_state = tx.init(variables["params"])
+```
+
+{{< /tab >}}
+{{< /tabs >}}
 
 ### Epocas y Early Stopping
 

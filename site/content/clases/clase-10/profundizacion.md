@@ -96,6 +96,69 @@ $$L_\delta(y, \hat{y}) = \begin{cases} \frac{1}{2}(y - \hat{y})^2 & \text{si } |
 
 Lo mejor de ambos mundos: cuadratica para errores pequenos, lineal para grandes.
 
+### Ejemplo: Implementacion de Huber Loss
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torch.nn as nn
+
+# Huber Loss integrada (delta se controla con 'delta')
+huber = nn.HuberLoss(delta=1.0)
+
+# Implementacion manual para entender la logica
+def huber_loss_manual(y_pred, y_real, delta=1.0):
+    error = torch.abs(y_real - y_pred)
+    # Cuadratica para errores pequenos, lineal para grandes
+    cuadratica = 0.5 * error ** 2
+    lineal = delta * error - 0.5 * delta ** 2
+    return torch.where(error <= delta, cuadratica, lineal).mean()
+
+y_pred = torch.tensor([2.5, 0.0, 10.0])
+y_real = torch.tensor([3.0, 0.5, 1.0])
+print(f"Huber Loss: {huber_loss_manual(y_pred, y_real):.4f}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Huber Loss integrada en Keras
+huber = tf.keras.losses.Huber(delta=1.0)
+
+# Implementacion manual
+def huber_loss_manual(y_real, y_pred, delta=1.0):
+    error = tf.abs(y_real - y_pred)
+    cuadratica = 0.5 * error ** 2
+    lineal = delta * error - 0.5 * delta ** 2
+    return tf.reduce_mean(tf.where(error <= delta, cuadratica, lineal))
+
+y_pred = tf.constant([2.5, 0.0, 10.0])
+y_real = tf.constant([3.0, 0.5, 1.0])
+print(f"Huber Loss: {huber_loss_manual(y_real, y_pred):.4f}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax.numpy as jnp
+import optax
+
+# Huber Loss con optax
+loss_optax = optax.huber_loss(jnp.array([2.5, 0.0, 10.0]), jnp.array([3.0, 0.5, 1.0]))
+
+# Implementacion manual
+def huber_loss_manual(y_pred, y_real, delta=1.0):
+    error = jnp.abs(y_real - y_pred)
+    cuadratica = 0.5 * error ** 2
+    lineal = delta * error - 0.5 * delta ** 2
+    return jnp.mean(jnp.where(error <= delta, cuadratica, lineal))
+
+print(f"Huber Loss: {huber_loss_manual(jnp.array([2.5, 0.0, 10.0]), jnp.array([3.0, 0.5, 1.0])):.4f}")
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ### Tabla comparativa
 
 | Propiedad | MSE (L2) | MAE (L1) | Huber |
@@ -308,6 +371,88 @@ Paso 6: dL/dw_11 = delta_1^(1) * x_1 = -0.002116
 
 **Observacion clave**: Los gradientes de la capa oculta son ~10x mas pequenos que los de la capa de salida -- esto es el inicio del problema de **vanishing gradients**.
 
+### Ejemplo: Backpropagation manual vs Autograd
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+
+# Red simple: una capa, sigmoid, MSE loss
+w = torch.tensor([[0.15, 0.25], [0.20, 0.30]], requires_grad=True)
+b = torch.tensor([0.35, 0.35], requires_grad=True)
+x = torch.tensor([0.5, 0.3])
+t = torch.tensor([0.01, 0.99])
+
+# Forward pass
+z = x @ w + b
+h = torch.sigmoid(z)
+
+# --- Backprop MANUAL ---
+dL_dh = h - t                            # Gradiente de MSE
+dh_dz = h * (1 - h)                      # Derivada de sigmoid
+delta = dL_dh * dh_dz                    # Regla de la cadena
+dL_dw_manual = x.unsqueeze(1) * delta.unsqueeze(0)
+print(f"Gradiente manual:\n{dL_dw_manual}")
+
+# --- Backprop con AUTOGRAD ---
+loss = 0.5 * ((h - t) ** 2).sum()
+loss.backward()
+print(f"Gradiente autograd:\n{w.grad}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+w = tf.Variable([[0.15, 0.25], [0.20, 0.30]])
+b = tf.Variable([0.35, 0.35])
+x = tf.constant([0.5, 0.3])
+t = tf.constant([0.01, 0.99])
+
+# --- Backprop con GradientTape (autograd) ---
+with tf.GradientTape() as tape:
+    z = x @ w + b
+    h = tf.sigmoid(z)
+    loss = 0.5 * tf.reduce_sum((h - t) ** 2)
+
+grads = tape.gradient(loss, [w, b])
+print(f"Gradiente autograd dL/dw:\n{grads[0].numpy()}")
+
+# --- Verificacion manual ---
+dL_dh = h - t
+dh_dz = h * (1 - h)
+delta = dL_dh * dh_dz
+dL_dw_manual = tf.expand_dims(x, 1) * tf.expand_dims(delta, 0)
+print(f"Gradiente manual dL/dw:\n{dL_dw_manual.numpy()}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+
+def forward(params, x):
+    """Forward pass: una capa con sigmoid."""
+    z = x @ params["w"] + params["b"]
+    return jax.nn.sigmoid(z)
+
+def loss_fn(params, x, t):
+    h = forward(params, x)
+    return 0.5 * jnp.sum((h - t) ** 2)
+
+params = {"w": jnp.array([[0.15, 0.25], [0.20, 0.30]]),
+          "b": jnp.array([0.35, 0.35])}
+x = jnp.array([0.5, 0.3])
+t = jnp.array([0.01, 0.99])
+
+# JAX calcula gradientes automaticamente via jax.grad
+grads = jax.grad(loss_fn)(params, x, t)
+print(f"Gradiente autograd dL/dw:\n{grads['w']}")
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ---
 
 ## 12. Flujo de Gradientes y la Matriz Jacobiana
@@ -341,6 +486,84 @@ $$\|\text{gradiente en capa 1}\| \leq (0.25)^K \cdot \|\text{gradiente en salida
 | 7 | 0.01563 |
 | 5 | 0.000977 |
 | 1 | **0.00000095** |
+
+### Ejemplo: Demostrar vanishing gradients con sigmoid
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torch.nn as nn
+
+# Red profunda con 10 capas sigmoid
+capas = []
+for _ in range(10):
+    capas += [nn.Linear(50, 50), nn.Sigmoid()]
+red = nn.Sequential(*capas, nn.Linear(50, 1))
+
+x = torch.randn(8, 50)
+y = torch.randn(8, 1)
+loss = nn.MSELoss()(red(x), y)
+loss.backward()
+
+# Mostrar norma del gradiente por capa (desvanece hacia las primeras)
+for i, capa in enumerate(red):
+    if hasattr(capa, 'weight'):
+        norma = capa.weight.grad.norm().item()
+        print(f"Capa {i:2d} | Norma gradiente: {norma:.8f}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Red profunda con 10 capas sigmoid
+modelo = tf.keras.Sequential(
+    [tf.keras.layers.Dense(50, activation='sigmoid', input_shape=(50,))] +
+    [tf.keras.layers.Dense(50, activation='sigmoid') for _ in range(9)] +
+    [tf.keras.layers.Dense(1)]
+)
+
+x = tf.random.normal((8, 50))
+y = tf.random.normal((8, 1))
+
+with tf.GradientTape() as tape:
+    loss = tf.reduce_mean((modelo(x) - y) ** 2)
+
+grads = tape.gradient(loss, modelo.trainable_variables)
+# Mostrar norma del gradiente por capa (solo pesos, no biases)
+for i, g in enumerate(grads[::2]):  # Saltar biases
+    print(f"Capa {i:2d} | Norma gradiente: {tf.norm(g).numpy():.8f}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+from jax import random
+
+def red_profunda(params, x):
+    """Red de 10 capas con sigmoid."""
+    for w, b in params:
+        x = jax.nn.sigmoid(x @ w + b)
+    return x
+
+# Inicializar 10 capas de 50x50
+key = random.PRNGKey(0)
+params = []
+for i in range(10):
+    key, k1, k2 = random.split(key, 3)
+    params.append((random.normal(k1, (50, 50)) * 0.1, jnp.zeros(50)))
+
+def loss_fn(params, x, y):
+    return jnp.mean((red_profunda(params, x) - y) ** 2)
+
+grads = jax.grad(loss_fn)(params, random.normal(key, (8, 50)), random.normal(key, (8, 50)))
+for i, (gw, _) in enumerate(grads):
+    print(f"Capa {i:2d} | Norma gradiente: {jnp.linalg.norm(gw):.8f}")
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ### Soluciones
 

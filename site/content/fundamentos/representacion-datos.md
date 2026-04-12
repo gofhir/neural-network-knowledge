@@ -21,6 +21,77 @@ Un **tensor** es la generalizacion de escalares, vectores y matrices a dimension
 
 En PyTorch, los tensores tienen dos superpoderes: pueden ejecutarse en **GPU** y pueden rastrear operaciones para calcular **gradientes automaticamente** (autograd).
 
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+
+# Escalar (0 dimensiones)
+escalar = torch.tensor(5.0)
+
+# Vector (1 dimension)
+vector = torch.tensor([1.0, 2.0, 3.0])
+
+# Matriz (2 dimensiones)
+matriz = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+
+# Tensor 3D (por ejemplo, una imagen RGB 4x4)
+tensor_3d = torch.randn(3, 4, 4)
+
+print(f"Escalar: shape={escalar.shape}, dtype={escalar.dtype}")
+print(f"Vector:  shape={vector.shape}")
+print(f"Matriz:  shape={matriz.shape}")
+print(f"Tensor:  shape={tensor_3d.shape}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Escalar (0 dimensiones)
+escalar = tf.constant(5.0)
+
+# Vector (1 dimension)
+vector = tf.constant([1.0, 2.0, 3.0])
+
+# Matriz (2 dimensiones)
+matriz = tf.constant([[1.0, 2.0], [3.0, 4.0]])
+
+# Tensor 3D (por ejemplo, una imagen RGB 4x4)
+tensor_3d = tf.random.normal((3, 4, 4))
+
+print(f"Escalar: shape={escalar.shape}, dtype={escalar.dtype}")
+print(f"Vector:  shape={vector.shape}")
+print(f"Matriz:  shape={matriz.shape}")
+print(f"Tensor:  shape={tensor_3d.shape}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax.numpy as jnp
+import jax
+
+# Escalar (0 dimensiones)
+escalar = jnp.float32(5.0)
+
+# Vector (1 dimension)
+vector = jnp.array([1.0, 2.0, 3.0])
+
+# Matriz (2 dimensiones)
+matriz = jnp.array([[1.0, 2.0], [3.0, 4.0]])
+
+# Tensor 3D (por ejemplo, una imagen RGB 4x4)
+key = jax.random.PRNGKey(0)
+tensor_3d = jax.random.normal(key, (3, 4, 4))
+
+print(f"Escalar: shape={escalar.shape}, dtype={escalar.dtype}")
+print(f"Vector:  shape={vector.shape}")
+print(f"Matriz:  shape={matriz.shape}")
+print(f"Tensor:  shape={tensor_3d.shape}")
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ---
 
 ## 2. Tipos de Datos de Entrada
@@ -61,6 +132,69 @@ Transforma los datos al rango $[0, 1]$.
 {{< concept-alert type="recordar" >}}
 **Las imagenes se normalizan por canal.** En ImageNet, la normalizacion estandar usa `mean = [0.485, 0.456, 0.406]` y `std = [0.229, 0.224, 0.225]` para los canales RGB respectivamente. Esto garantiza que cada canal tenga distribucion similar.
 {{< /concept-alert >}}
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+
+# Datos de ejemplo
+datos = torch.tensor([10.0, 20.0, 30.0, 40.0, 50.0])
+
+# Z-score: media 0, varianza 1
+media = datos.mean()
+std = datos.std()
+z_score = (datos - media) / std
+print(f"Z-score: {z_score}")
+
+# Min-Max: escalar al rango [0, 1]
+min_val = datos.min()
+max_val = datos.max()
+min_max = (datos - min_val) / (max_val - min_val)
+print(f"Min-Max: {min_max}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Datos de ejemplo
+datos = tf.constant([10.0, 20.0, 30.0, 40.0, 50.0])
+
+# Z-score: media 0, varianza 1
+media = tf.reduce_mean(datos)
+std = tf.math.reduce_std(datos)
+z_score = (datos - media) / std
+print(f"Z-score: {z_score.numpy()}")
+
+# Min-Max: escalar al rango [0, 1]
+min_val = tf.reduce_min(datos)
+max_val = tf.reduce_max(datos)
+min_max = (datos - min_val) / (max_val - min_val)
+print(f"Min-Max: {min_max.numpy()}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax.numpy as jnp
+
+# Datos de ejemplo
+datos = jnp.array([10.0, 20.0, 30.0, 40.0, 50.0])
+
+# Z-score: media 0, varianza 1
+media = jnp.mean(datos)
+std = jnp.std(datos)
+z_score = (datos - media) / std
+print(f"Z-score: {z_score}")
+
+# Min-Max: escalar al rango [0, 1]
+min_val = jnp.min(datos)
+max_val = jnp.max(datos)
+min_max = (datos - min_val) / (max_val - min_val)
+print(f"Min-Max: {min_max}")
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ---
 
@@ -109,6 +243,81 @@ graph LR
 ```
 
 El **batch size** determina cuantos ejemplos se procesan juntos en cada iteracion. Esto impacta directamente la eficiencia computacional y la dinamica del entrenamiento (ver [Optimizadores](/fundamentos/optimizadores/) y [Learning Rate](/fundamentos/learning-rate/)).
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+from torch.utils.data import Dataset, DataLoader
+
+# Definir un Dataset personalizado
+class MiDataset(Dataset):
+    def __init__(self, n_muestras=100):
+        self.X = torch.randn(n_muestras, 4)  # 4 features
+        self.y = torch.randint(0, 2, (n_muestras,))  # etiquetas binarias
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        return self.X[idx], self.y[idx]
+
+# Crear Dataset y DataLoader
+dataset = MiDataset(n_muestras=100)
+loader = DataLoader(dataset, batch_size=16, shuffle=True)
+
+# Iterar sobre mini-batches
+for batch_X, batch_y in loader:
+    print(f"Batch: X={batch_X.shape}, y={batch_y.shape}")
+    break  # solo mostramos el primero
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+import numpy as np
+
+# Crear datos de ejemplo
+X = np.random.randn(100, 4).astype("float32")  # 4 features
+y = np.random.randint(0, 2, size=(100,))  # etiquetas binarias
+
+# Crear un tf.data.Dataset
+dataset = tf.data.Dataset.from_tensor_slices((X, y))
+
+# Configurar pipeline: mezclar, agrupar en batches, precarga
+loader = dataset.shuffle(buffer_size=100).batch(16).prefetch(tf.data.AUTOTUNE)
+
+# Iterar sobre mini-batches
+for batch_X, batch_y in loader:
+    print(f"Batch: X={batch_X.shape}, y={batch_y.shape}")
+    break  # solo mostramos el primero
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+
+# Crear datos de ejemplo
+key = jax.random.PRNGKey(0)
+X = jax.random.normal(key, (100, 4))  # 4 features
+y = jax.random.bernoulli(key, shape=(100,)).astype(jnp.int32)
+
+# Funcion generadora de mini-batches
+def crear_batches(X, y, batch_size, key):
+    n = len(X)
+    indices = jax.random.permutation(key, n)  # mezclar indices
+    for i in range(0, n, batch_size):
+        idx = indices[i:i + batch_size]
+        yield X[idx], y[idx]
+
+# Iterar sobre mini-batches
+for batch_X, batch_y in crear_batches(X, y, batch_size=16, key=key):
+    print(f"Batch: X={batch_X.shape}, y={batch_y.shape}")
+    break  # solo mostramos el primero
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ---
 

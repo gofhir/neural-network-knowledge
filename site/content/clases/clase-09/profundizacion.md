@@ -52,6 +52,70 @@ Todas las innovaciones en arquitecturas CNN son, en el fondo, estrategias para *
 3. **Filtros en paralelo (Inception):** La red aprende que escala es relevante.
 4. **Skip connections + profundidad (ResNet):** Profundidad arbitraria sin degradacion.
 
+### Ejemplo: Calcular campo receptivo
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+def calcular_campo_receptivo(capas):
+    """Calcula el campo receptivo acumulado capa a capa.
+    Cada capa es una tupla (kernel_size, stride).
+    """
+    rf = 1       # campo receptivo inicial (1 pixel)
+    stride_acum = 1  # stride acumulado
+    for k, s in capas:
+        rf = rf + (k - 1) * stride_acum  # expandir campo receptivo
+        stride_acum *= s
+    return rf
+
+# Ejemplo: primeras capas de VGG-16 (conv3x3 + conv3x3 + maxpool)
+capas_vgg = [(3, 1), (3, 1), (2, 2),   # Bloque 1: RF = 6x6
+             (3, 1), (3, 1), (2, 2)]    # Bloque 2: RF = 16x16
+print(f"Campo receptivo tras bloque 2: {calcular_campo_receptivo(capas_vgg)}x{calcular_campo_receptivo(capas_vgg)}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+def calcular_campo_receptivo(capas):
+    """Calcula el campo receptivo acumulado capa a capa.
+    Cada capa es una tupla (kernel_size, stride).
+    """
+    rf = 1       # campo receptivo inicial (1 pixel)
+    stride_acum = 1  # stride acumulado
+    for k, s in capas:
+        rf = rf + (k - 1) * stride_acum
+        stride_acum *= s
+    return rf
+
+# Ejemplo: primeras capas de ResNet (conv7x7 stride 2 + maxpool 3x3 stride 2)
+capas_resnet = [(7, 2), (3, 2), (3, 1), (3, 1)]
+print(f"Campo receptivo tras primer bloque residual: {calcular_campo_receptivo(capas_resnet)}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax.numpy as jnp
+
+def calcular_campo_receptivo(capas):
+    """Calcula el campo receptivo acumulado capa a capa.
+    Cada capa es una tupla (kernel_size, stride).
+    """
+    rf = 1
+    stride_acum = 1
+    for k, s in capas:
+        rf = rf + (k - 1) * stride_acum
+        stride_acum *= s
+    return rf
+
+# Comparar campo receptivo de distintas estrategias
+una_capa_7x7 = [(7, 1)]             # RF = 7
+tres_capas_3x3 = [(3, 1)] * 3       # RF = 7 (mismo RF, menos parametros)
+print(f"1 capa 7x7: RF={calcular_campo_receptivo(una_capa_7x7)}")
+print(f"3 capas 3x3: RF={calcular_campo_receptivo(tres_capas_3x3)}")
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ---
 
 ## 3. VGG en Profundidad
@@ -101,6 +165,60 @@ Primer bloque Inception (filtros 5x5, input 192 canales, output 32):
 | Sin 1x1 | 153,600 |
 | Con 1x1 (16 intermedios) | 15,872 (~90% menos) |
 
+### Ejemplo: Convolucion 1x1 como proyeccion
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torch.nn as nn
+
+# Simular entrada: batch=1, 192 canales, 28x28 espacial
+x = torch.randn(1, 192, 28, 28)
+
+# Convolucion 1x1: proyecta de 192 a 16 canales (reduccion ~12x)
+proyeccion = nn.Conv2d(192, 16, kernel_size=1)
+x_reducido = proyeccion(x)
+
+print(f"Entrada:  {x.shape}")          # [1, 192, 28, 28]
+print(f"Salida:   {x_reducido.shape}")  # [1, 16, 28, 28] — misma resolucion, menos canales
+print(f"Params 1x1: {192 * 16 + 16:,}")  # 3,088 parametros (pesos + bias)
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Simular entrada: batch=1, 28x28, 192 canales
+x = tf.random.normal((1, 28, 28, 192))
+
+# Convolucion 1x1: proyecta de 192 a 16 canales (reduccion ~12x)
+proyeccion = tf.keras.layers.Conv2D(16, kernel_size=1)
+x_reducido = proyeccion(x)
+
+print(f"Entrada:  {x.shape}")          # (1, 28, 28, 192)
+print(f"Salida:   {x_reducido.shape}")  # (1, 28, 28, 16) — misma resolucion, menos canales
+print(f"Params 1x1: {proyeccion.count_params():,}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+from flax import linen as nn
+
+# Convolucion 1x1: proyeccion de canales sin cambiar resolucion espacial
+proyeccion = nn.Conv(features=16, kernel_size=(1, 1))
+x = jnp.ones((1, 28, 28, 192))  # entrada: 192 canales
+params = proyeccion.init(jax.random.PRNGKey(0), x)
+x_reducido = proyeccion.apply(params, x)
+
+print(f"Entrada:  {x.shape}")          # (1, 28, 28, 192)
+print(f"Salida:   {x_reducido.shape}")  # (1, 28, 28, 16) — misma resolucion, menos canales
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ### Clasificadores auxiliares y vanishing gradient
 
 Las redes profundas sufren vanishing gradient. Inception inyecta gradiente en capas intermedias con clasificadores auxiliares. En inferencia solo se usa el final.
@@ -136,6 +254,97 @@ Usa 3 capas (1x1 reduce, 3x3 convolucion, 1x1 restaura) para reducir costo compu
 | ResNet-18 | 1.8 x 10^9 |
 | ResNet-50 | 3.8 x 10^9 |
 | ResNet-152 | 11.3 x 10^9 |
+
+### Ejemplo: Bottleneck Block
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch.nn as nn
+
+class Bottleneck(nn.Module):
+    """Bloque bottleneck usado en ResNet-50/101/152"""
+    expansion = 4  # el canal de salida es 4x el cuello de botella
+
+    def __init__(self, in_channels, bottleneck_channels):
+        super().__init__()
+        out_channels = bottleneck_channels * self.expansion
+        self.conv1 = nn.Conv2d(in_channels, bottleneck_channels, 1, bias=False)  # reducir
+        self.bn1 = nn.BatchNorm2d(bottleneck_channels)
+        self.conv2 = nn.Conv2d(bottleneck_channels, bottleneck_channels, 3, padding=1, bias=False)  # conv espacial
+        self.bn2 = nn.BatchNorm2d(bottleneck_channels)
+        self.conv3 = nn.Conv2d(bottleneck_channels, out_channels, 1, bias=False)  # restaurar
+        self.bn3 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
+        # Skip connection con proyeccion si cambian dimensiones
+        self.shortcut = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 1, bias=False),
+            nn.BatchNorm2d(out_channels)
+        ) if in_channels != out_channels else nn.Identity()
+
+    def forward(self, x):
+        out = self.relu(self.bn1(self.conv1(x)))   # 1x1 reduce
+        out = self.relu(self.bn2(self.conv2(out)))  # 3x3 espacial
+        out = self.bn3(self.conv3(out))             # 1x1 restaura
+        return self.relu(out + self.shortcut(x))    # skip connection
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+from tensorflow.keras import layers
+
+class Bottleneck(layers.Layer):
+    """Bloque bottleneck usado en ResNet-50/101/152"""
+    expansion = 4
+
+    def __init__(self, bottleneck_channels):
+        super().__init__()
+        out_ch = bottleneck_channels * self.expansion
+        self.conv1 = layers.Conv2D(bottleneck_channels, 1, use_bias=False)   # reducir
+        self.bn1 = layers.BatchNormalization()
+        self.conv2 = layers.Conv2D(bottleneck_channels, 3, padding="same", use_bias=False)  # conv espacial
+        self.bn2 = layers.BatchNormalization()
+        self.conv3 = layers.Conv2D(out_ch, 1, use_bias=False)               # restaurar
+        self.bn3 = layers.BatchNormalization()
+        self.proj = layers.Conv2D(out_ch, 1, use_bias=False)  # proyeccion skip
+
+    def call(self, x):
+        out = tf.nn.relu(self.bn1(self.conv1(x)))   # 1x1 reduce
+        out = tf.nn.relu(self.bn2(self.conv2(out)))  # 3x3 espacial
+        out = self.bn3(self.conv3(out))              # 1x1 restaura
+        return tf.nn.relu(out + self.proj(x))        # skip connection
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+from flax import linen as nn
+
+class Bottleneck(nn.Module):
+    """Bloque bottleneck usado en ResNet-50/101/152"""
+    bottleneck_channels: int
+    expansion: int = 4
+
+    @nn.compact
+    def __call__(self, x, train: bool = True):
+        out_ch = self.bottleneck_channels * self.expansion
+        # 1x1 reduce dimensionalidad
+        out = nn.Conv(self.bottleneck_channels, (1, 1), use_bias=False)(x)
+        out = nn.BatchNorm(use_running_average=not train)(out)
+        out = nn.relu(out)
+        # 3x3 convolucion espacial
+        out = nn.Conv(self.bottleneck_channels, (3, 3), padding="SAME", use_bias=False)(out)
+        out = nn.BatchNorm(use_running_average=not train)(out)
+        out = nn.relu(out)
+        # 1x1 restaura dimensionalidad
+        out = nn.Conv(out_ch, (1, 1), use_bias=False)(out)
+        out = nn.BatchNorm(use_running_average=not train)(out)
+        # Proyeccion skip si es necesario
+        shortcut = nn.Conv(out_ch, (1, 1), use_bias=False)(x)
+        return nn.relu(out + shortcut)
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ---
 

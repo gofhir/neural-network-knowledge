@@ -41,6 +41,82 @@ Una red neuronal se representa como un **Grafo Aciclico Dirigido (DAG)**:
 
 El forward pass evalua nodos en orden topologico. El backward pass los recorre en orden inverso, acumulando gradientes. Cada nodo solo necesita conocer su **derivada local**.
 
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+
+# Definir entradas y pesos con seguimiento de gradientes
+x = torch.tensor(0.5)
+w = torch.tensor(0.8, requires_grad=True)
+b = torch.tensor(0.1, requires_grad=True)
+
+# Forward pass: y = sigmoid(w*x + b)
+z = w * x + b
+y = torch.sigmoid(z)
+loss = (y - 1.0) ** 2
+
+# Calculo manual del gradiente dL/dw
+with torch.no_grad():
+    manual_grad = 2 * (y - 1.0) * y * (1 - y) * x
+    print(f"Gradiente manual dL/dw: {manual_grad.item():.6f}")
+
+# Diferenciacion automatica
+loss.backward()
+print(f"Gradiente autograd dL/dw: {w.grad.item():.6f}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Definir entradas y pesos como variables
+x = tf.constant(0.5)
+w = tf.Variable(0.8)
+b = tf.Variable(0.1)
+
+# Forward pass con GradientTape para registrar operaciones
+with tf.GradientTape() as tape:
+    z = w * x + b
+    y = tf.sigmoid(z)
+    loss = (y - 1.0) ** 2
+
+# Calculo manual del gradiente dL/dw
+manual_grad = 2 * (y - 1.0) * y * (1 - y) * x
+print(f"Gradiente manual dL/dw: {manual_grad.numpy():.6f}")
+
+# Diferenciacion automatica
+grads = tape.gradient(loss, [w, b])
+print(f"Gradiente autograd dL/dw: {grads[0].numpy():.6f}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+
+# Definir la funcion de perdida completa
+def loss_fn(params, x, target):
+    w, b = params
+    z = w * x + b
+    y = jax.nn.sigmoid(z)
+    return (y - target) ** 2
+
+x, target = 0.5, 1.0
+params = (0.8, 0.1)  # (w, b)
+
+# Calculo manual del gradiente dL/dw
+y = jax.nn.sigmoid(params[0] * x + params[1])
+manual_grad = 2 * (y - target) * y * (1 - y) * x
+print(f"Gradiente manual dL/dw: {manual_grad:.6f}")
+
+# Diferenciacion automatica con JAX
+grads = jax.grad(loss_fn)(params, x, target)
+print(f"Gradiente autograd dL/dw: {grads[0]:.6f}")
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ---
 
 ## 3. Ejemplo Numerico Completo
@@ -147,6 +223,94 @@ ALGORITMO: Backpropagation
 12.     b^(l) = b^(l) - eta * delta^(l)
 ```
 
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torch.nn as nn
+
+# Red de 2 capas: 2 -> 2 -> 1
+modelo = nn.Sequential(
+    nn.Linear(2, 2), nn.Sigmoid(),
+    nn.Linear(2, 1), nn.Sigmoid()
+)
+
+# Entrada y objetivo
+x = torch.tensor([[0.5, 0.3]])
+target = torch.tensor([[1.0]])
+
+# Forward pass
+y = modelo(x)
+loss = 0.5 * (y - target) ** 2
+
+# Backward pass: calcula todos los gradientes
+loss.backward()
+
+# Inspeccionar gradientes de cada capa
+for nombre, param in modelo.named_parameters():
+    print(f"{nombre}: grad shape={param.grad.shape}, "
+          f"grad mean={param.grad.abs().mean():.6f}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Red de 2 capas: 2 -> 2 -> 1
+modelo = tf.keras.Sequential([
+    tf.keras.layers.Dense(2, activation='sigmoid', input_shape=(2,)),
+    tf.keras.layers.Dense(1, activation='sigmoid')
+])
+
+# Entrada y objetivo
+x = tf.constant([[0.5, 0.3]])
+target = tf.constant([[1.0]])
+
+# Forward + backward pass con GradientTape
+with tf.GradientTape() as tape:
+    y = modelo(x)
+    loss = 0.5 * (y - target) ** 2
+
+# Obtener gradientes de todas las variables entrenables
+grads = tape.gradient(loss, modelo.trainable_variables)
+
+# Inspeccionar gradientes de cada capa
+for var, grad in zip(modelo.trainable_variables, grads):
+    print(f"{var.name}: grad mean={tf.reduce_mean(tf.abs(grad)):.6f}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+from jax import random
+
+# Inicializar pesos: 2 -> 2 -> 1
+key = random.PRNGKey(0)
+params = {
+    'W1': random.normal(random.PRNGKey(1), (2, 2)) * 0.5,
+    'b1': jnp.zeros(2),
+    'W2': random.normal(random.PRNGKey(2), (2, 1)) * 0.5,
+    'b2': jnp.zeros(1)
+}
+
+def forward_and_loss(params, x, target):
+    # Forward pass completo
+    h = jax.nn.sigmoid(x @ params['W1'] + params['b1'])
+    y = jax.nn.sigmoid(h @ params['W2'] + params['b2'])
+    return 0.5 * jnp.sum((y - target) ** 2)
+
+x = jnp.array([[0.5, 0.3]])
+target = jnp.array([[1.0]])
+
+# Backward pass: gradientes de todos los parametros
+grads = jax.grad(forward_and_loss)(params, x, target)
+for nombre, grad in grads.items():
+    print(f"{nombre}: grad mean={jnp.abs(grad).mean():.6f}")
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ---
 
 ## 6. Vanishing y Exploding Gradients
@@ -182,6 +346,95 @@ Con 10 capas sigmoid, el gradiente se reduce un millon de veces.
 {{< /math-formula >}}
 
 El termino $I$ (identidad) garantiza que el gradiente siempre fluye, independientemente de $F'(x)$.
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torch.nn as nn
+
+# Red profunda con Sigmoid vs ReLU (20 capas)
+def crear_red(activacion, capas=20):
+    modulos = []
+    for _ in range(capas):
+        modulos.append(nn.Linear(10, 10))
+        modulos.append(nn.Sigmoid() if activacion == "sigmoid" else nn.ReLU())
+    return nn.Sequential(*modulos)
+
+x = torch.randn(1, 10)
+target = torch.randn(1, 10)
+
+for nombre_act in ["sigmoid", "relu"]:
+    red = crear_red(nombre_act)
+    y = red(x)
+    loss = ((y - target) ** 2).sum()
+    loss.backward()
+    # Comparar gradiente de la primera capa
+    grad_norma = red[0].weight.grad.norm().item()
+    print(f"{nombre_act:>7}: norma gradiente capa 1 = {grad_norma:.8f}")
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Red profunda con Sigmoid vs ReLU (20 capas)
+def crear_red(activacion, capas=20):
+    modelo = tf.keras.Sequential()
+    modelo.add(tf.keras.layers.InputLayer(input_shape=(10,)))
+    for _ in range(capas):
+        modelo.add(tf.keras.layers.Dense(10, activation=activacion))
+    return modelo
+
+x = tf.random.normal((1, 10))
+target = tf.random.normal((1, 10))
+
+for nombre_act in ["sigmoid", "relu"]:
+    red = crear_red(nombre_act)
+    with tf.GradientTape() as tape:
+        y = red(x)
+        loss = tf.reduce_sum((y - target) ** 2)
+    grads = tape.gradient(loss, red.trainable_variables)
+    # Comparar gradiente de la primera capa
+    grad_norma = tf.norm(grads[0]).numpy()
+    print(f"{nombre_act:>7}: norma gradiente capa 1 = {grad_norma:.8f}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+from jax import random
+
+# Red profunda con sigmoid vs relu (20 capas)
+def forward(params, x, activacion):
+    for W, b in params:
+        x = x @ W + b
+        x = jax.nn.sigmoid(x) if activacion == "sigmoid" else jax.nn.relu(x)
+    return x
+
+def crear_params(key, capas=20):
+    params = []
+    for i in range(capas):
+        k1, k2, key = random.split(key, 3)
+        params.append((random.normal(k1, (10, 10)) * 0.1, jnp.zeros(10)))
+    return params
+
+def loss_fn(params, x, target, activacion):
+    y = forward(params, x, activacion)
+    return jnp.sum((y - target) ** 2)
+
+key = random.PRNGKey(0)
+params = crear_params(key)
+x, target = random.normal(random.PRNGKey(1), (1, 10)), random.normal(random.PRNGKey(2), (1, 10))
+
+for nombre_act in ["sigmoid", "relu"]:
+    grads = jax.grad(loss_fn)(params, x, target, nombre_act)
+    grad_norma = jnp.linalg.norm(grads[0][0])
+    print(f"{nombre_act:>7}: norma gradiente capa 1 = {grad_norma:.8f}")
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ---
 

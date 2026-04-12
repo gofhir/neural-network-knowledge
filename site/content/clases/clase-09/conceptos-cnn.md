@@ -26,6 +26,90 @@ Mapa de activacion #0: 224x224 valores
 
 Cada filtro siempre produce exactamente **un** mapa de activacion.
 
+### Ejemplo: Extraer mapas de activacion de capas intermedias
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torchvision.models as models
+import torchvision.transforms as T
+from PIL import Image
+
+# Cargar modelo preentrenado
+model = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
+model.eval()
+
+# Preparar imagen
+img = T.Compose([T.Resize(224), T.CenterCrop(224), T.ToTensor(),
+    T.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])])(Image.open("gato.jpg")).unsqueeze(0)
+
+# Extraer features de capas intermedias usando hooks
+features = {}
+def guardar_activacion(nombre):
+    def hook(modelo, entrada, salida):
+        features[nombre] = salida.detach()
+    return hook
+
+model.features[4].register_forward_hook(guardar_activacion("bloque1"))   # tras bloque 1
+model.features[16].register_forward_hook(guardar_activacion("bloque3"))  # tras bloque 3
+
+with torch.no_grad():
+    model(img)
+
+print(f"Bloque 1: {features['bloque1'].shape}")  # [1, 64, 112, 112]
+print(f"Bloque 3: {features['bloque3'].shape}")  # [1, 256, 28, 28]
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Cargar modelo preentrenado
+base_model = tf.keras.applications.VGG16(weights="imagenet")
+
+# Crear modelo que retorna activaciones de capas intermedias
+capas_objetivo = ["block1_pool", "block3_pool", "block5_pool"]
+salidas = [base_model.get_layer(nombre).output for nombre in capas_objetivo]
+modelo_features = tf.keras.Model(inputs=base_model.input, outputs=salidas)
+
+# Preparar imagen
+img = tf.keras.preprocessing.image.load_img("gato.jpg", target_size=(224, 224))
+img_array = tf.expand_dims(tf.keras.applications.vgg16.preprocess_input(
+    tf.keras.preprocessing.image.img_to_array(img)), 0)
+
+# Extraer features de capas intermedias
+activaciones = modelo_features.predict(img_array)
+for nombre, act in zip(capas_objetivo, activaciones):
+    print(f"{nombre}: {act.shape}")  # ej: block1_pool: (1, 112, 112, 64)
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax
+import jax.numpy as jnp
+from flax import linen as nn
+
+class VGGConFeatures(nn.Module):
+    """VGG simplificado que retorna features intermedias"""
+    @nn.compact
+    def __call__(self, x):
+        intermedias = {}
+        # Bloque 1: 2 conv + pool
+        for _ in range(2):
+            x = nn.relu(nn.Conv(64, (3, 3), padding="SAME")(x))
+        x = nn.max_pool(x, (2, 2), strides=(2, 2))
+        intermedias["bloque1"] = x
+        # Bloque 2: 2 conv + pool
+        for _ in range(2):
+            x = nn.relu(nn.Conv(128, (3, 3), padding="SAME")(x))
+        x = nn.max_pool(x, (2, 2), strides=(2, 2))
+        intermedias["bloque2"] = x
+        return x, intermedias  # retornar salida final y features intermedias
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ---
 
 ## 2. Que significa `conv3-64`
@@ -186,6 +270,74 @@ Canal #23 detecta "ojos de perro":
   Con ojos en la imagen:  promedio = 0.32 -> "hay ojos de perro"
   Sin ojos en la imagen:  promedio = 0.0  -> "no hay ojos de perro"
 ```
+
+### Ejemplo: Global Average Pooling en practica
+
+{{< tabs >}}
+{{< tab name="PyTorch" >}}
+```python
+import torch
+import torch.nn as nn
+
+# Simular salida de ultima capa convolucional: batch=1, 512 canales, 7x7
+feature_maps = torch.randn(1, 512, 7, 7)
+
+# Global Average Pooling: promedia cada canal en un solo numero
+gap = nn.AdaptiveAvgPool2d(1)
+vector = gap(feature_maps).squeeze()  # [512]
+
+# Clasificador final: solo 512 x num_clases parametros
+clasificador = nn.Linear(512, 1000)
+logits = clasificador(vector)
+
+print(f"Feature maps: {feature_maps.shape}")  # [1, 512, 7, 7]
+print(f"Tras GAP:     {vector.shape}")        # [512]
+print(f"Params FC:    {512 * 1000 + 1000:,}") # 513,000 (vs 25M con flatten)
+```
+{{< /tab >}}
+{{< tab name="TensorFlow" >}}
+```python
+import tensorflow as tf
+
+# Simular salida de ultima capa convolucional: batch=1, 7x7, 512 canales
+feature_maps = tf.random.normal((1, 7, 7, 512))
+
+# Global Average Pooling: promedia cada canal en un solo numero
+gap = tf.keras.layers.GlobalAveragePooling2D()
+vector = gap(feature_maps)  # [1, 512]
+
+# Clasificador final: solo 512 x num_clases parametros
+clasificador = tf.keras.layers.Dense(1000)
+logits = clasificador(vector)
+
+print(f"Feature maps: {feature_maps.shape}")  # (1, 7, 7, 512)
+print(f"Tras GAP:     {vector.shape}")        # (1, 512)
+print(f"Params FC:    {clasificador.count_params():,}")
+```
+{{< /tab >}}
+{{< tab name="JAX" >}}
+```python
+import jax.numpy as jnp
+from flax import linen as nn
+import jax
+
+# Simular salida de ultima capa convolucional: batch=1, 7x7, 512 canales
+feature_maps = jnp.ones((1, 7, 7, 512))
+
+# Global Average Pooling: promedia sobre dimensiones espaciales (H, W)
+vector = jnp.mean(feature_maps, axis=(1, 2))  # [1, 512]
+
+# Clasificador final
+clasificador = nn.Dense(1000)
+params = clasificador.init(jax.random.PRNGKey(0), vector)
+logits = clasificador.apply(params, vector)
+
+print(f"Feature maps: {feature_maps.shape}")  # (1, 7, 7, 512)
+print(f"Tras GAP:     {vector.shape}")        # (1, 512)
+print(f"Logits:       {logits.shape}")        # (1, 1000)
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ### Todas las arquitecturas modernas lo usan
 
