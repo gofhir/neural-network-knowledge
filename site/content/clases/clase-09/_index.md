@@ -14,4 +14,5 @@ Arquitecturas profundas de CNNs (VGG, Inception/GoogLeNet, ResNet), campo recept
   {{< card link="teoria" title="Teoria" subtitle="VGG, Inception, ResNet e interpretabilidad" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Analisis profundo de arquitecturas" icon="beaker" >}}
   {{< card link="conceptos-cnn" title="Conceptos CNN" subtitle="Preguntas y respuestas fundamentales" icon="book-open" >}}
+  {{< card link="/laboratorios/lab-09" title="Laboratorio" subtitle="Feature Visualization y Attribution" icon="code" >}}
 {{< /cards >}}
