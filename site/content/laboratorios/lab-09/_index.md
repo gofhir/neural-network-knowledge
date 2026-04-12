@@ -25,4 +25,12 @@ Al terminar este lab seras capaz de navegar las capas de cualquier arquitectura 
   {{< card link="flores-overfitting" title="Flores y Overfitting" subtitle="MiAlexNet, fine-tuning y comparacion visual" icon="sparkles" >}}
   {{< card link="attribution" title="Attribution" subtitle="Extremal Perturbation paso a paso" icon="location-marker" >}}
   {{< card link="ejercicios" title="Ejercicios" subtitle="5 actividades + glosario" icon="pencil" >}}
+  {{< card link="resolucion" title="Resolución" subtitle="Resultados con ResNet50" icon="check-circle" >}}
 {{< /cards >}}
+
+## Notebook completo (Colab final)
+
+{{< notebook-viewer
+    src="/notebooks-html/lab09.html"
+    download="/notebooks/lab09.ipynb"
+    title="Laboratorio 9 - Visualización e Interpretabilidad en CNNs (Resolución)" >}}
