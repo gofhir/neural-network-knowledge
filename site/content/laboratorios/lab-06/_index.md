@@ -22,3 +22,10 @@ Al terminar este lab seras capaz de explicar como funciona backpropagation a tra
   {{< card link="ejercicios" title="Ejercicios" subtitle="4 actividades practicas" icon="pencil" >}}
   {{< card link="resolucion" title="Resolucion" subtitle="Respuestas y codigo completo" icon="check-circle" >}}
 {{< /cards >}}
+
+## Notebook completo (Colab final)
+
+{{< notebook-viewer
+    src="/notebooks-html/lab06.html"
+    download="/notebooks/lab06.ipynb"
+    title="Laboratorio 6 - Grafos de Computo, Activaciones e Inicializacion (Resolución)" >}}
