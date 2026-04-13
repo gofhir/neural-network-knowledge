@@ -14,4 +14,5 @@ Algoritmos de optimizacion (GD, SGD, Momentum, Nesterov, AdaGrad, Adam), learnin
   {{< card link="teoria" title="Teoria" subtitle="Contenido de las 53 diapositivas" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Loss functions, backprop, LR en detalle" icon="beaker" >}}
   {{< card link="historia-matematica" title="Historia Matematica" subtitle="De Cauchy (1847) a Adam (2015)" icon="book-open" >}}
+  {{< card link="/laboratorios/lab-10" title="Laboratorio" subtitle="GD, SGD, Adam y schedulers" icon="code" >}}
 {{< /cards >}}
