@@ -76,11 +76,11 @@ cascade:
 <span class="stat-label">Papers</span>
 </div>
 <div class="stat-item">
-<span class="stat-number">3</span>
+<span class="stat-number">6</span>
 <span class="stat-label">Laboratorios</span>
 </div>
 <div class="stat-item">
-<span class="stat-number">9</span>
+<span class="stat-number">13</span>
 <span class="stat-label">Fundamentos</span>
 </div>
 </div>
