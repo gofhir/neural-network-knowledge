@@ -16,5 +16,12 @@ Este laboratorio explora los algoritmos de optimizacion que permiten entrenar re
   {{< card link="sgd-cifar10" title="SGD en CIFAR10" subtitle="Modelo CNN, entrenamiento y efecto del learning rate" icon="chip" >}}
   {{< card link="metodos-adaptativos" title="Metodos Adaptativos" subtitle="Adam, Adagrad y schedulers" icon="adjustments" >}}
   {{< card link="ejercicios" title="Ejercicios" subtitle="3 actividades practicas" icon="pencil" >}}
-  {{< card link="resolucion" title="Resolución" subtitle="Respuestas de las 3 actividades" icon="check-circle" >}}
+  {{< card link="resolucion" title="Resolución" subtitle="Respuestas de las 4 actividades" icon="check-circle" >}}
 {{< /cards >}}
+
+## Notebook completo (Colab final)
+
+{{< notebook-viewer
+    src="/notebooks-html/lab10.html"
+    download="/notebooks/lab10.ipynb"
+    title="Laboratorio 10 - Optimización y Learning Rate (Resolución)" >}}
