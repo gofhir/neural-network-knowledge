@@ -483,7 +483,70 @@ En el laboratorio 09, un modelo AlexNet entrenado desde cero en Oxford Flowers o
 
 ---
 
+## 10. Evidencia Empirica: Yosinski et al. 2014
+
+El paper ["How transferable are features in deep neural networks?"](/papers/transferable-features-yosinski-2014) (Yosinski, Clune, Bengio, Lipson, NeurIPS 2014) es el trabajo empirico de referencia sobre transferibilidad layer-by-layer. Cuantifica con experimentos controlados cuan generales o especificas son las representaciones de cada capa.
+
+### 10.1 Setup experimental
+
+Dividieron las 1000 clases de ImageNet en dos subconjuntos de 500 clases (A y B) y entrenaron dos redes `baseA` y `baseB`. Luego construyeron:
+
+- **Selffer B3B**: copiar las primeras 3 capas de `baseB` (frozen), entrenar el resto en B. **Control**.
+- **Transfer A3B**: copiar las primeras 3 capas de `baseA` (frozen), entrenar el resto en B.
+- **B3B+** y **A3B+**: versiones de los anteriores pero con **fine-tuning** de todas las capas.
+
+Repitieron para $n \in \{1, 2, \ldots, 7\}$ (capa en la que cortar), y probaron dos variantes de similitud de datasets:
+
+- **Similar**: A y B son splits aleatorios de ImageNet (distribuciones similares).
+- **Disimilar**: A = entidades hechas por humanos, B = entidades naturales.
+
+### 10.2 Cinco hallazgos clave
+
+1. **Degradacion al cortar en capas medias** (3-5): las redes selffer BnB **empeoran** respecto a baseB cuando el corte ocurre en capas intermedias. Esto revela **"fragile co-adaptation"**: features en capas adyacentes aprenden a colaborar de forma compleja, y congelar parte de ellas rompe esa colaboracion.
+
+2. **Fine-tuning recupera la co-adaptacion**: las versiones BnB+ (fine-tuned) no sufren la caida. Las capas descongeladas reajustan su colaboracion con las frozen.
+
+3. **Generalidad decae con la profundidad**: las capas 1-2 transfieren **casi perfectamente** entre tareas. Capas 3+ pierden transferibilidad gradualmente. La ultima capa (7-8) es altamente especifica.
+
+4. **Transfer + fine-tuning supera a training desde cero**: sorprendentemente, incluso cuando el target dataset es grande, transferir e iniciar con pesos preentrenados **mejora la generalizacion** por ~1.6-2.1% sobre entrenar desde cero. El efecto persiste incluso tras 450k iteraciones de fine-tuning.
+
+5. **Distancia entre tareas importa**: cuando A y B son disimilares (hechas-por-humanos vs naturales), la transferibilidad cae mas. Pero incluso para tareas muy distintas, **transferir es mejor que pesos aleatorios**.
+
+{{< concept-alert type="clave" >}}
+**Dos mecanismos distintos** afectan la transferibilidad en capas medias:
+
+1. **Especificidad de features**: las features son demasiado especificas a la tarea source para transferir.
+2. **Fragile co-adaptation**: las features son lo suficientemente generales, pero dependen de interacciones finas con capas vecinas que se rompen al congelar.
+
+Yosinski muestra que el primer efecto domina en capas 6-7, el segundo en capas 3-5.
+{{< /concept-alert >}}
+
+### 10.3 Implicaciones practicas
+
+- **Usar siempre pesos preentrenados** cuando existan, incluso con datasets grandes. Es "free lunch".
+- **Fine-tuning > feature extraction** cuando el target difiere del source, para recuperar co-adaptation.
+- **Cortar en la penultima o ultima capa** es mas seguro que cortar a la mitad, si se quiere congelar algo.
+- **La penalizacion por transferir entre dominios lejanos existe, pero es menor que no transferir**.
+
+---
+
+## 11. Transfer Learning a Gran Escala: Foundation Models
+
+El paradigma moderno (2020+) extrema transfer learning:
+
+- **Pretrain**: un modelo masivo (GPT, BERT, CLIP) sobre **trillions de tokens** con self-supervision.
+- **Adaptar**: fine-tuning tradicional, **prompting** (sin gradient updates), **retrieval-augmented generation**, o **parameter-efficient fine-tuning** (LoRA, adapters).
+
+Un ResNet-50 fine-tuneado para clasificar flores tiene ~25M parametros. Un LLaMA-70B adaptado para asistencia medica tiene ~70,000M parametros. El mismo principio fundamental (reutilizar representaciones pretrained), aplicado con diferencias de escala de 3 ordenes de magnitud.
+
+Ver: [Foundation Models](foundation-models) · [Paper Bommasani 2021](/papers/foundation-models-bommasani-2021).
+
+---
+
 ## Para Profundizar
 
 - [Laboratorio 09 - Flores, Overfitting y Fine-tuning](/laboratorios/lab-09/) -- aplicacion practica con AlexNet y Oxford Flowers
 - [Laboratorio 05 - AlexNet](/laboratorios/lab-05/) -- arquitectura base usada para transfer learning
+- [Paper Yosinski 2014](/papers/transferable-features-yosinski-2014) -- el analisis layer-by-layer de referencia
+- [Foundation Models](foundation-models) -- el caso extremo moderno de transfer learning
+- [Data Augmentation](data-augmentation) -- complemento natural para datasets pequenos
