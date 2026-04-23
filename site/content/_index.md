@@ -68,11 +68,11 @@ cascade:
 <div class="stats-section" style="margin-top: 6rem; margin-bottom: 4rem;">
 <div class="stats-grid">
 <div class="stat-item">
-<span class="stat-number">8</span>
+<span class="stat-number">9</span>
 <span class="stat-label">Clases</span>
 </div>
 <div class="stat-item">
-<span class="stat-number">23</span>
+<span class="stat-number">27</span>
 <span class="stat-label">Papers</span>
 </div>
 <div class="stat-item">
@@ -80,7 +80,7 @@ cascade:
 <span class="stat-label">Laboratorios</span>
 </div>
 <div class="stat-item">
-<span class="stat-number">18</span>
+<span class="stat-number">20</span>
 <span class="stat-label">Fundamentos</span>
 </div>
 </div>
