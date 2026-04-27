@@ -24,6 +24,7 @@ Para nuestro curso UC, este lecture **complementa** las clases 11 (RNNs, Alvaro 
   {{< card link="notas" title="Notas" subtitle="Recorrido tematico de las 93 diapositivas" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Papers, comparacion con clase 11, conceptos no cubiertos" icon="beaker" >}}
   {{< card link="glosario" title="Glosario" subtitle="Terminos clave en espanol e ingles" icon="book-open" >}}
+  {{< card link="/videos/mit-6s191-l2-2026" title="Version 2026" subtitle="Mismo lecture, extendido a Transformers" icon="film" >}}
   {{< card link="/clases/clase-11" title="Clase 11 (curso UC)" subtitle="Material complementario de Alvaro Soto" icon="academic-cap" >}}
 {{< /cards >}}
 
