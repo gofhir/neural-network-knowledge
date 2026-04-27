@@ -111,6 +111,91 @@ Cada tipo de dato tiene un shape estandar y un preproceso particular:
 
 ---
 
+## 2.5 One-Hot Encoding: Representar Categorias
+
+Las redes neuronales solo trabajan con numeros — no entienden colores, idiomas, letras ni categorias abstractas. Cuando una variable es **categorica** (un conjunto finito de opciones sin orden numerico real), no puedes simplemente asignarle un numero entero. Necesitas un encoding que **no introduzca un orden falso** entre las categorias.
+
+### El problema con codificar como entero
+
+Imagina que tienes 5 colores y los codificas asi:
+
+```
+rojo     → 1
+verde    → 2
+azul     → 3
+amarillo → 4
+negro    → 5
+```
+
+La red recibiria estos numeros como **magnitudes**: pensaria que `negro (5)` es "mas grande" que `rojo (1)`, que `verde (2)` es el promedio entre rojo y azul porque $(1+3)/2 = 2$, y aprenderia relaciones absurdas. Los colores **no tienen orden numerico real** — son etiquetas.
+
+El mismo error ocurre con letras: si codificas `'A' → 1, 'B' → 2, ..., 'Z' → 26`, la red interpretaria que 'M' es "el promedio entre A y Z", lo cual no significa nada.
+
+### La solucion: one-hot encoding
+
+Un vector **one-hot** ("uno caliente") tiene tantas casillas como categorias posibles, todas en cero **excepto una** — la posicion de la categoria que quieres representar:
+
+```
+                rojo  verde  azul  amarillo  negro
+rojo     →     [ 1,    0,    0,     0,        0  ]
+verde    →     [ 0,    1,    0,     0,        0  ]
+azul     →     [ 0,    0,    1,     0,        0  ]
+amarillo →     [ 0,    0,    0,     1,        0  ]
+negro    →     [ 0,    0,    0,     0,        1  ]
+```
+
+Solo una casilla esta "encendida" (en 1) — de ahi el nombre.
+
+### Por que funciona
+
+1. **Misma magnitud:** todos los vectores tienen norma 1. Ninguna categoria es "mayor" que otra.
+2. **Ortogonalidad:** el producto punto entre dos vectores one-hot distintos es 0 — la red los ve como **independientes**, sin relacion numerica artificial.
+3. **La red aprende los pesos:** cada posicion del vector tiene su propio peso entrenable. La red descubre por si misma cuales categorias importan y como combinarlas, sin asumir nada.
+
+### En PyTorch
+
+```python
+import torch
+
+# Construccion manual
+def one_hot(idx, n_categorias):
+    vector = torch.zeros(n_categorias)
+    vector[idx] = 1
+    return vector
+
+print(one_hot(2, 5))  # tensor([0., 0., 1., 0., 0.])  ← categoria #2 de 5
+
+# Con la API de PyTorch
+torch.nn.functional.one_hot(torch.tensor(2), num_classes=5)
+# tensor([0, 0, 1, 0, 0])
+```
+
+{{< concept-alert type="clave" >}}
+**One-hot vs Embeddings:** one-hot funciona bien cuando hay **pocas categorias** (decenas a cientos). Para vocabularios grandes (50 000 palabras de un idioma), el vector seria absurdamente largo y dispersero. En esos casos se usan **embeddings** — vectores densos de baja dimension (300, 512) que la red aprende para que palabras similares queden cerca en el espacio. Los embeddings son la generalizacion natural de one-hot para datos de alta cardinalidad.
+{{< /concept-alert >}}
+
+### Caso de uso: clasificacion a nivel de caracter
+
+En el [Lab 11](/laboratorios/lab-11/) se clasifican apellidos por nacionalidad usando una RNN que lee carácter por carácter. Cada letra del alfabeto (57 simbolos: a–z, A–Z y puntuacion) se representa como un vector one-hot de 57 dimensiones:
+
+```
+'A' → [0, 0, ..., 0, 1, 0, ..., 0]   (1 en la posicion 26)
+'l' → [0, 0, ..., 0, 1, 0, ..., 0]   (1 en la posicion 11)
+```
+
+Un apellido como `"Albert"` (6 caracteres) se convierte en un tensor de shape `(6, 1, 57)` — 6 vectores one-hot apilados.
+
+### Cuando NO usar one-hot
+
+| Situacion | Alternativa |
+|-----------|-------------|
+| Categorias con orden real (talla S/M/L/XL) | Encoding ordinal (1, 2, 3, 4) |
+| Vocabularios grandes (>10K) | Embeddings entrenables |
+| Categorias jerarquicas | Embeddings o encodings estructurados |
+| Variables continuas (edad, precio) | Normalizacion (no es categorica) |
+
+---
+
 ## 3. Normalizacion de Datos
 
 La normalizacion asegura que todas las features tengan escalas comparables, lo cual es esencial para que el entrenamiento converja de forma estable.
