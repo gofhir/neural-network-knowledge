@@ -117,3 +117,164 @@ Operativamente:
 Estas tres propiedades — localidad, weight sharing, múltiples filtros — son la inducción de bias arquitectural que hace que las CNNs funcionen sobre imágenes mientras las MLPs fracasan.
 
 En la siguiente sección formalizaremos la operación, definiremos stride, padding, profundidad de salida y campo receptivo, y veremos cómo se apilan capas convolucionales para producir la jerarquía de features de la sección 4.
+
+---
+
+## 7. Caso de estudio: detectar una "X" deforme
+
+Antes de formalizar, la clase usa un caso de estudio canónico (Rohrer, *How do CNNs work?*) para ganar intuición *(slides 27-29)*. La pregunta: dada una imagen binaria de una "X", ¿cómo clasificarla como X aunque esté **desplazada, escalada, rotada o deformada**? *(slide 27)*.
+
+Respuesta: en vez de buscar la X completa, buscar **partes locales** que la caractericen *(slide 28)*: una esquina superior-izquierda con diagonal hacia adentro, una esquina superior-derecha con diagonal hacia adentro, y un cruce diagonal central. Cada parte vive en un parche de $3 \times 3$ píxeles.
+
+![Slide 29 — Tres filtros 3×3 con pesos {+1, -1} que detectan las tres partes locales que caracterizan una X.](/videos/mit-6s191-l3-2026/slides/slide-29.png)
+
+Cada filtro es una matriz de $3 \times 3$ con pesos en $\{+1, -1\}$. Aplicar el filtro a un parche significa multiplicar elemento-a-elemento y sumar: si el parche del input coincide perfectamente con el patrón del filtro, la suma se maximiza. Para un parche $3 \times 3$ que coincide exactamente con el filtro de pesos $\pm 1$, todos los productos son $+1$ y la suma vale $9$ *(slide 30)*.
+
+Ese **escalar** es la respuesta de un detector local. Aplicar el filtro a todas las posiciones del input produce una matriz de respuestas: el **feature map**.
+
+---
+
+## 8. La operación de convolución, paso a paso
+
+Las slides 31-40 desarrollan la convolución operativamente sobre un input $5 \times 5$ con un filtro $3 \times 3$ *(slides 31-40)*. Para cada posición $(p, q)$ de salida:
+
+$$
+y_{p,q} = \sum_{i=1}^{k} \sum_{j=1}^{k} w_{ij} \cdot x_{p+i-1,\, q+j-1}
+$$
+
+donde $k$ es el tamaño del filtro, $w_{ij}$ son los pesos del filtro, y $x_{\cdot,\cdot}$ es el input. Repetir para cada posición $(p, q)$ produce el feature map.
+
+Tres ideas operativas se consolidan tras la animación slide-by-slide *(slide 42)*:
+
+1. **Aplicar un conjunto de pesos** (un filtro) extrae *features locales* — una respuesta por parche, no una respuesta por imagen.
+2. **Múltiples filtros** producen *múltiples feature maps*, cada uno especializado en una feature diferente (un detector de borde vertical, otro horizontal, otro de textura).
+3. **Compartir parámetros espacialmente** (*spatial weight sharing*) significa que el mismo filtro se aplica a todas las posiciones — invarianza a traslación incorporada en la arquitectura.
+
+La operación de convolución no es un invento del deep learning: filtros como Sobel para bordes, Gaussiano para suavizado, o Laplaciano para detección de bordes fuertes existen desde décadas en procesamiento de imágenes clásico *(slide 41)*.
+
+![Slide 41 — Feature maps producidos por filtros conocidos sobre la imagen de Lena: sharpen, edge detect, strong edge detect.](/videos/mit-6s191-l3-2026/slides/slide-41.png)
+
+La novedad de las CNNs no es la convolución en sí: es que los pesos del filtro se **aprenden por gradiente** desde los datos, en vez de diseñarlos a mano. Una CNN profunda puede aprender filtros de bordes en la primera capa que se parecen a los de Sobel, pero también filtros más exóticos en capas profundas que ningún humano hubiera escrito.
+
+---
+
+## 9. Arquitectura CNN para clasificación
+
+Una CNN para clasificación apila tres tipos de operaciones *(slide 44)*:
+
+![Slide 44 — Pipeline canónico: input → convolución (feature maps) → pooling → fully-connected → softmax.](/videos/mit-6s191-l3-2026/slides/slide-44.png)
+
+1. **Convolución:** aplica filtros aprendibles para producir feature maps.
+2. **No-linealidad** (típicamente ReLU): se aplica después de cada convolución.
+3. **Pooling:** downsampling de cada feature map.
+
+Estas tres se repiten varias veces (formando el "backbone" convolucional), y al final se conectan a una o varias capas fully-connected que producen la distribución sobre clases.
+
+En código:
+
+```python
+# Keras / TensorFlow
+import tensorflow as tf
+tf.keras.layers.Conv2D(filters=d, kernel_size=(h, w), strides=s, activation="relu")
+tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)
+
+# PyTorch
+import torch.nn as nn
+nn.Conv2d(in_channels=c_in, out_channels=d, kernel_size=(h, w), stride=s)
+nn.ReLU()
+nn.MaxPool2d(kernel_size=(2, 2), stride=2)
+```
+
+---
+
+## 10. Capas convolucionales: matemática y conectividad local
+
+Cada neurona en una capa convolucional tiene tres propiedades clave *(slides 45-46)*:
+
+- **Toma sus inputs de un parche** del feature map anterior, no de toda la entrada.
+- **Calcula una combinación lineal ponderada** $\sum_{i,j} w_{ij} \, x_{i+p, j+q} + b$.
+- **Aplica una función de activación no-lineal** (ReLU).
+
+Para una capa con filtros de tamaño $k \times k$, la salida en la posición $(p, q)$ del feature map es:
+
+$$
+y_{p,q} = g\!\left(\sum_{i=1}^{k} \sum_{j=1}^{k} w_{ij} \cdot x_{i+p,\, j+q} + b\right)
+$$
+
+donde $g$ es la no-linealidad. La **misma matriz de pesos** $W \in \mathbb{R}^{k \times k}$ y **el mismo bias** $b$ se reutilizan en todas las posiciones $(p, q)$ — esto es el weight sharing que define la convolución.
+
+---
+
+## 11. Volúmenes 3D: profundidad y campo receptivo
+
+Hasta aquí trabajamos con un solo filtro y un input de un solo canal. La realidad es 3D: imágenes RGB tienen 3 canales, y cada capa convolucional aplica $d$ filtros distintos, produciendo $d$ feature maps apilados *(slide 47)*.
+
+![Slide 47 — Volumen de salida de una capa Conv: dimensiones $h \times w \times d$. Profundidad $d$ = número de filtros. Stride = paso del filtro. Receptive field = región del input que afecta a un nodo dado.](/videos/mit-6s191-l3-2026/slides/slide-47.png)
+
+Tres dimensiones definen un volumen de feature maps:
+
+- **Height ($h$) y width ($w$):** dimensiones espaciales — qué tan "grande" es el feature map.
+- **Depth ($d$):** número de filtros aplicados, equivalente al número de feature maps producidos. Un input RGB tiene depth 3; una capa con 64 filtros produce un volumen de salida con depth 64.
+
+Tres hiperparámetros controlan el shape de salida:
+
+- **Kernel size $k$:** tamaño del filtro (típicamente 3, 5, 7).
+- **Stride $s$:** cuántos píxeles avanza el filtro entre aplicaciones (1 = denso; 2 = downsample por 2).
+- **Padding $p$:** cuántos píxeles de "ceros" se agregan al borde para controlar el shape de salida.
+
+Para un input $H \times W$ con kernel $k$, padding $p$, stride $s$, la salida tiene tamaño:
+
+$$
+H_{\text{out}} = \left\lfloor \frac{H + 2p - k}{s} \right\rfloor + 1
+$$
+
+(análogo para $W_{\text{out}}$).
+
+El **receptive field** (campo receptivo) de un nodo en una capa profunda es la región del input original que efectivamente afecta su valor. Apilando capas con kernel $3 \times 3$ y stride 1 sin padding, el receptive field crece linealmente: capa 1 cubre $3 \times 3$, capa 2 cubre $5 \times 5$, capa 3 cubre $7 \times 7$. Con stride 2 o convoluciones dilatadas el crecimiento puede ser exponencial.
+
+Esta capacidad de un nodo profundo de "ver" una porción cada vez mayor del input es lo que permite componer features de bajo nivel en features de alto nivel.
+
+---
+
+## 12. No-linealidad: ReLU
+
+Se aplica una activación no-lineal después de cada convolución *(slide 48)*. El estándar de facto es **ReLU** (Rectified Linear Unit):
+
+$$
+g(z) = \max(0, z)
+$$
+
+Operativamente: cada valor negativo del feature map se reemplaza por cero; los positivos pasan sin cambio. Esto introduce no-linealidad (sin la cual una pila de capas convolucionales colapsaría a una sola convolución lineal) y mantiene el gradiente fluyendo en la mitad positiva, evitando la saturación que sufren sigmoid/tanh.
+
+---
+
+## 13. Pooling
+
+Las CNNs intercalan capas de **pooling** entre convoluciones para reducir la dimensión espacial y agregar invarianza local *(slide 49)*:
+
+![Slide 49 — Max pooling con filtros 2×2 y stride 2: cada bloque 2×2 del feature map se reemplaza por su valor máximo.](/videos/mit-6s191-l3-2026/slides/slide-49.png)
+
+Operación más común: **max pooling**, $2 \times 2$ con stride 2. Por cada bloque $2 \times 2$ del feature map se queda solo el máximo, reduciendo $h$ y $w$ a la mitad pero conservando $d$.
+
+Beneficios:
+
+1. **Reducción de dimensionalidad:** $h \times w$ de salida es $\tfrac{1}{4}$ del de entrada, lo que acelera capas posteriores.
+2. **Invarianza espacial local:** pequeños desplazamientos del input no cambian la salida del pool (si la feature está en cualquier lugar del bloque $2 \times 2$, el máximo es el mismo).
+
+Alternativas: **average pooling** (promedio en vez de max), **global average pooling** (un solo escalar por feature map, usado al final del backbone en muchas arquitecturas modernas en vez de FC).
+
+---
+
+## 14. Representación aprendida: jerarquía emergente
+
+Cuando se entrena una CNN profunda end-to-end con clasificación de imágenes, los filtros aprendidos en cada capa revelan exactamente la jerarquía que motivamos en la sección 4 *(slide 50)*:
+
+![Slide 50 — Visualización de filtros aprendidos en capas Conv 1, 2 y 3 de una CNN profunda (Lee+ ICML 2009): bordes en Conv 1, partes faciales en Conv 2, caras completas en Conv 3.](/videos/mit-6s191-l3-2026/slides/slide-50.png)
+
+- **Conv layer 1:** detectores de bordes orientados, manchas oscuras, gradientes locales.
+- **Conv layer 2:** combinaciones de bordes que detectan partes — ojos, narices, esquinas de caras.
+- **Conv layer 3:** detectores de objetos completos — caras enteras.
+
+Esta jerarquía no se programa: emerge cuando se entrena una CNN profunda con un loss de clasificación end-to-end. Es una de las observaciones empíricas más importantes en deep learning, y el hilo que conecta la motivación inicial (¿podemos aprender features?) con la maquinaria desarrollada (convolución + pooling + ReLU apilados).
+
+En la siguiente sección veremos qué aplicaciones se construyen sobre esta arquitectura — clasificación, detección, segmentación, generación, conducción autónoma — y cómo se modifica el "head" de la red según la tarea.
