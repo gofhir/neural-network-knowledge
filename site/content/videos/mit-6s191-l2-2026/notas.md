@@ -1,5 +1,5 @@
 ---
-title: "Notas - MIT 6.S191 (2026): RNNs, Transformers y Attention"
+title: "Notas - MIT 6.S191 (2026) Deep Sequence Modeling"
 weight: 10
 math: true
 ---
@@ -7,587 +7,532 @@ math: true
 > Recorrido tematico de las 83 diapositivas del lecture, organizado por contenido (no por slide). Citas a slides especificas en *cursiva*.
 
 **Video original:** [YouTube](https://www.youtube.com/watch?v=d02VkQ9MP44)
-**Slides:** [PDF local (4.4 MB)](/videos/mit-6s191-l2-2026/slides.pdf) - [Original MIT](https://introtodeeplearning.com/slides/6S191_MIT_DeepLearning_L2.pdf)
+**Slides:** [PDF local](/videos/mit-6s191-l2-2026/slides.pdf)
+**Lecturer:** Ava Amini, MIT Introduction to Deep Learning, 5 de enero de 2026.
+
+El lecture mantiene el armazon clasico del 2020 (motivacion -> RNN -> BPTT -> vanishing -> aplicaciones) pero a partir de la slide 60 pivota explicitamente hacia **self-attention** y termina con una vista panoramica del Transformer y sus aplicaciones modernas (BERT, GPT, AlphaFold, ViT). LSTMs y GRUs ocupan **una sola slide** (la 54) y se mencionan apenas como teaser: el enfasis pedagogico se desplazo del gating a la atencion.
 
 ---
 
-## 1. Motivación: por qué modelar secuencias
+## 1. Motivacion: por que modelar secuencias *(slides 1-8)*
 
-El mundo está lleno de datos secuenciales: audio, video, texto, series temporales financieras, secuencias de ADN biológicas. A diferencia de las redes feed-forward o convolucionales que procesan entradas de **tamaño fijo**, una red recurrente maneja secuencias de **longitud variable** mediante un estado oculto que persiste entre pasos temporales *(slides 1-6)*.
+El lecture abre con una **metafora visual progresiva** alrededor de una pelota *(slides 2-5)*. Primero aparece la pelota sola con la pregunta "dada una imagen de una pelota, puedes predecir donde ira despues?". La respuesta natural es ambigua, lo que se ilustra agregando flechas en multiples direcciones y signos "???" *(slide 3)*. Luego se introduce el contexto: una secuencia de cuatro pelotas atenuadas, sin flecha *(slide 4)*. Finalmente, con esa secuencia mas una flecha hacia la derecha, la prediccion se vuelve obvia *(slide 5)*. La leccion implicita: **lo que convierte un problema ambiguo en uno tratable es la informacion temporal pasada**.
 
-La pregunta fundamental es: **dado el contexto pasado, ¿qué viene después?** Esta pregunta subyace en tareas como predecir la trayectoria de un objeto en movimiento ("dada una imagen de una pelota, ¿dónde estará en el siguiente frame?") o generar el siguiente token en una secuencia de palabras. Las secuencias aparecen en múltiples dominios —carácter a carácter, palabra a palabra, frame a frame— y el desafío es capturar tanto **dependencias de corto plazo** como **dependencias de largo plazo** que pueden estar separadas por cientos de pasos temporales.
+A continuacion, "Sequences in the Wild" muestra que las secuencias estan en todas partes: una waveform de audio *(slide 6)*, y un collage con stocks, video, ADN, ECG, un corredor en motion blur y un mapa satelital de ozono *(slide 7)*. La idea es que el dominio "secuencia" cubre desde fonemas y bases nucleotidicas hasta frames de video y series financieras.
 
----
+La motivacion se cierra con un **catalogo de las 4 configuraciones canonicas** de tareas secuenciales *(slide 8, "Sequence Modeling Applications")*:
 
-## 2. Limitaciones de los enfoques ingenuos
+- **One-to-One** -- *Binary Classification* ("Will I pass this class?").
+- **Many-to-One** -- *Sentiment Classification* sobre un tweet con emoji.
+- **One-to-Many** -- *Image Captioning* (un baseball player lanzando una pelota).
+- **Many-to-Many** -- *Machine Translation* con caracteres `文` y `A`.
 
-Antes de presentar las RNNs, Amini expone tres soluciones ingenuas y por qué fallan *(slides 7-13)*.
+Este grid reaparecera mas adelante *(slide 29)* relabelado en terminos de RNN concretas, con un badge `6.S191 Lab!` apuntando al lab de generacion de musica.
 
-### 2.1 Ventana fija pequeña
-
-La forma más simple es usar una **ventana deslizante** de tamaño fijo para predecir el siguiente elemento. Dado un contexto de dos palabras anteriores ("for a"), se predice la siguiente. Cada palabra se codifica en **one-hot encoding**, sin perder información de la identidad.
-
-El problema: una ventana de dos palabras captura muy poco contexto. En la oración *"Francia es donde crecí, pero ahora vivo en Boston. Hablo fluidamente ____"*, para predecir "francés" se necesita información del **pasado distante** (que viví en Francia al inicio). Una ventana pequeña falla categóricamente.
-
-### 2.2 Bag of words (contar palabras)
-
-Codificar todo el texto como un vector de conteos por palabra. El problema es que los **conteos no preservan el orden**. Las frases *"The food was good, not bad at all"* y *"The food was bad, not good at all"* tienen el mismo vector de conteos, pero significan lo **opuesto**. Sin preservar el orden, es imposible capturar negaciones, contexto temporal o relaciones sintácticas.
-
-### 2.3 Ventana fija grande
-
-Expandir la ventana a toda la secuencia, con un vector one-hot independiente por posición. El problema fundamental: **sin compartir parámetros**. Cada palabra en cada posición es un parámetro separado; lo aprendido sobre "this" en posición 1 no transfiere a "this" en posición 5. El modelo no generaliza y el número de parámetros crece sin límite con la longitud de la secuencia.
+> Nota: a diferencia del lecture 2020, **no hay slides sobre fixed-window ni bag-of-words**. El 2026 saltea esa critica de "naive approaches" y va directo de la motivacion al perceptron.
 
 ---
 
-## 3. Criterios de diseño para el modelado de secuencias
+## 2. Construccion del RNN: del perceptron a la recurrencia *(slides 9-23)*
 
-Tras exponer las limitaciones, Amini enumera **cuatro criterios clave** que debe cumplir una solución robusta *(slide 14)*:
+La construccion del RNN se hace **incrementalmente**, partiendo de objetos ya conocidos y agregando una pieza por slide. El objetivo pedagogico es mostrar que la recurrencia no aparece de la nada: emerge naturalmente cuando uno intenta procesar muchos pasos temporales con feed-forward.
 
-1. **Manejar secuencias de longitud variable** sin padding artificial ni truncamiento.
-2. **Rastrear dependencias de largo plazo**: el estado interno debe retener y propagar información del pasado distante.
-3. **Preservar información sobre el orden**: el orden de la secuencia debe estar implícitamente codificado.
-4. **Compartir parámetros entre pasos**: los mismos pesos en cada paso temporal, permitiendo generalización y eficiencia de parámetros.
+### 2.1 Del perceptron a la caja temporal *(slides 10-12)*
 
-Las **redes neuronales recurrentes (RNNs)** emergen como la respuesta natural a estos cuatro requisitos.
+Se parte de un perceptron clasico con entradas $x^{(1)}, x^{(2)}, \ldots, x^{(m)}$, pesos $w_1, \ldots, w_m$, suma $z$ y activacion $\hat{y} = g(z)$ *(slide 10)*. Luego se generaliza a una **feed-forward network** con $\boldsymbol{x} \in \mathbb{R}^m$ y $\hat{\boldsymbol{y}} \in \mathbb{R}^n$ *(slide 11)*. Finalmente, esa red se colapsa visualmente en una **caja unica** con subindice de tiempo: $\boldsymbol{x}_t \to \text{caja} \to \hat{\boldsymbol{y}}_t$ *(slide 12)*. Es la primera vez que aparece la idea de "tiempo".
 
----
+### 2.2 Time steps independientes y el problema *(slide 13)*
 
-## 4. Arquitectura de redes neuronales recurrentes
+Se replica la caja en $t=0, 1, 2$ pero **sin conexion entre cajas**. La formula es deliberadamente trivial: $\hat{y}_t = f(x_t)$. Ava enmarca con un rectangulo azul los inputs vistos $x_0, x_1$ y con un rectangulo purpura el output futuro $\hat{y}_2$ para hacer evidente que **sin recurrencia, lo aprendido en $t=0,1$ no puede informar la prediccion en $t=2$**. Esa es la motivacion concreta para introducir un canal de memoria.
 
-### 4.1 Concepto fundamental: recurrencia
+### 2.3 Recurrencia y self-loop *(slides 14-15)*
 
-Una RNN aplica la **misma función** en cada paso temporal, con una entrada que incluye el estado oculto del paso anterior *(slides 15-17)*. La ecuación fundamental es:
+El siguiente paso introduce los **estados ocultos** $h_0, h_1$ que pasan informacion entre cajas, con la formula
+
+$$\hat{y}_t = f(x_t, h_{t-1})$$
+
+etiquetada como **output, input, past memory** *(slide 14)*. El cambio crucial respecto del slide 13 es que ahora cada caja recibe no solo $x_t$ sino tambien la "memoria pasada" $h_{t-1}$. La slide siguiente *(15)* introduce el **`recurrent cell`** como un solo nodo con un `self-loop` etiquetado $h_t$: la representacion compacta del mismo computo.
+
+### 2.4 RNN formal y `pseudocodigo` *(slides 16-20)*
+
+La definicion formal aparece en *slide 17*:
 
 $$h_t = f_W(x_t, h_{t-1})$$
 
-donde:
+con etiquetas **cell state, function with weights W, input, old state**. La nota es importante: "the same function and set of parameters are used at every time step. RNNs have a state $h_t$ that is updated at each time step". Aqui aparece, sin gritarlo, el principio de **parameter sharing**.
 
-- $x_t$ es la entrada en el paso $t$.
-- $h_t$ es el **estado oculto** — un "resumen lossy" de toda la información procesada hasta el momento.
-- $f_W$ es una función parametrizada (típicamente una red neuronal pequeña) con pesos aprendibles $W$.
-
-Este mecanismo cumple los cuatro criterios:
-
-- **Longitud variable**: se aplica el mismo paso recurrente tantas veces como sea necesario.
-- **Largo plazo**: el estado $h_t$ propaga información desde $h_0$ por composición a través del tiempo.
-- **Orden**: la secuencia se procesa paso a paso, preservando estructura temporal.
-- **Parámetros compartidos**: $f_W$ es idéntica en cada $t$; la red reutiliza los mismos pesos.
-
-### 4.2 Parametrización estándar: lineal + activación
-
-La implementación típica usa una combinación de transformación lineal y activación no-lineal:
-
-$$h_t = \tanh(W_{hh}^\top h_{t-1} + W_{xh}^\top x_t)$$
-
-donde:
-
-- $W_{hh} \in \mathbb{R}^{d_h \times d_h}$ es la matriz de transición del estado oculto ("recurrente").
-- $W_{xh} \in \mathbb{R}^{d_h \times d_x}$ es la matriz entrada-a-oculto.
-- $\tanh$ es una activación no-lineal que introduce expresividad.
-- El bias se absorbe implícitamente.
-
-La dimensión crítica es $d_h$, el **tamaño del estado oculto**: suficientemente grande para capturar contexto, pero eficiente en parámetros.
-
-Para generar una predicción en cada paso, se añade una capa de salida:
-
-$$\hat{y}_t = W_{hy}^\top h_t$$
-
-donde $W_{hy} \in \mathbb{R}^{d_y \times d_h}$ mapea del estado oculto al espacio de salida.
-
-### 4.3 Pseudocódigo de RNN
-
-La implementación operativa, con pesos compartidos en cada paso, se resume *(slides 18-19)*:
+Para anclar la idea en codigo, se construye un pseudocodigo Python en 3 slides *(18-20)* que reproduce literalmente el espiritu de la recurrencia:
 
 ```python
 my_rnn = RNN()
-hidden_state = [0, 0, 0, 0]      # h_0 inicializado en cero
-
+hidden_state = [0, 0, 0, 0]
 sentence = ["I", "love", "recurrent", "neural"]
 
 for word in sentence:
     prediction, hidden_state = my_rnn(word, hidden_state)
 
-next_word_prediction = prediction  # predicción para "networks"
+next_word_prediction = prediction
+# >>> "networks!"
 ```
 
-La misma instancia `my_rnn` (con los mismos pesos) procesa cada palabra, actualizando `hidden_state` en cada iteración.
+El highlight verde se mueve progresivamente entre la inicializacion, el loop y la prediccion final, dejando claro que el `hidden_state` se reusa de iteracion en iteracion.
+
+### 2.5 Las tres ecuaciones del RNN *(slides 21-24)*
+
+El bloque cierra con un build progresivo titulado **"RNN State Update and Output"**. La slide 21 muestra solo el diagrama base: $\hat{y}_t$ (output, purpura) <- `RNN cell` (con $h_t$ y self-loop) <- $x_t$ (input, azul). En las slides siguientes se agregan callouts uno por uno:
+
+- *(slide 22)* **Input Vector**: $x_t$.
+- *(slide 23)* **Update Hidden State**:
+  $$h_t = \tanh(\boldsymbol{W}_{hh}^T h_{t-1} + \boldsymbol{W}_{xh}^T x_t)$$
+- *(slide 24)* **Output Vector**:
+  $$\hat{y}_t = \boldsymbol{W}_{hy}^T h_t$$
+
+Esta es la primera vez que se explicitan **tres matrices distintas** -- $W_{xh}$, $W_{hh}$, $W_{hy}$ -- y se escoge `tanh` como activacion. La eleccion reaparecera mas tarde como pieza relevante en la discusion de vanishing gradients.
 
 ---
 
-## 5. Arquitecturas según la tarea
+## 3. Computational graph y codigo (TF/PyTorch) *(slides 24-29)*
 
-Las RNNs permiten múltiples configuraciones según cómo se alineen las secuencias de entrada y salida *(slides 16-19)*:
+### 3.1 Unrolling
 
-- **Many-to-one** (clasificación de secuencias): se procesan todos los inputs $x_1, \ldots, x_T$ generando estados $h_1, \ldots, h_T$, pero solo el **último estado** $h_T$ alimenta una salida $y$. Ejemplo: análisis de sentimiento de una oración completa.
-- **One-to-many** (generación condicionada): se proporciona un único input (o contexto inicial codificado en $h_0$) que genera una secuencia de outputs $y_1, \ldots, y_T$. Ejemplo: image captioning, donde la imagen se codifica y la RNN genera palabras secuencialmente.
-- **Many-to-many síncrono** (misma longitud): se generan outputs en cada paso temporal, con igual número de pasos que inputs. Ejemplo: etiquetado POS (part-of-speech) de oraciones.
-- **Many-to-many asíncrono** (encoder-decoder): dos RNNs en cascada: un **encoder** procesa la secuencia de entrada y resume en $h_T$ (el "contexto"); un **decoder** alimentado por el contexto genera la secuencia de salida. Permite entrada y salida de **longitudes distintas**. Ejemplo: traducción automática.
+Una vez tenemos las ecuaciones, conviene **desenrollar** el RNN en el tiempo *(slide 25)*. La slide muestra el RNN folded con un `=` y el texto "Represent as computational graph unrolled across time": una sola idea que sin embargo es la base para entender BPTT, parameter sharing y vanishing gradients.
+
+El unrolled completo *(slide 26)* tiene:
+
+- Los outputs $\hat{y}_0, \hat{y}_1, \hat{y}_2, \ldots, \hat{y}_t$ con $\boldsymbol{W}_{hy}$ subiendo a cada uno.
+- $\boldsymbol{W}_{hh}$ conectando cells horizontalmente.
+- $\boldsymbol{W}_{xh}$ desde cada input $x_0, x_1, x_2, \ldots, x_t$.
+- Una **perdida por timestep** $L_0, L_1, L_2, L_3$ que se agrega en una **perdida total** $L$ (caja naranja arriba).
+- Un indicador "Forward pass" arriba a la izquierda.
+
+El texto clave: "Re-use the **same weight matrices** at every time step". Aqui se materializa la idea de parameter sharing como **literal**: las flechas de $W_{hh}$ entre cells son la misma matriz, las flechas de $W_{xh}$ desde cada input son la misma matriz, etc.
+
+### 3.2 RNN desde cero en TensorFlow *(slide 27)*
+
+Para mostrar que la matematica se traduce directo a codigo, Ava muestra una clase `MyRNNCell(tf.keras.layers.Layer)` completa:
+
+- En `__init__(self, rnn_units, input_dim, output_dim)` se inicializan tres matrices con `self.add_weight`:
+  - `W_xh` con shape `[rnn_units, input_dim]`,
+  - `W_hh` con shape `[rnn_units, rnn_units]`,
+  - `W_hy` con shape `[output_dim, rnn_units]`.
+  - El estado oculto se inicializa con `tf.zeros([rnn_units, 1])`.
+- En `call(self, x)` aparecen tres bloques resaltados en verde que mapean uno-a-uno con las ecuaciones del slide 23-24:
+
+  ```python
+  self.h = tf.math.tanh(self.W_hh * self.h + self.W_xh * x)
+  output = self.W_hy * self.h
+  return output, self.h
+  ```
+
+La intencion pedagogica es eliminar la magia: la implementacion **es exactamente lo que dice la formula**.
+
+### 3.3 Los one-liners *(slide 28)*
+
+Acto seguido se muestra que en la practica casi nadie escribe RNNs a mano. Dos snippets de una linea cada uno:
+
+- **TensorFlow**: `from tf.keras.layers import SimpleRNN; model = SimpleRNN(rnn_units)`.
+- **PyTorch**: `from torch.nn import RNN; model = RNN(input_size, rnn_units)`.
+
+El framework abstrae el `for word in sentence` y la actualizacion del `hidden_state`.
+
+### 3.4 RNNs para sequence modeling *(slide 29)*
+
+La slide reaparece el grid de cuatro arquitecturas *(estructura igual al slide 8 pero con labels distintos orientados a RNN)*:
+
+- **One to One** -- "Vanilla" NN -- *Binary classification*.
+- **Many to One** -- *Sentiment Classification*.
+- **One to Many** -- *Text Generation* / *Image Captioning*.
+- **Many to Many** -- *Translation & Forecasting* / *Music Generation*.
+
+El pie cierra con "... and many other architectures and applications" mas un badge `6.S191 Lab!` apuntando al lab practico.
 
 ---
 
-## 6. Grafo computacional desplegado en el tiempo
+## 4. Criterios de diseno + predict-next-word + embeddings *(slides 30-40)*
 
-Para entender cómo entrenar una RNN, visualizar el **grafo computacional desplegado** es fundamental *(slides 23-25)*. En lugar de ver la RNN como un ciclo, se "despliega" en el tiempo: en cada paso $t = 1, \ldots, T$ hay una copia del módulo RNN recibiendo $x_t$ y $h_{t-1}$, produciendo $h_t$ y $y_t$.
+### 4.1 Los 4 criterios de diseno *(slide 30)*
 
-```mermaid
-graph LR
-    X0["x₀"] -->|W_xh| H0["h₀"]
-    H0 -->|W_hh| H1["h₁"]
-    H1 -->|W_hh| H2["h₂"]
-    H2 -->|W_hh| HT["h_T"]
+Despues de tener el RNN como objeto, Ava plantea explicitamente los **criterios que cualquier modelo de secuencias debe cumplir** *(slide 30, "Sequence Modeling: Design Criteria")*:
 
-    H0 -->|W_hy| Y0["y₀"]
-    H1 -->|W_hy| Y1["y₁"]
-    H2 -->|W_hy| Y2["y₂"]
-    HT -->|W_hy| YT["y_T"]
+1. Manejar **variable-length** sequences.
+2. Rastrear **long-term** dependencies.
+3. Mantener informacion sobre el **order**.
+4. **Share parameters** a lo largo de la secuencia.
 
-    X1["x₁"] -->|W_xh| H1
-    X2["x₂"] -->|W_xh| H2
-    XT["x_T"] -->|W_xh| HT
+El cierre es retorico: "Recurrent Neural Networks (RNNs) meet these sequence modeling design criteria". Es el setup perfecto para mostrar **uno por uno** por que cada criterio importa.
+
+### 4.2 Predict the next word *(slides 31-34)*
+
+El section header *(slide 31)* introduce el problema canonico: predict the next word. La frase ejemplo es "**This morning I took my cat for a walk.**" *(slide 32)*. Las slides 33-34 anotan la frase: las palabras "This morning I took my cat for a" en verde con label "given these words", y la palabra "walk" en naranja con label "predict the next word".
+
+> *Detalle de procedencia:* las slides 32-34 cargan el footer **`H. Suresh, 6.S191 2018.`** -- son slides recicladas/adaptadas del lecture 2018 por Harini Suresh. No es contenido nuevo de Ava 2026, pero sigue siendo la ilustracion canonica del problema.
+
+### 4.3 Embeddings: representando lenguaje numericamente *(slides 35-36)*
+
+Para que la red pueda procesar palabras, primero hay que **convertirlas en numeros**. La slide 35 contrasta dos opciones:
+
+- ❌ "deep" -> caja roja -> "learning" (las redes no interpretan palabras).
+- ✅ vector $[0.1, 0.8, 0.6]$ -> caja verde -> $[0.9, 0.2, 0.4]$ (las redes requieren inputs numericos).
+
+La slide 36 ("Encoding Language for a Neural Network") es la **unica slide del lecture entero que cubre embeddings explicitamente**, y el flujo es claro:
+
+1. **Vocabulary** -- corpus de palabras (this, cat, for, my, took, walk, I, a, morning).
+2. **Indexing** -- mapeo word-to-index (a -> 1, cat -> 2, ..., walk -> N).
+3. **Embedding** -- index -> vector de tamano fijo.
+
+Para el paso 3 se muestran dos opciones:
+
+- **One-hot embedding**: `cat = [0, 1, 0, 0, 0, 0]` (un 1 en el i-th index).
+- **Learned embedding**: scatter 2D donde palabras semanticamente cercanas (`run`, `walk`, `dog`, `cat`) se agrupan en un eje, y palabras de otra dimension semantica (`day`, `sun`, `happy`, `sad`) en otro.
+
+La intuicion: con learned embeddings, **distancia geometrica refleja similitud semantica**, mientras que one-hot las hace todas equidistantes.
+
+### 4.4 Los criterios, ilustrados uno por uno *(slides 37-39)*
+
+Las siguientes tres slides aterrizan los criterios 1-3 con ejemplos concretos:
+
+- **Variable-length** *(slide 37)*: tres frases de longitudes muy distintas, todas con la ultima palabra resaltada en naranja:
+  - "The food was **great**" (4 palabras)
+  - "We visited a restaurant for **lunch**" (6 palabras)
+  - "We were hungry but cleaned the house before **eating**" (9 palabras)
+
+  El modelo debe poder lidiar con todas sin padding artificial.
+
+- **Long-term dependencies** *(slide 38)*: la frase "**France** is where I grew up, but I now live in Boston. I speak fluent ____." Decoraciones con corazones y "J'aime 6.S191!" enfatizan que la palabra clave ("France") esta a docenas de tokens de distancia de la prediccion. La leccion: "We need information from **the distant past** to accurately predict the correct word."
+
+- **Order** *(slide 39)*: dos frases con el **mismo vocabulario** pero orden distinto:
+  - "The food was good, not bad at all." (icono burger positivo)
+  - "The food was bad, not good at all." (icono burger en circulo de prohibicion)
+
+  Bag-of-words no podria distinguirlas; un RNN si, porque procesa el orden secuencialmente.
+
+### 4.5 Recap *(slide 40)*
+
+La slide 40 es **un duplicado exacto del slide 30**. No es un error: es un patron pedagogico bookend. Slide 30 introduce los 4 criterios; slides 31-39 los desarrollan uno por uno; slide 40 los repite para cerrar el bloque.
+
+---
+
+## 5. Backpropagation Through Time mecanico *(slides 41-44)*
+
+La seccion BPTT comienza con un section header *(slide 41)* y un recordatorio del backprop estandar en feed-forward *(slide 42)*: diagrama de tres capas (input azul, hidden verde, output purpura) con flechas rojas backward y el algoritmo en dos pasos -- "1. Take the derivative (gradient) of the loss with respect to each parameter. 2. Shift parameters in order to minimize loss".
+
+Sobre el unrolled RNN *(slide 43)* se vuelve a mostrar el grafo con $W_{xh}$, $W_{hh}$, $W_{hy}$ y las perdidas $L_0..L_3 \to L$, ahora con el indicador "Forward pass" en negro. La slide 44 agrega progresivamente las **flechas rojas backward**:
+
+1. Desde la perdida total $L$ hacia atras a cada $L_i$.
+2. Desde cada $L_i$ a su $\hat{y}_i$ y de ahi al cell.
+3. **Entre cells horizontalmente**, viajando via $W_{hh}$.
+
+El footer en este punto cambia a `Mozer Complex Systems 1989.`, citacion al paper original que formaliza BPTT. La idea visual: el gradiente respecto a un peso recibe contribuciones de **todos** los timesteps, porque el peso aparece en todas las transiciones.
+
+---
+
+## 6. Vanishing/exploding gradients y long-term dependencies *(slides 45-53)*
+
+### 6.1 Standard RNN gradient flow *(slides 45-46)*
+
+Se simplifica el diagrama a un flujo horizontal: 4 cells -> ... -> $h_t$ con flechas backward rojas, $W_{hh}$ entre cells y $W_{xh}$ subiendo desde inputs *(slide 45)*. Se anota el problema *(slide 46)*: "Computing the gradient wrt $h_0$ involves **many factors of $W_{hh}$** + **repeated gradient computation**".
+
+Este es el corazon del problema: cuando el gradiente viaja $T$ pasos hacia atras, se multiplica por $W_{hh}$ aproximadamente $T$ veces.
+
+### 6.2 Exploding y vanishing en paralelo *(slides 47-48)*
+
+La slide 47 enmarca el primer fallo: "Many values > 1: **exploding gradients**. **Gradient clipping** to scale big gradients" en una caja redondeada al lado del diagrama.
+
+La slide 48 introduce el caso opuesto, **vanishing gradients**: "Many values < 1: vanishing gradients" con una lista numerada de mitigaciones:
+
+1. Activation function.
+2. Weight initialization.
+3. Network architecture.
+
+Visualmente, la caja de "exploding" del slide anterior queda **atenuada/grisada al fondo** -- es un patron de comparacion lado-a-lado. La nueva caja (vanishing) queda al frente con sus tres lineas de defensa.
+
+### 6.3 Por que es un problema *(slide 49)*
+
+Un flow chart vertical aterriza la consecuencia practica:
+
+- "Why are vanishing gradients a problem?"
+- -> "Multiply small numbers together"
+- -> "Errors due to further back time steps have smaller and smaller gradients"
+- -> "Bias parameters to capture short-term dependencies"
+
+En otras palabras: el RNN **aprende a confiar solo en lo cercano** y se vuelve incapaz de modelar dependencias largas.
+
+### 6.4 El ejemplo dual: "clouds in the sky" vs "I speak French" *(slides 50-53)*
+
+La forma mas convincente de explicar long-term dependencies es contrastando dos casos:
+
+- **Distancia corta** *(slides 50-51)*: "The clouds are in the ___". El diagrama RNN tiene 5 cells unrolled. La prediccion $\hat{y}_3$ esta resaltada **teal**, las palabras informativas $x_0, x_1$ ("The clouds") tambien estan resaltadas teal. La distancia entre informacion y prediccion es de pocos pasos: el RNN puede manejarlo.
+
+- **Distancia larga** *(slides 52-53)*: "I grew up in France, ... and I speak fluent ___". El diagrama agrega cells extendidos $x_0, x_1, ..., x_t, x_{t+1}$. Ahora $\hat{y}_t$ se resalta **naranja** y las palabras informativas $x_0, x_1$ ("France") tambien naranja. La distancia es decenas de tokens: el gradiente no llega, el RNN no aprende la dependencia.
+
+El contraste teal vs naranja es deliberado: el lector entiende visualmente cuando el RNN puede vs cuando no puede.
+
+---
+
+## 7. Gating como solucion (LSTM/GRU teaser) *(slide 54)*
+
+La slide 54 ("Gating Mechanisms in Neurons") es **la unica del lecture donde se mencionan LSTM/GRU explicitamente**. La idea se presenta de forma compacta:
+
+- "Idea: use **gates** to selectively **add** or **remove** information within **each recurrent unit**".
+- Componentes legenda: **σ** (sigmoid neural net layer, caja amarilla) y **×** (pointwise multiplication, circulo rojo).
+- Una caja verde grande etiquetada **"gated cell -- LSTM, GRU, etc."**.
+- Caption: "Gates optionally let information through the cell".
+- Bottom: "Long Short Term Memory (LSTMs) networks rely on a gated cell to track information throughout many time steps."
+
+Y eso es **todo**. No hay forget/input/output gates desagregadas, no hay ecuaciones del cell state, no hay derivacion de por que LSTM evita el vanishing. El lecture trata a las arquitecturas con compuertas como una nota al pie historica antes de hacer el pivot real hacia attention.
+
+> Para la mecanica completa de LSTM/GRU (ecuaciones de las compuertas, propiedad $\partial c_t / \partial c_{t-1} = f_t$, comparacion entre LSTM y GRU), ver el documento de [profundizacion](./profundizacion.md) o la [Clase 11 del curso UC](/clases/clase-11/teoria).
+
+---
+
+## 8. Aplicaciones de RNN: musica y sentiment *(slides 55-58)*
+
+El bloque comienza con un section header *(slide 55)* y luego presenta dos aplicaciones canonicas.
+
+### 8.1 Music generation *(slide 56)*
+
+Un RNN con 4 cells: inputs (notas en azul) `E, F#, G, C` -> outputs (notas en purpura) `F#, G, C, A`. El setup:
+
+- **Input**: sheet music.
+- **Output**: next character in sheet music.
+
+Una caja amarilla muestra "Listening to 3rd movement" con un boton play -- es el famoso ejemplo del MIT donde un RNN entrenado en partituras de Schubert genera el "tercer movimiento" de la sinfonia inacabada. El badge `6.S191 Lab!` apunta al laboratorio donde el alumno replica esto. Footer: `Huawei.` (atribucion a la fuente del demo).
+
+### 8.2 Sentiment classification *(slides 57-58)*
+
+Un RNN many-to-one: inputs `"I love this class!"` -> output `<positive>`. El setup:
+
+- **Input**: sequence of words.
+- **Output**: probability of having positive sentiment.
+
+Aparece una linea de codigo TensorFlow con la perdida tipica de clasificacion:
+
+```python
+loss = tf.nn.softmax_cross_entropy_with_logits(y, predicted)
 ```
 
-El grafo resultante es una **red feed-forward profunda** (con profundidad $T$). Las **mismas matrices $W_{xh}$, $W_{hh}$, $W_{hy}$ se repiten** en cada paso: los parámetros se **comparten profundamente** a través del tiempo. Esta visualización es esencial para comprender por qué el entrenamiento es desafiante: el gradiente debe fluir hacia atrás a través de muchas capas, ampliando el riesgo de vanishing o exploding gradients.
+Footer: `Socher+, EMNLP 2013.` (paper original de sentiment con RNN).
+
+La slide 58 expande con un panel "Tweet sentiment classification" mostrando dos tweets reales:
+
+- 😃 "@MIT Introduction to #DeepLearning is definitely one of the best courses..."
+- 😢 "I wouldn't mind a bit of snow right now. We haven't had any..."
+
+Footer cambia a `H. Suresh, 6.S191 2018.` -- otra slide reciclada de la version 2018.
 
 ---
 
-## 7. Backpropagation through time (BPTT)
+## 9. Limitaciones de RNN y pivot a self-attention *(slides 59-64)*
 
-Entrenar una RNN requiere extender backpropagation al grafo desplegado. El procedimiento se llama **backpropagation through time (BPTT)** *(slides 24-26)*:
+Esta es **la transicion pedagogica clave** del lecture.
 
-1. **Forward pass**: propagar $x_1, \ldots, x_T$ por el grafo desplegado, computando $h_1, \ldots, h_T$ y $y_1, \ldots, y_T$.
-2. **Definir pérdida**: sumar la pérdida en cada paso (típicamente cross-entropy):
+### 9.1 Las 3 limitaciones de los RNN *(slide 59)*
 
-   $$L = \sum_{t=1}^{T} L_t(y_t, \text{target}_t)$$
-3. **Backward pass**: aplicar la regla de la cadena a través del grafo desplegado. El gradiente respecto a $W_{hh}$ recibe contribuciones de **todos** los pasos temporales, porque $W_{hh}$ aparece en cada transición $h_{t-1} \to h_t$.
-4. **Actualizar**: aplicar SGD, Adam o RMSprop con los gradientes computados.
+A la izquierda permanece el diagrama del sentiment RNN; a la derecha aparece un panel titulado "Limitations of RNNs" con tres iconos:
 
-Al calcular el gradiente respecto a $h_0$, la señal debe fluir hacia atrás a través de $T$ pasos. Cada factor incluye la derivada de la activación y la matriz $W_{hh}$. Para una RNN vanilla con tanh:
+- 🪣 **Encoding bottleneck**: toda la secuencia comprimida en un unico hidden state final.
+- ⏰ **Slow, no parallelization**: cada paso depende del anterior, por construccion.
+- 🧠 **Not long memory**: aun con LSTMs, mas alla de cierto horizonte la memoria se diluye.
 
-$$\frac{\partial h_t}{\partial h_{t-1}} = W_{hh}^\top \cdot \mathrm{diag}\bigl(\tanh'(z)\bigr)$$
+Esta slide es la **bisagra explicita** hacia Transformers.
 
-donde $z$ es la pre-activación y $\tanh'(z) = 1 - \tanh^2(z) \in (0, 1)$.
+### 9.2 Goal of sequence modeling *(slide 60)*
 
----
+Un diagrama de 3 capas con 6 timesteps ($x_0, x_1, x_2, ..., x_{t-2}, x_{t-1}, x_t$):
 
-## 8. Vanishing y exploding gradients
+- Capa **input** (azul) -> capa **feature vector** (barras amarillas conectadas con flechas) -> capa **output** $\hat{y}_*$ (purpura).
+- Tres labels a la izquierda: "Sequence of inputs", "Sequence of features", "Sequence of outputs".
+- Texto superior: "RNNs: recurrence to model sequence dependencies".
 
-El flujo del gradiente a través de muchos pasos temporales es **multiplicativo**: la derivada de $h_t$ respecto a $h_{t-k}$ es un producto de $k$ jacobianos *(slides 27-28)*:
+Es el **setup conceptual** sobre el cual luego se itera.
 
-$$\frac{\partial h_t}{\partial h_{t-k}} = \prod_{i=0}^{k-1} \frac{\partial h_{t-i}}{\partial h_{t-i-1}}$$
+### 9.3 Limitations -> Desired Capabilities *(slides 61-62)*
 
-Si los valores singulares de las jacobianas son **menores que 1**, el gradiente decae exponencialmente: **vanishing gradient**. Si son **mayores que 1**, explota: **exploding gradient**.
+La slide 61 agrega a la izquierda el panel "Limitations of RNNs" con los 3 iconos del slide 59. La slide 62 lo reemplaza por **"Desired Capabilities"** con tres iconos nuevos:
 
-$$\left\| \frac{\partial L}{\partial h_0} \right\| \;\approx\; C \cdot \sigma_{\max}(W_{hh})^T$$
+- 🌊 **Continuous stream**.
+- ⤴⤵ **Parallelization**.
+- 🧠 **Long memory**.
 
-**Vanishing**: silencioso e impide aprender dependencias de largo plazo. El gradiente que viaja desde el paso 100 al paso 1 se vuelve negligible, y los pesos que afectan el paso 1 casi no se actualizan.
+Y agrega arriba la pregunta provocadora: "**Can we eliminate the need for recurrence entirely?**"
 
-**Exploding**: causa inestabilidad numérica (NaN, Inf), pero al menos provoca alertas visibles.
+### 9.4 Idea 1: feed everything into dense network *(slides 63-64)*
 
-Ambos fenómenos surgen del diseño arquitectónico: una RNN vanilla intenta comprimir toda la historia en un vector de estado oculto de dimensión fija, y multiplicar repetidamente por matrices $W_{hh}$ causa decaimiento o crecimiento exponencial. Las soluciones —gradient clipping, arquitecturas con compuertas, mecanismos de atención— se desarrollan en las partes siguientes.
+El diagrama cambia: ahora el input es **una sola barra horizontal** (no celdas separadas), el feature vector tambien es una sola barra sin flechas entre timesteps, y el output igual. El icono "Long memory" se vuelve un solo bloque $x_0$: **todos los inputs colapsados en uno solo** *(slide 63)*.
 
----
+La slide 64 evalua esta idea con un panel "Idea 1: Feed everything into dense network":
 
-## 9. Recortado de gradientes (Gradient Clipping)
+- ✅ No recurrence.
+- ❌ Not scalable.
+- ❌ No order.
+- ❌ No long memory.
 
-Durante el entrenamiento de RNNs mediante BPTT, los gradientes se propagan hacia atrás a través de muchos pasos temporales. Cuando la magnitud de estos gradientes crece de manera descontrolada, produce **exploding gradients**, causando inestabilidad numérica y divergencia del entrenamiento *(slide 48)*.
-
-El **gradient clipping** es una técnica simple pero efectiva para mitigar este problema. El procedimiento es directo: antes de actualizar los parámetros, se verifica la norma del gradiente total. Si excede un umbral $\tau$, se escala proporcionalmente:
-
-$$\hat{g} \leftarrow \begin{cases} g & \text{si } \|g\| \leq \tau \\ \dfrac{\tau}{\|g\|} \cdot g & \text{si } \|g\| > \tau \end{cases}$$
-
-A continuación, se realiza la actualización de parámetros con el gradiente recortado: $\theta \leftarrow \theta - \eta \hat{g}$.
-
-**Por qué funciona**: el clipping limita la magnitud del paso de actualización sin alterar la dirección del gradiente. Esto evita saltos numéricos extremos que podrían causar NaN o Inf. El umbral típico $\tau$ se elige empíricamente (por ejemplo, 5.0 o 10.0).
-
-**Limitación crítica**: el gradient clipping **no resuelve el vanishing gradient**, solo mitiga la explosión. Para el desvanecimiento silencioso de gradientes, que impide aprender dependencias a largo plazo, se requiere una arquitectura con mecanismos de memoria explícitos.
+Y el cierre, con un emoji de cerebro: "**Idea: Identify and attend to what's important**". Pivot explicito a self-attention.
 
 ---
 
-## 10. Limitaciones fundamentales de las RNNs vanilla
+## 10. Self-attention conceptual: la analogia YouTube/search *(slides 65-69)*
 
-Las redes recurrentes estándar enfrentan dos desafíos críticos que limitan su capacidad de modelar secuencias largas *(slides 49-52)*.
+### 10.1 Section header y Iron Man *(slides 65-66)*
 
-### 10.1 El problema del desvanecimiento de gradientes
+El section header *(slide 65)* es directamente el titulo del paper de Vaswani: "Attention Is All You Need".
 
-Cuando se calcula el gradiente respecto a un estado oculto temprano $h_0$, este debe fluir hacia atrás a través de $T$ pasos temporales. Matemáticamente:
+La slide 66 ("Intuition Behind Self-Attention") muestra una imagen de Iron Man volando con flechas horizontales blancas atravesando la imagen, representando atencion sobre regiones. Dos pasos:
 
-$$\frac{\partial L}{\partial h_0} = \frac{\partial L}{\partial h_T} \cdot \frac{\partial h_T}{\partial h_{T-1}} \cdot \frac{\partial h_{T-1}}{\partial h_{T-2}} \cdots \frac{\partial h_1}{\partial h_0}$$
+1. **Identify** which parts to attend to (caja resaltada con flecha azul a "Similar to a search problem!").
+2. Extract the features with high attention.
 
-Cada factor en esta cadena de jacobianos incluye la derivada de la activación (por ejemplo, $\tanh'(z)$) y la matriz de recurrencia $W_{hh}$. Si los valores singulares de estas jacobianas son consistentemente menores que 1, el producto de muchos factores decae exponencialmente. El gradiente que viaja desde el paso 100 al paso 1 se vuelve negligible, y la red no puede aprender cómo el paso inicial afecta la salida final.
+La metafora `attention = search` es lo que articula la analogia que viene.
 
-**Impacto práctico**: la red desarrolla un sesgo hacia las **dependencias de corto plazo**. Los parámetros que influyen en predicciones cercanas se actualizan eficientemente, mientras que los que afectan predicciones distantes casi no reciben señal de error.
+### 10.2 La analogia search *(slide 67)*
 
-### 10.2 El cuello de botella de información
+Un emoji 🤔 con thought bubble "How can I learn more about neural networks?" y un collage de muchas miniaturas de videos. La pregunta es como encontrar lo relevante en un mar de contenido.
 
-Una RNN vanilla comprime toda la historia de la secuencia en un vector de estado oculto de dimensión fija. Para secuencias de miles de pasos, un vector de 128 o 256 dimensiones es insuficiente para retener toda la información relevante. La red debe olvidar información antigua para dejar espacio a información nueva.
+### 10.3 YouTube como ilustracion de Q/K/V *(slides 68-69)*
 
-El ejemplo clásico ilustra el problema: *"Francia es donde crecí, pero ahora vivo en Boston. Hablo fluidamente ___."* Para predecir "francés", el modelo debe recordar información del **pasado distante** (mencionada al principio). Sin un mecanismo explícito, esta información se diluye conforme procesa palabras intermedias.
+Mockup de YouTube en dark mode con search box "deep learning" (resaltado azul como **Query (Q)**). Tres resultados:
 
----
+- (1) "GIANT SEA TURTLES • AMAZING CORAL REEF FISH..." atenuado como **Key (K₁)**.
+- (2) **"MIT 6.S191 (2020): Introduction to Deep Learning"** por Alexander Amini resaltado en naranja como **Key (K₂)**.
+- (3) "The Kobe Bryant Fadeaway Shot" atenuado como **Key (K₃)**.
 
-## 11. Motivación para los mecanismos de compuertas (gating)
+Llaves laterales agrupan los tres keys con texto "How similar is the key to the query?". Bottom: "**1. Compute attention mask:** how similar is each key to the desired query?" *(slide 68)*.
 
-La solución a ambos problemas es introducir **compuertas** que controlen selectivamente qué información fluye, qué se olvida y qué se retiene en la celda de memoria *(slides 53-55)*.
+La slide 69 agrega un **box purpura** alrededor del resultado MIT etiquetado **Value (V)** -- el contenido real extraido. Bottom cambia a: "**2. Extract values based on attention:** Return the values [with] highest attention".
 
-La intuición combina dos mecanismos clave:
-
-1. **Multiplicación elemento-a-elemento por vectores de compuerta**: los valores de las compuertas están entre 0 y 1 (producidos por activación sigmoide). Un valor de 0 "cierra" completamente el flujo; un valor de 1 lo abre completamente.
-
-2. **Conexiones "shortcut" o caminos alternativos**: en lugar de transformar información a través de múltiples capas no-lineales, se permite que fluya relativamente sin cambios cuando se desea. Esto crea caminos para que el gradiente viaje sin acumulación de transformaciones.
-
-Estas dos ideas en combinación mitigan el vanishing gradient: los caminos directos reducen la "distancia" que el gradiente debe viajar, mientras que las compuertas aprendibles permiten a la red desarrollar control fino sobre qué retener y qué descartar.
-
-Típicamente se introduce una tríada de compuertas:
-
-- **Forget gate**: controla qué del estado anterior se retiene.
-- **Input gate**: controla cuánta información nueva entra.
-- **Output gate**: controla qué se expone al siguiente paso.
+La triada Q/K/V ya esta presentada en lenguaje cotidiano antes de aparecer en formulas.
 
 ---
 
-## 12. LSTM: Long Short-Term Memory
+## 11. Self-attention tecnico: los 4 pasos hasta el head completo *(slides 70-78)*
 
-### 12.1 Arquitectura fundamental
+Esta es la seccion mas densa del lecture: **9 slides para construir el self-attention head completo**, paso a paso. El titulo unificado es "Learning Self-Attention with Neural Networks". La lista de 4 pasos aparece a la izquierda en cada slide y se va resaltando uno a la vez:
 
-LSTM, propuesto por Hochreiter y Schmidhuber (1997), es la arquitectura con compuertas más icónica *(slides 54-55)*. A diferencia de una RNN vanilla que mantiene un único estado oculto $h_t$, el LSTM mantiene **dos estados paralelos**:
+1. Encode position information.
+2. Extract query, key, value for search.
+3. Compute attention weighting.
+4. Extract features with high attention.
 
-- **Cell state** $c_t$: la "memoria" principal o "cinta de contexto". Fluye con cambios mínimos cuando el forget gate es alto, preservando información a largo plazo.
-- **Hidden state** $h_t$: la salida "filtrada" del cell state, que se pasa al siguiente paso y se usa para la predicción.
+### 11.1 Step 1 -- Encode position information *(slides 70-71)*
 
-```mermaid
-graph LR
-    Cprev["c_{t-1}"] -->|"⊙ f_t"| Mul1["×"]
-    Mul1 --> Add["+"]
-    Add --> Ct["c_t"]
-    Xt["x_t"] --> Gates["i_t, f_t, o_t, ~c_t"]
-    Hprev["h_{t-1}"] --> Gates
-    Gates -->|"i_t ⊙ ~c_t"| Add
-    Ct -->|"tanh · o_t"| Ht["h_t"]
-```
+La slide 70 lista los 4 pasos con solo el primero highlighted, y al lado derecho una barra azul $x$ con las palabras "He / tossed / the / tennis / ball / to / serve" debajo. Bottom: "Data is fed in all at once! Need to encode position information to understand order."
 
-### 12.2 Ecuaciones del LSTM
+La slide 71 visualiza el position encoding: la frase pasa por un embedding (azul vertical), se le suma elementwise (`⊕`) la position information $p_0, p_1, ..., p_6$, y resulta una **"Position-aware encoding"** (verde). Sin esto, el modelo no tendria ninguna nocion de orden, porque el computo siguiente es totalmente paralelo.
 
-Las ecuaciones formales *(slides 54-55)*:
+### 11.2 Step 2 -- Extract Q, K, V *(slide 72)*
 
-$$i_t = \sigma(W_{xi} x_t + W_{hi} h_{t-1} + b_i) \quad \text{(input gate)}$$
+Step 2 highlighted. A la derecha aparecen tres multiplicaciones matriciales: la **positional embedding** (verde) se multiplica por una **linear layer** distinta para producir cada uno de los tres outputs:
 
-$$f_t = \sigma(W_{xf} x_t + W_{hf} h_{t-1} + b_f) \quad \text{(forget gate)}$$
+- Linear azul -> **Q (Query)**.
+- Linear naranja -> **K (Key)**.
+- Linear purpura -> **V (Value)**.
 
-$$\tilde{c}_t = \tanh(W_{xc} x_t + W_{hc} h_{t-1} + b_c) \quad \text{(candidate cell state)}$$
+Footer: `Vaswani+, NeurIPS 2017.`
 
-$$c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t \quad \text{(new cell state)}$$
+La idea: las tres matrices `W_Q`, `W_K`, `W_V` son parametros aprendibles que **proyectan el mismo input** a tres representaciones distintas, una por rol.
 
-$$o_t = \sigma(W_{xo} x_t + W_{ho} h_{t-1} + b_o) \quad \text{(output gate)}$$
+### 11.3 Step 3 -- Compute attention weighting *(slides 73-75)*
 
-$$h_t = o_t \odot \tanh(c_t) \quad \text{(hidden state)}$$
+Step 3 highlighted con titulo "Attention score: compute pairwise similarity between each query and key".
 
-donde $\odot$ denota multiplicación elemento-a-elemento. Todos los pesos $W$ y biases $b$ son aprendibles.
+- **Slide 73**: vectores Q (azul) y K (naranja) con flechas desde el origen, dot product, formula
+  $$\frac{Q \cdot K^T}{\text{scaling}}$$
+  etiquetada como "Similarity metric". Caption: "Also known as the 'cosine similarity'". El `scaling` (en el paper original $\sqrt{d_k}$) se introduce sin entrar en por que; lo que importa pedagogicamente es que **dot product = similitud**.
 
-### 12.3 Rol de cada compuerta
+- **Slide 74**: misma idea pero con **matrices completas** en lugar de vectores -- $Q \cdot K^T$ ahora es una multiplicacion matricial. Es el salto a "todo a la vez" caracteristico de la atencion.
 
-**Forget gate** $f_t$: produce valores en $(0, 1)$ que multiplican elemento-a-elemento el cell state anterior. Si $f_t$ es cercano a 0, el contenido de $c_{t-1}$ se "olvida"; si es cercano a 1, se preserva. La red aprende cuándo olvidar información antigua.
+- **Slide 75**: la estrella visual del bloque. Se muestra una **matriz de atencion 7x7** (gradientes rojos, diagonal mas oscura) con filas y columnas labeled "He / tossed / the / tennis / ball / to / serve". La formula final es
+  $$\text{softmax}\left(\frac{Q \cdot K^T}{\text{scaling}}\right)$$
+  etiquetada "Attention weighting". El softmax convierte similitudes en probabilidades por fila, que es lo que permite interpretar la matriz como "cuanto atiende cada token a cada otro token".
 
-**Input gate** $i_t$ y **candidate** $\tilde{c}_t$: el input gate decide cuánta información nueva entra en el cell state. El candidato, computado con tanh, proporciona los valores que pueden entrar. La combinación $i_t \odot \tilde{c}_t$ filtra el candidato según importancia.
+### 11.4 Step 4 -- Extract features with high attention *(slide 76)*
 
-**Output gate** $o_t$: controla qué información del cell state se comunica al siguiente paso y al exterior. El cell state se filtra con una activación tanh y se multiplica por $o_t$.
+Los cuatro steps quedan en negro (todos completos). A la derecha: matriz **Attention weighting** (roja) × matriz **Value** (purpura, V) = matriz **Output** (gris). La formula completa, con cada componente subrayado en su color:
 
-### 12.4 Por qué LSTM mitiga el vanishing gradient
+$$A(Q, K, V) = \text{softmax}\!\left(\frac{Q K^T}{\text{scaling}}\right) \cdot V$$
 
-La derivada del cell state respecto al paso anterior es:
+Es la **definicion completa del scaled dot-product attention** del paper de Vaswani.
 
-$$\frac{\partial c_t}{\partial c_{t-1}} = f_t$$
+### 11.5 El head completo *(slides 77-78)*
 
-**Críticamente**, no hay matriz $W_{hh}$ multiplicando: es únicamente una multiplicación elemento-a-elemento por valores en $(0, 1)$. Aunque cada elemento sea menor que 1, rara vez **todos** los elementos simultáneamente son cercanos a cero. En contraste, una RNN vanilla multiplica repetidamente por $W_{hh}$, causando decaimiento exponencial rápido cuando sus valores singulares son pequeños. El LSTM evita esto, permitiendo que la red mantenga un "camino directo" para el flujo de información y gradientes.
+La slide 77 reemplaza la visualizacion por el **diagrama completo del self-attention head** (estilo Vaswani):
 
----
+- Positional Encoding (verde)
+- -> 3 Linear layers (Query azul, Key naranja, Value purpura)
+- -> MatMul
+- -> Scale
+- -> Softmax
+- -> MatMul final
+- -> output.
 
-## 13. GRU: Gated Recurrent Unit
+Una caja roja inferior dice: "These operations form a self-attention head that can plug into a larger network. Each head attends to a different part of input." Esta es **la slide donde se ensambla todo**.
 
-La arquitectura **GRU** (Cho et al., 2014) simplifica el diseño de LSTM combinando el forget gate y el input gate en una única **update gate**, y eliminando el cell state separado. En su lugar, usa un único estado oculto $h_t$ que se actualiza de forma similar *(slide 55)*.
-
-Las ecuaciones principales:
-
-$$z_t = \sigma(W_{xz} x_t + W_{hz} h_{t-1}) \quad \text{(update gate)}$$
-
-$$r_t = \sigma(W_{xr} x_t + W_{hr} h_{t-1}) \quad \text{(reset gate)}$$
-
-$$\tilde{h}_t = \tanh(W_{x\tilde{h}} x_t + W_{h\tilde{h}} (r_t \odot h_{t-1})) \quad \text{(candidate)}$$
-
-$$h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t$$
-
-**Update gate** $z_t$: balance entre retener el estado anterior y adoptar el candidato nuevo.
-
-**Reset gate** $r_t$: controla cuánto del estado anterior se considera al computar el candidato.
-
-**Ventajas de GRU**: menos parámetros que LSTM (no requiere el cell state separado), entrenamiento más rápido y rendimiento típicamente comparable. Es una opción preferida en contextos donde la eficiencia de parámetros es crítica.
+La slide 78 muestra el mismo diagrama mas la frase punchline centrada: "**Attention is the foundational building block of the Transformer architecture.**"
 
 ---
 
-## 14. Limitaciones de los modelos recurrentes y motivación para attention
+## 12. Multi-head, aplicaciones modernas y cierre *(slides 79-83)*
 
-Aunque LSTM y GRU resolvieron el vanishing gradient, siguen procesando secuencias **secuencialmente**, paso a paso. Esto introduce limitaciones que motivan el salto hacia mecanismos de atención.
+### 12.1 Multi-head con Iron Man *(slide 79)*
 
-### 14.1 Cuello de botella secuencial
+Tres imagenes de Iron Man arriba: **Attention weighting** (silueta blanca) × **Value** (escena completa) = **Output** (Iron Man enfocado). Debajo, tres outputs distintos:
 
-Cada paso $t$ depende de la salida del paso $t-1$. Esto impide la paralelización a través del tiempo y hace que el entrenamiento de secuencias largas sea lento, incluso en hardware altamente paralelo (GPUs/TPUs).
+- Output of attention head 1: cara/casco de Iron Man.
+- Output of attention head 2: edificio/fondo.
+- Output of attention head 3: objeto en la distancia / contexto distinto.
 
-### 14.2 Distancia efectiva entre tokens
+La leccion intuitiva: **multiples heads aprenden a atender a partes distintas del input simultaneamente**. Cada head es un especialista; juntos cubren mas "aspectos" del contenido. (Esta visualizacion no esta en el paper original; es una adaptacion didactica de Ava.)
 
-Aunque las compuertas LSTM permiten teóricamente preservar información indefinidamente, en la práctica las dependencias de muy largo alcance siguen siendo difíciles. La señal entre tokens distantes debe atravesar muchos pasos de procesamiento, atenuándose por interferencia de tokens intermedios.
+### 12.2 Self-attention applied: 3 dominios *(slide 80)*
 
-### 14.3 Cuello de botella de codificación en seq2seq
+Tres columnas con aplicaciones reales:
 
-En arquitecturas **seq2seq** con LSTM, el encoder comprime toda la entrada en un vector de contexto fijo $c$ de dimensión limitada. El decoder genera la salida usando únicamente este vector. Para secuencias largas, toda la información debe fluir a través de este cuello de botella, causando pérdida de información.
+- **Language Processing**: imagen avocado-armchair "An armchair in the shape of an avocado". Modelos: **BERT, GPT**. Refs: *Devlin et al., NAACL 2019* y *Brown et al., NeurIPS 2020*. Badge `6.S191 Lab and Lectures!` apuntando a labs futuros.
+- **Biological Sequences**: imagen de estructura proteinica 3D. Modelos: **AlphaFold** (*Jumper et al., Nature 2021*), **ESM** (*Lin et al., Science 2023*).
+- **Computer Vision**: golden retriever en pasto con grid overlay. Modelo: **Vision Transformers (ViT)** (*Dosovitskiy et al., ICLR 2020*).
 
-Ejemplo: traducir *"El auto rojo de Carlos está averiado"* requiere que el encoder capture estructura gramatical, identidades de entidades (Carlos, auto), atributos (rojo) y estado (averiado). Todo en un vector $c$. El decoder, sin acceso directo a palabras específicas del input, debe generar la traducción palabra por palabra; cuando necesita generar "Carlos", no tiene acceso directo a esa palabra en el input, debe "recordarla" en $c$, que ahora contiene información sobre todas las otras palabras también.
+El mensaje: la misma maquinaria (self-attention) funciona en lenguaje, biologia y vision. Es la primera pista hacia la idea de **arquitectura general de proposito**.
 
-La **atención** resuelve esto permitiendo que el decoder, en cada paso, genere su propio context vector adaptativo que enfatiza las partes relevantes del input.
+### 12.3 Summary *(slide 81)*
 
----
+Lista de **6 takeaways** sobre fondo de waveform multicolor:
 
-## 15. Self-attention: queries, keys y values
+1. RNNs are well suited for **sequence modeling** tasks.
+2. Model sequences via a **recurrence relation**.
+3. Training RNNs with **backpropagation through time**.
+4. Models for **music generation**, classification, machine translation, and more.
+5. Self-attention to model **sequences without recurrence**.
+6. Self-attention is the basis for many **large language models** -- stay tuned!
 
-La **self-attention** (o intra-attention) emerge como un mecanismo alternativo para capturar dependencias en una secuencia **sin necesidad de recurrencia**. En lugar de procesar token por token, permite que cada posición "atienda" directamente a todas las demás posiciones simultáneamente.
+Estos seis puntos son lo que el alumno deberia poder responder al terminar el lecture.
 
-### 15.1 La metáfora de búsqueda
+### 12.4 Logistica final *(slides 82-83)*
 
-La idea central es derivar tres representaciones para cada token:
+Las dos ultimas slides son administrativas y no pedagogicas:
 
-- **Query** (pregunta): ¿Qué información necesito?
-- **Key** (clave): ¿Qué información puedo ofrecer?
-- **Value** (valor): ¿Cuál es esa información?
+- *(slide 82)* "Lab 1: Deep Learning in Python and Music Generation with RNNs". Pasos: abrir el lab en Google Colab, ejecutar bloques y rellenar `#TODO`s, pedir ayuda a TA si hace falta.
+- *(slide 83)* "Kickoff Reception at One Kendall Square!" -- evento de inicio del bootcamp con comida y bebida, patrocinado por John Werner y Link Ventures.
 
-Es análogo a una búsqueda en una base de datos: la *query* se compara con todas las *keys*; las que más coinciden seleccionan los *values* correspondientes.
-
-### 15.2 Proyecciones aprendibles
-
-Si la entrada es $X \in \mathbb{R}^{n \times d}$ ($n$ tokens, $d$ dimensiones):
-
-$$Q = X W_Q, \quad K = X W_K, \quad V = X W_V$$
-
-donde $W_Q, W_K, W_V \in \mathbb{R}^{d \times d_k}$ son matrices aprendibles. En self-attention, los tres provienen de la **misma** secuencia $X$ — de ahí el "self".
-
----
-
-## 16. Scaled dot-product attention
-
-Una vez derivados queries y keys, se computa la "compatibilidad" entre cada query y cada key:
-
-$$\text{scores} = QK^T \in \mathbb{R}^{n \times n}$$
-
-Cada elemento $(i, j)$ indica cuán relevante es la posición $j$ para la posición $i$. Para estabilizar estos scores, se escalan:
-
-$$\text{attention\_scores} = \frac{QK^T}{\sqrt{d_k}}$$
-
-donde $d_k$ es la dimensión de los keys. El factor $\sqrt{d_k}$ evita que los productos punto sean muy grandes cuando $d_k$ es grande, lo cual saturaría el softmax (gradientes muy pequeños).
-
-Finalmente, se aplica softmax fila por fila para convertir los scores en probabilidades, y se ponderan los values:
-
-$$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^T}{\sqrt{d_k}}\right) V$$
-
-El output es una combinación ponderada de los values, donde los pesos se aprenden según la relevancia capturada por queries y keys. La derivación formal del factor $\sqrt{d_k}$ se desarrolla en `profundizacion.md`.
+Confirman que este es el primer lecture tecnico del programa intensivo: Lab 1 es el primer lab y la kickoff reception es el inicio del programa.
 
 ---
 
-## 17. Síntesis del bloque intermedio
+## Notas sobre el lecture
 
-Las limitaciones de las RNNs vanilla —vanishing gradients y cuello de botella de codificación— impulsaron el desarrollo de arquitecturas progresivamente más sofisticadas:
+Algunas observaciones meta que vale la pena tener presentes al estudiar el material:
 
-1. **Gradient clipping** mitiga la explosión, pero no el desvanecimiento.
-2. **LSTM/GRU** resuelven el desvanecimiento mediante caminos directos y compuertas aprendibles, permitiendo aprender dependencias de centenas de pasos.
-3. **Self-attention** elimina el cuello de botella secuencial: cada posición accede directamente a todas las demás, en paralelo.
+- **Continuidad y pivot.** El lecture 2026 mantiene el armazon clasico del 2020 (motivacion -> RNN -> BPTT -> vanishing -> aplicaciones) hasta la slide 60. A partir de ahi pivota explicitamente hacia attention y Transformers, terminando con BERT/GPT/AlphaFold/ViT como estado del arte. Esto refleja como el campo se desplazo entre 2020 y 2026.
 
-El siguiente bloque (Parte III) construye sobre la self-attention para llegar al **Transformer** completo: multi-head attention, positional encoding, normalización por capas, conexiones residuales y aplicaciones más allá del lenguaje.
+- **LSTM/GRU minimizados.** En el lecture 2020 las arquitecturas con compuertas ocupan una porcion sustancial del lecture (forget/input/output gates desagregadas, ecuaciones, intuicion del cell state). En el 2026 ocupan **una sola slide** (la 54), sin internals. El enfasis pedagogico se desplazo del gating a la atencion -- consistente con la trayectoria del campo.
+
+- **Slides recicladas.** Las slides 32-34, 38-39, 56-58 cargan footers de autores originales (`H. Suresh, 6.S191 2018.`, `Mozer Complex Systems 1989.`, `Huawei.`, `Socher+, EMNLP 2013.`). Son slides recicladas de versiones anteriores del curso o de fuentes externas, no creadas por Ava desde cero. Esto es normal en cursos academicos y ayuda a mantener trazabilidad de las contribuciones.
+
+- **Bookend pedagogico.** La slide 40 es **identica a la 30** (los 4 criterios de diseno). No es un typo: es un patron deliberado donde se introduce la lista, se desarrollan los puntos uno por uno con ejemplos y luego se cierra el bloque repitiendo la lista. Vale tener este patron en mente al revisar las notas.
+
+- **El embedding aparece una sola vez.** La slide 36 es la unica del lecture que cubre embeddings (vocabulary -> indexing -> one-hot vs learned). Si el alumno se queda con dudas, este tema se cubre con mas detalle en la profundizacion y en el material complementario sobre word2vec.
+
+- **Iron Man como hilo visual.** La metafora de Iron Man se usa dos veces: primero para introducir la intuicion de attention *(slide 66)* y despues para visualizar multi-head attention *(slide 79)*. Es una eleccion didactica de Ava que no esta en el paper original.
 
 ---
 
-## 18. Mecanismo de Atención Escalada (Scaled Dot-Product Attention)
-
-La atención es el mecanismo fundamental que permite a las redes neuronales identificar y enfocarse en las características más importantes de una entrada. El objetivo central es reconocer qué partes del input merecen mayor atención *(slides 56-58)*.
-
-El proceso comprende cuatro pasos clave:
-
-1. **Codificación de información posicional**: Dado que los datos se procesan en paralelo (no secuencialmente como en RNNs), es necesario inyectar información sobre la posición de cada elemento en la secuencia. Sin esto, la arquitectura no distingue el orden de los tokens.
-
-2. **Extracción de query, key, value**: Cada posición genera tres representaciones aprendidas mediante capas lineales aplicadas a la entrada con codificación posicional.
-
-3. **Cálculo del peso de atención**: Se computa la similitud entre cada query y todos los keys usando el producto punto, escalado por un factor de normalización:
-
-$$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$
-
-Aquí, $d_k$ es la dimensión de los keys. El escalamiento evita valores extremos en la softmax *(slide 59)*.
-
-4. **Extracción de características con alta atención**: Los pesos resultantes se usan para ponderar los values, obteniendo una representación que enfatiza los tokens relevantes.
-
-### Multi-Head Attention
-
-Una cabeza de atención solo puede enfocarse en un patrón simultáneamente. La solución es usar múltiples cabezas en paralelo, cada una aprendiendo patrones diferentes. Una cabeza podría atender a relaciones sintácticas, otra a semánticas, etc. *(slides 60-61)*
-
-Cada cabeza:
-- Proyecta entrada a query, key, value independientes
-- Computa atención con dimensión reducida
-- Genera un output que se concatena con los de otras cabezas
-- Se proyecta nuevamente a la dimensión original
-
-## 19. Codificación Posicional (Positional Encoding)
-
-Como el Transformer procesa toda la secuencia simultáneamente, pierde información inherente del orden. La solución clásica es sumar una codificación posicional a cada embedding *(slides 62-63)*.
-
-La codificación usa funciones sinusoidales:
-
-$$PE_{(pos, 2i)} = \sin\left(\frac{pos}{10000^{2i/d_{model}}}\right)$$
-
-$$PE_{(pos, 2i+1)} = \cos\left(\frac{pos}{10000^{2i/d_{model}}}\right)$$
-
-Donde:
-- $pos$ es la posición en la secuencia
-- $i$ es la dimensión del modelo
-- Las frecuencias varían logarítmicamente entre dimensiones
-
-Esta formulación permite al modelo aprender tanto dependencias locales como de largo alcance, pues diferentes dimensiones capturan patrones a diferentes escalas temporales.
-
-## 20. Arquitectura Completa del Transformer
-
-*(Slides 64-70 aproximadamente)*
-
-### Bloque Encoder
-
-El encoder es una pila de capas idénticas. Cada capa contiene:
-
-1. **Multi-head self-attention**: Los tokens atienden a todos los demás tokens (incluido a sí mismo)
-2. **Conexión residual**: $\text{output} = x + \text{MultiHeadAttention}(x)$
-3. **Normalización de capa**: Layer normalization estabiliza el entrenamiento
-4. **Feed-forward block**: Red neuronal de dos capas con ReLU
-   - Primera capa expande la dimensión (típicamente 4x)
-   - Segunda capa proyecta de vuelta
-5. **Otra conexión residual**: $\text{output} = x + \text{FFN}(x)$
-
-Las conexiones residuales y normalizaciones son críticas para permitir que redes muy profundas entrenen efectivamente.
-
-### Bloque Decoder
-
-El decoder es similar al encoder pero con tres modificaciones:
-
-1. **Self-attention enmascarada**: Causal/masked attention. Un token solo puede atender a posiciones anteriores, no futuras. Esto es esencial en tareas generativas para evitar acceso a información futura.
-
-2. **Cross-attention**: El decoder atiende a la salida del encoder, permitiendo que la información codificada se incorpore al proceso decodificador.
-
-3. **Salida decodificada secuencialmente**: A diferencia del encoder que procesa todo paralelamente, el decoder típicamente genera un token por paso de tiempo (durante inferencia).
-
-### Arquitectura Encoder-Decoder Completa
-
-```mermaid
-graph TB
-    subgraph Encoder["Encoder (Stack of N layers)"]
-        E_Input["Input embedding + Positional encoding"]
-        E_MHA["Multi-Head Self-Attention"]
-        E_FFN["Feed-Forward Network"]
-        E_LN1["Layer Norm"]
-        E_LN2["Layer Norm"]
-        E_Res1["Residual"]
-        E_Res2["Residual"]
-
-        E_Input -->|x| E_MHA
-        E_MHA -->|attn_output| E_Res1
-        E_Res1 -->|x + attn| E_LN1
-        E_LN1 -->|normalized| E_FFN
-        E_FFN -->|ffn_output| E_Res2
-        E_Res2 -->|x + ffn| E_LN2
-        E_LN2 -->|encoder_out| E_Output["Encoder Output"]
-    end
-
-    subgraph Decoder["Decoder (Stack of N layers)"]
-        D_Input["Output embedding + Positional encoding"]
-        D_MHA_Masked["Masked Multi-Head Self-Attention"]
-        D_Cross["Cross-Attention to Encoder"]
-        D_FFN["Feed-Forward Network"]
-        D_LN1["Layer Norm"]
-        D_LN2["Layer Norm"]
-        D_LN3["Layer Norm"]
-        D_Res1["Residual"]
-        D_Res2["Residual"]
-        D_Res3["Residual"]
-
-        D_Input -->|x| D_MHA_Masked
-        D_MHA_Masked -->|causal_attn| D_Res1
-        D_Res1 -->|x + causal| D_LN1
-        E_Output -->|encoder_out| D_Cross
-        D_LN1 -->|x| D_Cross
-        D_Cross -->|cross_attn| D_Res2
-        D_Res2 -->|x + cross| D_LN2
-        D_LN2 -->|x| D_FFN
-        D_FFN -->|ffn_output| D_Res3
-        D_Res3 -->|x + ffn| D_LN3
-        D_LN3 -->|decoder_out| D_Output["Decoder Output"]
-    end
-
-    D_Output -->|logits| Linear["Linear + Softmax"]
-    Linear -->|probabilities| Output["Next Token"]
-```
-
-## 21. Mecanismos Especializados: Atención Enmascarada y Causal
-
-### Atención Enmascarada (Masked Attention)
-
-En tareas generativas, durante el entrenamiento no queremos que el modelo vea posiciones futuras. Se implementa multiplicando los scores de atención por una máscara triangular antes del softmax: los valores correspondientes a posiciones futuras se establecen a $-\infty$, asegurando que softmax produce probabilidad 0 *(slides 65-67)*.
-
-### Cross-Attention
-
-En arquitecturas encoder-decoder, la cross-attention permite que cada posición del decoder atienda a todas las posiciones del encoder. Las queries provienen del decoder, mientras que keys y values vienen del encoder. Esto es fundamental para tareas como traducción automática, donde el decoder necesita acceder selectivamente a diferentes partes de la entrada codificada.
-
-## 22. Aplicaciones Transversales de Transformers
-
-*(Slides 71-76)*
-
-### Procesamiento de Lenguaje Natural (NLP)
-
-**BERT (Devlin et al., 2019)**: Transformer bidireccional preentrenado. Usa solo el encoder, enfocándose en tareas de comprensión (clasificación, extracción de entidades). La atención bidireccional permite que cada token vea contexto futuro y pasado.
-
-**GPT (Brown et al., 2020)**: Transformer solo-decoder. Usa atención causal para tareas de generación (continuación de texto, resumen). Preentrenado con objective language modeling: predecir el siguiente token.
-
-### Visión por Computadora (Computer Vision)
-
-**Vision Transformer (ViT, Dosovitskiy et al., 2020)**: Divide la imagen en parches (patches), los embebe, añade codificación posicional, y pasa por Transformer estándar. Demostró que los Transformers pueden competir o superar a CNNs en tareas de clasificación de imágenes, especialmente con datos de entrenamiento suficientes.
-
-La ventaja clave: los Transformers capturan relaciones de largo alcance sin los sesgos inductivos de las convoluciones locales.
-
-### Modelado de Secuencias Biológicas
-
-**AlphaFold (Jumper et al., 2021, Lin et al., 2023)**: Usa Transformers para predecir estructura de proteínas a partir de secuencias de aminoácidos. La atención aprende qué residuos interaccionan a través de la cadena 3D. Revolucionó la biología estructural.
-
-El breakthrough: la atención multi-head puede representar explícitamente interacciones entre pares de residuos, lo que es perfecto para estructura proteica.
-
-## 23. Ventajas sobre Modelos Recurrentes
-
-*(Slides 77-79)*
-
-Los RNNs sufren limitaciones críticas:
-
-- **Cuello de botella de codificación**: Toda la información de entrada debe comprimirse en un vector de estado oculto de dimensión fija
-- **Sin paralelización**: El procesamiento es secuencial; cada step depende del anterior
-- **Memoria limitada**: La información temprana se diluye al propagar a través de muchos pasos
-
-Los Transformers eliminan estas limitaciones:
-
-- **Atención directa**: Cada posición puede acceder directamente a cualquier otra, sin intermediarios
-- **Paralelización completa**: Todos los tokens se procesan simultáneamente
-- **Memoria de largo plazo**: Los gradientes fluyen directamente entre posiciones distantes
-
-## 24. Cierre: El Futuro de los Modelos de Secuencias
-
-*(Slide 83)*
-
-Los Transformers son el bloque constructivo fundamental de los grandes modelos de lenguaje (Large Language Models, LLMs) modernos. La lección destaca seis puntos:
-
-1. RNNs son adecuados para tareas de modelado de secuencias, pero tienen limitaciones estructurales
-2. La recurrencia permite modelar dependencias secuenciales
-3. El entrenamiento requiere backpropagation a través del tiempo (BPTT)
-4. Existen aplicaciones exitosas en música, clasificación, traducción, etc.
-5. **La atención permite procesar secuencias sin recurrencia**, eliminando cuellos de botella
-6. **La atención es la base de muchos modelos de lenguaje grandes** — el futuro pertenece a arquitecturas basadas en Transformers
-
----
-
-> Material adaptado de **MIT 6.S191 (2026) Lecture 2: Recurrent Neural Networks, Transformers, and Attention**, Ava Amini, 5 de enero de 2026.
-> [Video](https://www.youtube.com/watch?v=d02VkQ9MP44) - [Slides oficiales](https://introtodeeplearning.com/slides/6S191_MIT_DeepLearning_L2.pdf) - [Sitio del curso](https://introtodeeplearning.com/).
-> Notas en espanol como elaboracion independiente. Sin afiliacion oficial con MIT.
+> Material adaptado de **MIT 6.S191 (2026) Lecture 2: Deep Sequence Modeling**, Ava Amini, 5 de enero de 2026. [Video](https://www.youtube.com/watch?v=d02VkQ9MP44) - [Slides locales](/videos/mit-6s191-l2-2026/slides.pdf) - [Sitio del curso](http://introtodeeplearning.com). Notas en espanol con investigacion complementaria. Sin afiliacion oficial con MIT.

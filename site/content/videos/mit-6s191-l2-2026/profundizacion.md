@@ -1,358 +1,270 @@
 ---
-title: "Profundizacion - MIT 6.S191 (2026): RNNs + Transformers"
+title: "Profundizacion - MIT 6.S191 (2026)"
 weight: 20
 math: true
 ---
 
-> Material complementario al video de Ava Amini correspondiente al Lecture 2 de la edicion 2026
-> de MIT 6.S191. Esta nota acompana al lecture y se concibe como **bisagra**
-> entre los apuntes UC ya disponibles (clases 11 y 13) y el video MIT mas reciente.
-> No re-deriva contenido cubierto en otras paginas: cruza enlaces y solo profundiza
-> en aquello que la edicion 2026 introduce o reordena, especialmente la mitad
-> dedicada a Transformers, multi-head attention y positional encoding.
+> Material complementario al lecture 2 de MIT 6.S191 edicion 2026 ("Deep Sequence Modeling", Ava Amini, 5 enero 2026). El lecture motiva muchos conceptos pero no los deriva al detalle: BPTT solo se muestra como diagrama de flechas backward, vanishing/exploding aparecen como recetas, LSTM/GRU obtienen una sola slide, y toda la genealogia seq2seq -> attention queda implicita. Esta profundizacion rellena esos huecos: deriva BPTT mecanicamente, analiza el producto de jacobianos detras del vanishing, repasa LSTM/GRU conceptualmente, reconstruye la transicion historica seq2seq -> Bahdanau -> Vaswani, y desarma el scaled dot-product paso a paso, con multi-head, position encoding y aplicaciones modernas.
 
 ---
 
-## 1. Contexto breve
+## 1. BPTT al detalle
 
-**MIT 6.S191 -- Introduction to Deep Learning** es el curso introductorio del MIT que
-desde 2017 dictan Alexander Amini y Ava Amini (anteriormente Soleimany) cada
-*Independent Activities Period* (IAP, enero). En la edicion **2026** el curso fue
-significativamente reestructurado para reflejar la realidad post-LLM: el Lecture 2
-ya no es solo sobre RNNs, sino que se titula explicitamente **"Recurrent Neural
-Networks, Transformers, and Attention"** y es presentado por **Ava Amini**. Es decir,
-toda la cadena conceptual -- desde la motivacion del modelado secuencial hasta el
-Transformer completo de Vaswani et al. (2017) -- se cubre en una sola hora de
-clase. Esto contrasta con la edicion **2020** (la que documentamos en
-[/videos/mit-6s191-rnn/profundizacion/](/videos/mit-6s191-rnn/profundizacion/)),
-donde los Transformers solo aparecian aludidos al final como sucesor.
+El lecture 2026 cubre **backpropagation through time** en cuatro slides (41-44): primero recuerda backprop en feed-forward (slide 42), luego despliega el grafo computacional con la perdida total $L = \sum_t L_t$ (slide 43), y finalmente superpone flechas rojas backward sobre el unrolling (slide 44, citando *Mozer, Complex Systems 1989* — el trabajo seminal sobre variantes de BPTT). Lo que NO se muestra es la formula explicita del gradiente que justifica por que aparece el problema de vanishing/exploding. La derivamos aqui.
 
-La consecuencia pedagogica es que el lecture 2026 dedica aproximadamente la primera
-mitad a RNNs, vanishing/exploding gradient y LSTM (material que ya cubrimos en
-[Clase 11](/clases/clase-11/teoria/) y su [profundizacion](/clases/clase-11/profundizacion/)),
-y la segunda mitad a self-attention, multi-head attention, positional encoding y
-arquitectura Transformer (que se solapa parcialmente con [Clase 13](/clases/clase-13/teoria/)
-pero introduce explicitamente la formalizacion query/key/value y los detalles
-ingenieriles del Transformer). Este documento se concentra en la parte que la
-clase UC aun no formaliza con suficiente detalle: las derivaciones que justifican
-las elecciones especificas del Transformer.
+Recordemos las ecuaciones de la celula RNN del lecture (slide 23):
 
----
+$$
+\mathbf{h}_t = \tanh(\mathbf{W}_{hh}^T \mathbf{h}_{t-1} + \mathbf{W}_{xh}^T \mathbf{x}_t), \qquad \hat{\mathbf{y}}_t = \mathbf{W}_{hy}^T \mathbf{h}_t.
+$$
 
-## 2. Papers seminales
+La perdida total sobre una secuencia de longitud $T$ es $L = \sum_{t=1}^{T} L_t$, donde $L_t = \ell(\hat{\mathbf{y}}_t, \mathbf{y}_t)$. El parametro mas delicado es $\mathbf{W}_{hh}$: aparece en la actualizacion de $\mathbf{h}_t$ tanto **directamente** (al combinar $\mathbf{h}_{t-1}$ con la entrada actual) como **indirectamente** a traves de todos los $\mathbf{h}_{t-1}, \mathbf{h}_{t-2}, \ldots, \mathbf{h}_1$ que dependen recursivamente del mismo $\mathbf{W}_{hh}$.
 
-A continuacion sintetizamos los papers fundamentales que el lecture 2026 atraviesa,
-con la formula o insight central de cada uno y enlace a la pagina de paper en el
-sitio (cuando existe) o cita directa a arxiv.
+Aplicando regla de la cadena multivariada sobre el grafo desplegado, el gradiente de una perdida puntual $L_t$ respecto a $\mathbf{W}_{hh}$ es:
 
-### Bengio, Simard & Frasconi (1994) -- "Learning Long-Term Dependencies with Gradient Descent is Difficult"
+$$
+\frac{\partial L_t}{\partial \mathbf{W}_{hh}} \;=\; \sum_{k=1}^{t} \frac{\partial L_t}{\partial \hat{\mathbf{y}}_t} \cdot \frac{\partial \hat{\mathbf{y}}_t}{\partial \mathbf{h}_t} \cdot \left( \prod_{j=k+1}^{t} \frac{\partial \mathbf{h}_j}{\partial \mathbf{h}_{j-1}} \right) \cdot \frac{\partial \mathbf{h}_k}{\partial \mathbf{W}_{hh}}.
+$$
 
-Cita: *IEEE Transactions on Neural Networks*, vol. 5, no. 2, pp. 157-166, 1994.
-Disponible en [https://ieeexplore.ieee.org/document/279181](https://ieeexplore.ieee.org/document/279181).
+El gradiente total es entonces $\partial L / \partial \mathbf{W}_{hh} = \sum_{t=1}^{T} \partial L_t / \partial \mathbf{W}_{hh}$. La pieza critica es el **producto de jacobianos** $\prod_{j=k+1}^{t} \partial \mathbf{h}_j / \partial \mathbf{h}_{j-1}$: cuando $t-k$ es grande (dependencia de largo alcance), este producto encadena $t-k$ matrices que dependen ambas del mismo $\mathbf{W}_{hh}$ y de la derivada del $\tanh$. Cada jacobiano vale aproximadamente
 
-Es el primer analisis formal del **problema del gradiente desvaneciente** en redes
-recurrentes. Bengio et al. demuestran que para que un RNN almacene informacion
-robustamente durante muchos pasos, los autovalores de la matriz jacobiana
-$\partial h_t / \partial h_{t-1}$ deben caer dentro del disco unitario, lo que
-fuerza al producto $\prod_t \partial h_t / \partial h_{t-1}$ a contraerse
-exponencialmente -- es decir, gradientes que se desvanecen. Es un resultado de
-*imposibilidad parcial*: no es que sea dificil entrenar RNNs largas, es que el
-diseno mismo introduce una tension entre estabilidad y memoria. Este insight
-motivara, anos despues, la cell state aditiva de LSTM como solucion estructural.
+$$
+\frac{\partial \mathbf{h}_j}{\partial \mathbf{h}_{j-1}} = \mathbf{W}_{hh}^T \cdot \mathrm{diag}(\tanh'(\mathbf{z}_j)),
+$$
 
-### Pascanu, Mikolov & Bengio (2013) -- "On the Difficulty of Training Recurrent Neural Networks"
+con $\mathbf{z}_j = \mathbf{W}_{hh}^T \mathbf{h}_{j-1} + \mathbf{W}_{xh}^T \mathbf{x}_j$ y $\tanh'(z) = 1 - \tanh^2(z) \in (0, 1]$. La norma del producto crece o decrece **exponencialmente** con la profundidad temporal, segun el radio espectral de $\mathbf{W}_{hh}$ y la saturacion del $\tanh$. Esa es exactamente la observacion de la slide 46 ("**many factors of $\mathbf{W}_{hh}$** + **repeated gradient computation**") y motiva todo el bloque de vanishing/exploding (slides 47-48).
 
-Pagina UC: [/papers/difficulty-training-rnns-pascanu-2013/](/papers/difficulty-training-rnns-pascanu-2013/).
+```mermaid
+graph LR
+  x0[x0] --> h0[h0]
+  x1[x1] --> h1[h1]
+  x2[x2] --> h2[h2]
+  xt[xt] --> ht[ht]
+  h0 --> h1 --> h2 --> ht
+  ht --> L[Loss L]
+  L -.backward.-> ht
+  ht -.backward.-> h2
+  h2 -.backward.-> h1
+  h1 -.backward.-> h0
+```
 
-Reformula el resultado de 1994 con herramientas modernas (analisis espectral con
-norma de matriz, SVD, valores singulares maximos) y propone dos remedios
-practicos: **gradient clipping** para exploding gradient (re-escalar el gradiente
-si su norma supera un umbral $\tau$) y **regularizacion** que penaliza variaciones
-abruptas en la norma del estado oculto. El bound formal $\|\partial h_T / \partial h_t\|
-\leq \sigma_{\max}(W_{hh})^{T-t} \cdot \prod \|f'\|$ se trabaja en
-[Clase 11 profundizacion](/clases/clase-11/profundizacion/).
+El diagrama muestra el flujo forward (flechas solidas) y backward (flechas punteadas) que el lecture dibuja en la slide 44. Cada flecha backward horizontal corresponde a multiplicar por un jacobiano $\partial \mathbf{h}_j / \partial \mathbf{h}_{j-1}$.
 
-### Hochreiter & Schmidhuber (1997) -- "Long Short-Term Memory"
-
-Pagina UC: [/papers/lstm-hochreiter-1997/](/papers/lstm-hochreiter-1997/).
-
-Introduce LSTM como solucion al vanishing gradient: la **constant error carousel**
-mediante una cell state $c_t$ con actualizacion aditiva (no multiplicativa)
-$c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t$. La derivada
-$\partial c_t / \partial c_{t-1} = f_t$ permite al gradiente fluir sin atenuarse
-mientras $f_t$ permanezca cerca de 1. Las matematicas completas estan en
-[Clase 11 profundizacion seccion 6](/clases/clase-11/profundizacion/).
-
-### Sutskever, Vinyals & Le (2014) -- "Sequence to Sequence Learning with Neural Networks"
-
-Pagina UC: [/papers/seq2seq-sutskever-2014/](/papers/seq2seq-sutskever-2014/).
-
-Define el patron **encoder-decoder** con dos LSTMs apiladas: la encoder consume
-$x_1, \ldots, x_{T_x}$ y produce un context vector $c$ (su ultimo hidden state);
-la decoder genera $y_1, \ldots, y_{T_y}$ condicionado en $c$. Establece estado del
-arte en WMT 2014 ingles-frances con BLEU 34.8. Su limitacion -- el **cuello de
-botella** del context vector unico -- motiva directamente Bahdanau 2015.
-
-### Bahdanau, Cho & Bengio (2015) -- "Neural Machine Translation by Jointly Learning to Align and Translate"
-
-Pagina UC: [/papers/bahdanau-attention-2015/](/papers/bahdanau-attention-2015/).
-
-Reemplaza el context fijo por un **context adaptativo** $c_t = \sum_j \alpha_{tj} h_j$
-con pesos calculados por una MLP de alineamiento. Es el origen conceptual de
-toda la familia attention. La derivacion completa, incluido el alignment model
-$e_{tj} = V_a^T \tanh(W_a s_{t-1} + U_a h_j)$, esta en
-[Clase 13 profundizacion seccion 3](/clases/clase-13/profundizacion/).
-
-### Luong, Pham & Manning (2015) -- "Effective Approaches to Attention-based Neural Machine Translation"
-
-Cita: arXiv [1508.04025](https://arxiv.org/abs/1508.04025). EMNLP 2015.
-
-Simplifica Bahdanau y propone tres scores alternativos: **dot-product** ($s_t^T h_j$),
-**general bilinear** ($s_t^T W_a h_j$) y **concat** (similar a Bahdanau). Tambien
-introduce **local attention**: en vez de atender sobre todas las posiciones,
-predecir una posicion de pivote $p_t$ y restringir a una ventana
-$[p_t - D, p_t + D]$. El resultado es un sistema NMT mas simple, mas rapido y
-con BLEU comparable a Bahdanau. La elegancia del dot-product -- sin parametros
-extra -- preanuncia el Transformer.
-
-### Vaswani et al. (2017) -- "Attention Is All You Need"
-
-Cita: arXiv [1706.03762](https://arxiv.org/abs/1706.03762). NeurIPS 2017.
-
-Demuestra que **se puede prescindir totalmente de la recurrencia**: una arquitectura
-construida unicamente con self-attention multi-cabezal, feedforward por posicion,
-residuales y layer normalization supera todos los baselines anteriores en
-traduccion. Introduce tres componentes que explicaremos en la seccion 3:
-**scaled dot-product attention**, **multi-head attention** y **sinusoidal positional
-encoding**. La eliminacion de la recurrencia permite paralelismo total dentro de
-la secuencia y abre la puerta al escalamiento masivo que culminara en BERT, GPT y
-los LLMs modernos.
+Cross-link: [Fundamento: BPTT](/fundamentos/backpropagation-through-time).
 
 ---
 
-## 3. Derivaciones formales
+## 2. Vanishing y exploding gradients
 
-Esta seccion cubre las matematicas que la edicion 2026 del lecture introduce de
-forma intuitiva pero que vale la pena formalizar. Para BPTT, gradientes a traves
-del tiempo y matematica LSTM ver
-[clase-11 profundizacion](/clases/clase-11/profundizacion/). Para el alignment math
-de Bahdanau y la derivacion de Seq2Seq con cross-entropy ver
-[clase-13 profundizacion](/clases/clase-13/profundizacion/).
+El lecture 2026 enuncia el problema en la slide 46 ("computing the gradient wrt $h_0$ involves many factors of $\mathbf{W}_{hh}$") y luego separa las dos patologias en las slides 47 (exploding) y 48 (vanishing) con una caja "many values > 1" vs "many values < 1". La fundamentacion teorica completa proviene de **Bengio, Simard y Frasconi (1994)**, que en *IEEE Transactions on Neural Networks* mostraron analiticamente por que las RNN no pueden aprender dependencias largas: si $\rho(\mathbf{W}_{hh})$ es el radio espectral (mayor valor singular), el producto de jacobianos $\prod_{j} \partial \mathbf{h}_j / \partial \mathbf{h}_{j-1}$ crece como $\rho^{t-k}$ cuando $\rho > 1$ y decae como $\rho^{t-k}$ cuando $\rho < 1$. En ambos casos la dependencia con la profundidad temporal es **exponencial**, no polinomial, y por eso no hay learning rate ni mas datos que arregle el problema.
 
-### 3.1 Justificacion del factor $1/\sqrt{d_k}$ en scaled dot-product attention
+```mermaid
+graph LR
+  subgraph Exploding
+    E1[Many values > 1] --> E2[Norma del producto explota]
+    E2 --> E3[NaN / divergencia]
+  end
+  subgraph Vanishing
+    V1[Many values < 1] --> V2[Norma del producto colapsa a 0]
+    V2 --> V3[Sin senal a tiempos lejanos]
+  end
+```
 
-Vaswani et al. definen la atencion como
+**Para exploding**, la solucion estandar es **gradient clipping**, propuesta por **Pascanu, Mikolov y Bengio (2013)** en *On the difficulty of training recurrent neural networks* (ICML 2013). La idea es simple: si la norma del gradiente excede un umbral $\theta$, escalarlo proporcionalmente para mantenerlo acotado:
 
-$$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{Q K^T}{\sqrt{d_k}}\right) V.$$
+$$
+\nabla \;\leftarrow\; \nabla \cdot \min\!\left(1, \frac{\theta}{\|\nabla\|}\right).
+$$
 
-La pregunta es: por que dividir por $\sqrt{d_k}$ en lugar de no normalizar, o
-normalizar por $d_k$? La respuesta es un **argumento de varianza** que asume
-que las componentes de $q$ y $k$ son independientes con media 0 y varianza 1.
+La direccion del gradiente se preserva, solo se acota la magnitud. En la practica $\theta \in [1, 10]$ funciona bien.
 
-Sea $q, k \in \mathbb{R}^{d_k}$ con componentes $q_i, k_i$ iid, $\mathbb{E}[q_i] = \mathbb{E}[k_i] = 0$,
-$\text{Var}(q_i) = \text{Var}(k_i) = 1$, e independientes entre si. El producto punto es
+**Para vanishing**, no hay un parche tan simple. La slide 48 enumera tres familias de soluciones:
 
-$$q^T k = \sum_{i=1}^{d_k} q_i k_i.$$
+1. **Activation function**: usar ReLU (derivada $1$ para $z > 0$) en lugar de $\tanh$ (derivada $\leq 1$ siempre, saturando a $0$ para $|z|$ grande). Esto evita que el factor $\tanh'(\mathbf{z}_j)$ del jacobiano contribuya al colapso.
+2. **Weight initialization**: inicializar $\mathbf{W}_{hh}$ con matrices ortogonales (radio espectral exactamente $1$) o usar identity initialization. La idea es arrancar el entrenamiento con $\rho(\mathbf{W}_{hh}) \approx 1$ para que el producto de jacobianos no decaiga ni explote en las primeras iteraciones.
+3. **Network architecture**: el cambio mas profundo. Reemplazar la celula RNN simple por **gated units** (LSTM, GRU) que aprenden dinamicamente cuando preservar y cuando borrar informacion del estado oculto. Esta es la motivacion directa para la slide 54 del lecture.
 
-Por linealidad de la esperanza y la independencia de $q_i$ y $k_i$:
-
-$$\mathbb{E}[q^T k] = \sum_i \mathbb{E}[q_i] \mathbb{E}[k_i] = 0.$$
-
-Para la varianza, cada termino $q_i k_i$ tiene
-$\mathbb{E}[(q_i k_i)^2] = \mathbb{E}[q_i^2] \mathbb{E}[k_i^2] = 1 \cdot 1 = 1$
-y $\mathbb{E}[q_i k_i] = 0$, asi que $\text{Var}(q_i k_i) = 1$. Por independencia
-de los terminos:
-
-$$\text{Var}(q^T k) = \sum_{i=1}^{d_k} \text{Var}(q_i k_i) = d_k.$$
-
-Es decir, la magnitud tipica del logit crece como $\sqrt{d_k}$. Para
-$d_k = 64$ los scores fluctuan en el rango $\pm 8$, manejable. Pero para
-$d_k = 512$ fluctuan en $\pm 22$, lo que **satura la softmax**: la mayoria de la
-masa se concentra en una sola posicion y los gradientes en las demas tienden a 0
-(`softmax' (z)_i = p_i (\delta_{ij} - p_j)`, despreciable cuando una $p_i \to 1$).
-
-Dividiendo por $\sqrt{d_k}$ obtenemos
-$\text{Var}(q^T k / \sqrt{d_k}) = d_k / d_k = 1$, devolviendo los logits a una
-escala estable independiente de la dimension. Esta es la unica razon por la que
-$\sqrt{d_k}$ aparece y no otro factor: viene del teorema central del limite
-aplicado al producto interno.
-
-Para una discusion comparativa entre dot-product, additive y scaled dot-product,
-ver [clase-13 profundizacion seccion 5](/clases/clase-13/profundizacion/).
-
-### 3.2 Multi-head attention: por que $H$ cabezales de dimension $d_k = d_{\text{model}} / H$ tienen el mismo costo que uno solo
-
-Multi-head attention reparte el espacio de atencion en $H$ cabezales. Cada cabezal
-$i$ tiene matrices de proyeccion $W_i^Q, W_i^K \in \mathbb{R}^{d_{\text{model}} \times d_k}$ y
-$W_i^V \in \mathbb{R}^{d_{\text{model}} \times d_v}$, con $d_k = d_v = d_{\text{model}} / H$
-en la receta del paper. El output es
-
-$$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_H) W^O,$$
-
-con $\text{head}_i = \text{Attention}(Q W_i^Q, K W_i^K, V W_i^V)$ y
-$W^O \in \mathbb{R}^{d_{\text{model}} \times d_{\text{model}}}$.
-
-El conteo de FLOPs revela una propiedad clave. Sea $n$ la longitud de secuencia.
-
-**Single-head con dimension $d_{\text{model}}$**:
-
-- Proyecciones $Q, K, V$: $3 \cdot n \cdot d_{\text{model}}^2$ FLOPs.
-- Producto $Q K^T$: $n^2 \cdot d_{\text{model}}$ FLOPs.
-- Aplicacion del softmax a $V$: $n^2 \cdot d_{\text{model}}$ FLOPs.
-
-Total dominante en attention: $\mathcal{O}(n^2 \cdot d_{\text{model}})$
-mas $\mathcal{O}(n \cdot d_{\text{model}}^2)$ en proyecciones.
-
-**$H$ cabezales con dimension $d_k = d_{\text{model}} / H$**:
-
-- Proyecciones por cabezal: $3 \cdot n \cdot d_{\text{model}} \cdot d_k$ FLOPs cada uno.
-  Sumando todos: $3 \cdot n \cdot d_{\text{model}} \cdot d_k \cdot H = 3 \cdot n \cdot d_{\text{model}}^2$.
-- Producto $Q_i K_i^T$ por cabezal: $n^2 \cdot d_k$ FLOPs cada uno. Total: $n^2 \cdot d_k \cdot H = n^2 \cdot d_{\text{model}}$.
-- Multiplicacion por $V_i$: identico, $n^2 \cdot d_{\text{model}}$.
-- $W^O$: $n \cdot d_{\text{model}}^2$.
-
-Los totales coinciden hasta constantes pequenas. Es decir, **multi-head no cuesta
-mas** que single-head (a igual $d_{\text{model}}$), pero permite a la red
-construir $H$ subespacios de atencion distintos en paralelo. Empiricamente cada
-cabezal aprende patrones diferentes (sintaxis, co-referencia, posicion relativa,
-proximidad lexica) que se combinan en $W^O$.
-
-La leccion ingenieril es importante: **multi-head es un free lunch**. La unica
-razon por la que no se hace single-head con $d_{\text{model}}$ enorme es que la
-softmax sobre un unico mapa de atencion es menos expresiva que la mezcla de
-varios mapas independientes, aun a igual presupuesto.
-
-### 3.3 Positional encoding sinusoidal y la propiedad de invarianza por traslacion
-
-Una RNN procesa la secuencia paso a paso, asi que el orden esta codificado en la
-estructura del computo. Pero un Transformer aplica self-attention de forma
-permutation-invariante: si reorden los inputs, la salida (modulo permutacion)
-es identica. Por lo tanto necesita inyectar **informacion de posicion**
-explicitamente. Vaswani et al. proponen sumar al embedding de cada token un
-vector $\mathrm{PE}(\text{pos}) \in \mathbb{R}^{d_{\text{model}}}$ definido por
-
-$$\mathrm{PE}(\text{pos}, 2i) = \sin(\text{pos} / 10000^{2i / d_{\text{model}}})$$
-$$\mathrm{PE}(\text{pos}, 2i+1) = \cos(\text{pos} / 10000^{2i / d_{\text{model}}})$$
-
-para $i = 0, 1, \ldots, d_{\text{model}}/2 - 1$. Cada par de coordenadas
-$(2i, 2i+1)$ codifica la posicion en una "frecuencia angular"
-$\omega_i = 1 / 10000^{2i / d_{\text{model}}}$, que decae geometricamente con $i$.
-
-**Propiedad clave (relative position invariance).** Para cualquier offset $k$ entero,
-el vector $\mathrm{PE}(\text{pos} + k)$ se puede expresar como una **transformacion
-lineal** (independiente de pos) aplicada a $\mathrm{PE}(\text{pos})$. Es decir,
-existe una matriz $M_k \in \mathbb{R}^{d_{\text{model}} \times d_{\text{model}}}$ tal
-que para todo pos:
-
-$$\mathrm{PE}(\text{pos} + k) = M_k \cdot \mathrm{PE}(\text{pos}).$$
-
-**Demostracion.** Trabajemos sobre el par $(2i, 2i+1)$ con frecuencia $\omega_i$.
-Aplicando las formulas trigonometricas de adicion:
-
-$$\sin(\omega_i (\text{pos} + k)) = \sin(\omega_i \text{pos}) \cos(\omega_i k) + \cos(\omega_i \text{pos}) \sin(\omega_i k),$$
-$$\cos(\omega_i (\text{pos} + k)) = \cos(\omega_i \text{pos}) \cos(\omega_i k) - \sin(\omega_i \text{pos}) \sin(\omega_i k).$$
-
-En forma matricial, llamando $u_i(\text{pos}) = (\sin(\omega_i \text{pos}), \cos(\omega_i \text{pos}))^T$:
-
-$$u_i(\text{pos} + k) = R_i(k) \cdot u_i(\text{pos}),$$
-
-donde $R_i(k) = \begin{pmatrix} \cos(\omega_i k) & \sin(\omega_i k) \\ -\sin(\omega_i k) & \cos(\omega_i k) \end{pmatrix}$
-es una **rotacion** en el plano $(2i, 2i+1)$ con angulo $-\omega_i k$. La matriz
-global $M_k$ es la suma directa de estas rotaciones por cada par:
-
-$$M_k = \bigoplus_{i=0}^{d_{\text{model}}/2 - 1} R_i(k).$$
-
-Lo crucial es que $M_k$ depende **solo del offset $k$, no de la posicion absoluta
-pos**. Esto significa que, dada $\mathrm{PE}(\text{pos}_a)$ y $\mathrm{PE}(\text{pos}_b)$,
-la diferencia $\text{pos}_b - \text{pos}_a$ es recuperable mediante una operacion
-lineal fija. La attention puede entonces aprender a atender a "tokens 5 posiciones
-atras" generando una query que rote el key 5 unidades, sin importar donde en la
-secuencia ocurra. Esa es la propiedad de **relative-position invariance** que
-Vaswani et al. mencionan como motivacion para usar sinusoides en vez de
-embeddings aprendidos.
-
-Esta misma observacion -- que las rotaciones lineales en pares de coordenadas
-codifican posicion -- es lo que motiva las **rotary position embeddings (RoPE)**
-de Su et al. (2021) y las variantes ALiBi, que predominan en LLMs modernos
-(LLaMA, GPT-NeoX, Mistral).
+Cross-link: [Fundamento: BPTT](/fundamentos/backpropagation-through-time).
 
 ---
 
-## 4. Diferencias con la clase UC y con el video 2020
+## 3. LSTM y GRU (extension conceptual)
 
-La siguiente tabla resume coberturas entre las tres fuentes principales:
+El lecture 2026 dedica **una sola slide** al gating (slide 54): introduce los componentes basicos ($\sigma$ como sigmoid layer, $\times$ como multiplicacion pointwise, una "gated cell" verde) y enuncia que "**Long Short Term Memory (LSTMs)** networks rely on a gated cell to track information throughout many time steps", sin entrar en las ecuaciones internas. Aqui se cubre conceptualmente para cerrar el arco motivacional. Los detalles completos viven en [Fundamento: LSTM y GRU](/fundamentos/lstm-gru).
 
-| Tema | MIT 2020 (L2 Soleimany) | MIT 2026 (L2 Amini) | UC clases 11 + 13 |
-|---|---|---|---|
-| Datos secuenciales y motivacion | Si, pedagogico | Si, condensado | Si |
-| RNN vainilla y BPTT | Si, conceptual | Mencion breve | **Si, BPTT formal** |
-| Vanishing/exploding gradient | Si, intuitivo | Mencion (refuerza por que LSTM/Transformer) | **Si, analisis espectral** |
-| LSTM completo | Si, ecuaciones | Si, condensado | **Si, derivacion formal** |
-| GRU | Mencion | Mencion | Si, completo |
-| Encoder-decoder seq2seq | Si | Si, breve antes de attention | Si, en clase 13 |
-| Bahdanau attention | Si, central | Si, como puente | **Si, formalizado** |
-| Self-attention con Q/K/V | No | **Si, central** | Si, en clase 13 |
-| Scaled dot-product justificacion | No | Mencion | Si, varianza |
-| Multi-head attention | No | **Si, con motivacion** | Si, breve |
-| Positional encoding | No | **Si** | Mencion |
-| Transformer block completo | No | **Si** | Si, breve |
-| Conexion con LLMs | No | **Si, explicita** | Mencion |
-| Image captioning + attention espacial | Si | No (eliminado) | No |
-| Demos de generacion (Shakespeare, musica) | Si | Si, recortado | No |
+**LSTM** fue introducida por **Hochreiter y Schmidhuber (1997)** en *Neural Computation* con la idea fundacional del **constant error carousel (CEC)**: en lugar de propagar gradientes a traves de una activacion no lineal saturante, mantener una **cell state** $\mathbf{c}_t$ que se actualiza de forma **aditiva**. El gradiente $\partial \mathbf{c}_t / \partial \mathbf{c}_{t-1}$ deja de depender del producto de matrices y pasa a ser controlado por una **forget gate** $\mathbf{f}_t \in [0, 1]$ aprendida. Cuando $\mathbf{f}_t \approx 1$, la informacion se conserva intacta a traves del tiempo; cuando $\mathbf{f}_t \approx 0$, se descarta. La celda LSTM moderna combina cuatro gates:
 
-**Que profundiza la edicion 2026 que la edicion 2020 no cubre.** Lo central:
-toda la mitad de Transformers. Vaswani et al. aparece de manera explicita, con
-derivacion de Q/K/V como proyecciones aprendidas del input, justificacion del
-escalamiento $1/\sqrt{d_k}$, motivacion de multi-head, y una pasada completa por
-el Transformer block (residual + layernorm + FFN). Tambien hay un cambio de tono
-mas marcado: las RNNs se presentan como **paso historico** en vez de tecnologia
-contemporanea, con el Transformer como destino natural.
+- **Input gate** $\mathbf{i}_t$: controla cuanto del nuevo candidato se incorpora.
+- **Forget gate** $\mathbf{f}_t$: controla cuanto del estado anterior se preserva.
+- **Output gate** $\mathbf{o}_t$: controla cuanto del estado se expone como hidden state.
+- **Cell state** $\mathbf{c}_t$: la "autopista" de informacion de largo plazo.
 
-**Que profundiza la clase UC que MIT 2026 no cubre.** El curso UC mantiene
-ventaja en el rigor formal: BPTT con todas las cadenas de gradientes, demostracion
-de por que LSTM evita vanishing usando $\partial c_t / \partial c_{t-1} = f_t$,
-analisis espectral con valores singulares de Pascanu et al., y la formalizacion
-probabilistica de seq2seq con maximizacion de log-verosimilitud y beam search.
-La edicion MIT 2026 los menciona pero no los deriva.
+```mermaid
+graph LR
+  prev[c_{t-1}, h_{t-1}] --> forget[Forget gate sigma]
+  prev --> input[Input gate sigma]
+  prev --> output[Output gate sigma]
+  forget --> cell[Cell state c_t]
+  input --> cell
+  cell --> output
+  output --> h[h_t]
+```
 
-**Espiritu complementario.** Lo recomendable sigue siendo: ver el video MIT 2026
-para la *vista de pajaro* completa (RNN -> attention -> Transformer en una hora) y
-la intuicion visual; trabajar luego [Clase 11 profundizacion](/clases/clase-11/profundizacion/)
-y [Clase 13 profundizacion](/clases/clase-13/profundizacion/) para cerrar las
-matematicas.
+**GRU** fue propuesta por **Cho et al. (2014)** en *Learning phrase representations using RNN encoder-decoder for statistical machine translation* (EMNLP 2014). Simplifica LSTM combinando input y forget gates en una unica **update gate** $\mathbf{z}_t$, y eliminando la separacion entre cell state y hidden state. Quedan solo dos gates (reset $\mathbf{r}_t$ y update $\mathbf{z}_t$), con menos parametros y menor costo computacional. En muchas tareas (especialmente con datasets pequenos a medianos) GRU iguala o supera ligeramente a LSTM.
+
+Ambas arquitecturas resuelven el problema de **vanishing gradient** porque el camino aditivo a traves de la cell state mantiene el gradiente acotado. Sin embargo, **no resuelven exploding**: sigue siendo necesario aplicar gradient clipping en el entrenamiento. Esta es la razon por la que el lecture (y la literatura) menciona LSTM como solucion al "long-term dependency problem" pero no abandona el clipping.
 
 ---
 
-## 5. Conceptos NO cubiertos por MIT 2026 que vale la pena conocer
+## 4. De seq2seq a attention: la genealogia historica
 
-- **Bidirectional RNNs / BiLSTM**: aludidas pero no profundizadas; centrales para tagging y NLU offline.
-- **Encoder-only vs decoder-only Transformers**: BERT (encoder-only, MLM, NLU) vs GPT (decoder-only, autoregresivo, generacion); ambas familias derivan del paper de 2017 pero divergen en pretraining y uso.
-- **Transformer-XL** (Dai et al. 2019): atencion segmentada con memoria recurrente entre segmentos para extender el receptive field mas alla del context window.
-- **Sparse attention** (Child et al. 2019, Longformer, BigBird): patrones de atencion sub-cuadraticos para secuencias largas (documentos, codigo).
-- **FlashAttention** (Dao et al. 2022): implementacion IO-aware de attention que evita materializar la matriz $n \times n$ completa, reduciendo memoria de $\mathcal{O}(n^2)$ a $\mathcal{O}(n)$ y acelerando 2-4x en GPUs modernas; es lo que hace viable contextos de millones de tokens en LLMs actuales.
-- **Rotary Position Embeddings (RoPE) y ALiBi**: alternativas modernas al positional encoding sinusoidal de Vaswani et al., que generalizan mejor a longitudes mayores que las vistas en entrenamiento; predominan en LLMs 2023-2026.
-- **Modelos espacio-estado (S4, Mamba)**: combinan complejidad lineal (como RNN) con paralelismo en entrenamiento (como Transformer); investigacion activa que compite con attention en contextos largos.
-- **Mixture of Experts (MoE)**: enrutamiento sparse de tokens a expertos especializados; clave en LLMs modernos como Mixtral, DeepSeek y Claude.
-- **Speculative decoding**: tecnica de inferencia que acelera la generacion autoregresiva usando un modelo pequeno para proponer y uno grande para verificar.
+El lecture 2026 hace un pivot abrupto: en la slide 59 enumera tres limitaciones de RNN (encoding bottleneck, slow / no parallelization, not long memory) y de ahi salta directo a self-attention en las slides 65+. Lo que **NO** muestra es la evolucion historica que llevo de RNN a Transformer, y que es esencial para entender por que el Transformer tiene la forma que tiene. Aqui se rellena ese hueco.
 
----
+**Seq2Seq (Sutskever, Vinyals, Le, 2014)** en *Sequence to sequence learning with neural networks* (NeurIPS 2014) fue el primer modelo encoder-decoder con LSTMs apiladas para traduccion automatica. La arquitectura era simple: una LSTM "encoder" lee la oracion fuente y comprime toda su informacion en un **vector de contexto fijo** $\mathbf{c}$ (su ultimo hidden state). Una LSTM "decoder" recibe ese vector como estado inicial y genera la traduccion palabra por palabra. Funcionaba sorprendentemente bien (alcanzo estado del arte en WMT'14 ingles-frances), pero tenia un problema fundamental: **el bottleneck**. Toda la informacion de una oracion de 50 palabras tenia que caber en un solo vector de unos pocos cientos de dimensiones. Para oraciones largas, la performance degradaba dramaticamente.
 
-## Referencias
+**Bahdanau attention (Bahdanau, Cho, Bengio, 2015)** en *Neural machine translation by jointly learning to align and translate* (ICLR 2015) rompio el bottleneck. La idea: en vez de comprimir el input en UN vector, dejar que el decoder **mire todos los hidden states del encoder en cada paso** con pesos aprendidos. En cada paso $j$ del decoder, computar:
 
-- Bengio, Simard & Frasconi (1994). Learning Long-Term Dependencies with Gradient Descent is Difficult. *IEEE TNN* 5(2):157-166.
-- Pascanu, Mikolov & Bengio (2013). [On the Difficulty of Training Recurrent Neural Networks](/papers/difficulty-training-rnns-pascanu-2013/). *ICML*.
-- Hochreiter & Schmidhuber (1997). [Long Short-Term Memory](/papers/lstm-hochreiter-1997/). *Neural Computation* 9(8).
-- Cho et al. (2014). [Learning Phrase Representations Using RNN Encoder-Decoder](/papers/gru-cho-2014/). *EMNLP*.
-- Sutskever, Vinyals & Le (2014). [Sequence to Sequence Learning with Neural Networks](/papers/seq2seq-sutskever-2014/). *NeurIPS*.
-- Bahdanau, Cho & Bengio (2015). [Neural Machine Translation by Jointly Learning to Align and Translate](/papers/bahdanau-attention-2015/). *ICLR*.
-- Luong, Pham & Manning (2015). Effective Approaches to Attention-based Neural Machine Translation. arXiv [1508.04025](https://arxiv.org/abs/1508.04025).
-- Xu et al. (2015). [Show, Attend and Tell](/papers/show-attend-tell-xu-2015/). *ICML*.
-- Vaswani et al. (2017). Attention Is All You Need. arXiv [1706.03762](https://arxiv.org/abs/1706.03762).
+$$
+\alpha_{ij} = \frac{\exp(e_{ij})}{\sum_k \exp(e_{kj})}, \qquad e_{ij} = \mathbf{v}_a^T \tanh(\mathbf{W}_a [\mathbf{h}_i; \mathbf{s}_j]),
+$$
 
-Material relacionado: [video MIT 6.S191 (2020) RNN](/videos/mit-6s191-rnn/profundizacion/) - [Clase 11 profundizacion](/clases/clase-11/profundizacion/) - [Clase 13 profundizacion](/clases/clase-13/profundizacion/).
+donde $\mathbf{h}_i$ son los hidden states del encoder, $\mathbf{s}_j$ es el estado del decoder y $\mathbf{v}_a, \mathbf{W}_a$ son parametros aprendidos. El context vector pasa a ser $\mathbf{c}_j = \sum_i \alpha_{ij} \mathbf{h}_i$, una mezcla ponderada de TODOS los estados del encoder. Esta es la formulacion **additive attention** (tambien llamada concat o Bahdanau attention).
+
+**Luong attention (Luong, Pham, Manning, 2015)** en *Effective approaches to attention-based neural machine translation* (EMNLP 2015) propuso variantes mas eficientes computacionalmente reemplazando la red feed-forward de Bahdanau por funciones de scoring mas simples: **dot** ($\mathbf{s}_j^T \mathbf{h}_i$), **general** ($\mathbf{s}_j^T \mathbf{W}_a \mathbf{h}_i$) y **concat** (similar a Bahdanau). El scoring **dot** de Luong es el ancestro directo del **scaled dot-product attention** del Transformer.
+
+El paso final fue **Vaswani et al. (2017)** con *Attention is all you need*: eliminaron por completo la recurrencia, dejando solo bloques de attention apilados. Pero conceptualmente, todo el aparato de Q/K/V que veremos en la siguiente seccion es la generalizacion natural de la attention de Bahdanau-Luong al setting "encoder = decoder = lo mismo".
+
+Cross-link: [Fundamento: Mecanismo de atencion](/fundamentos/mecanismo-atencion), [Clase 13](/clases/clase-13).
 
 ---
 
-> Material complementario al video **MIT 6.S191 (2026) Lecture 2: Recurrent Neural Networks, Transformers, and Attention**, Ava Amini, 5 de enero de 2026.
-> [Video](https://www.youtube.com/watch?v=d02VkQ9MP44) - [Slides oficiales](https://introtodeeplearning.com/slides/6S191_MIT_DeepLearning_L2.pdf) - [Sitio del curso](https://introtodeeplearning.com/).
-> Investigacion adicional como elaboracion independiente. Sin afiliacion oficial con MIT.
+## 5. Scaled dot-product attention: derivacion completa
+
+El lecture 2026 dedica **nueve slides** (70-78) a construir progresivamente el scaled dot-product attention, con un build paso a paso que culmina en el diagrama completo del head (slide 77) y la frase punchline "**Attention is the foundational building block of the Transformer architecture**" (slide 78). Aqui se hace la derivacion formal completa.
+
+**Paso 1: position encoding.** Como toda la secuencia se procesa en paralelo (no hay recurrencia), el modelo no tiene forma intrinseca de saber el orden de los tokens. La solucion es **inyectar** informacion posicional sumando un vector $\mathbf{p}_i$ al embedding del token:
+
+$$
+\mathbf{x}_i \;=\; \mathbf{e}_i + \mathbf{p}_i,
+$$
+
+donde $\mathbf{e}_i$ es el embedding del token y $\mathbf{p}_i$ es el position encoding (detalles en seccion 7). El resultado $\mathbf{x}_i$ es un **position-aware encoding**. La slide 71 lo visualiza explicitamente: 7 columnas de embedding $\oplus$ 7 vectores de position $\rightarrow$ 7 columnas verdes "position-aware encoding".
+
+**Paso 2: tres proyecciones lineales.** A partir de la matriz $\mathbf{X} \in \mathbb{R}^{n \times d_{\text{model}}}$ (donde $n$ es la longitud de la secuencia), se computan tres proyecciones independientes:
+
+$$
+\mathbf{Q} = \mathbf{X} \mathbf{W}_Q, \qquad \mathbf{K} = \mathbf{X} \mathbf{W}_K, \qquad \mathbf{V} = \mathbf{X} \mathbf{W}_V,
+$$
+
+con $\mathbf{W}_Q, \mathbf{W}_K \in \mathbb{R}^{d_{\text{model}} \times d_k}$ y $\mathbf{W}_V \in \mathbb{R}^{d_{\text{model}} \times d_v}$. La intuicion (slides 68-69 con la analogia YouTube) es que cada token se transforma en tres roles distintos: **query** (lo que estoy buscando), **key** (lo que ofrezco para ser encontrado) y **value** (el contenido que entrego cuando me eligen).
+
+**Paso 3: similarity scoring.** Se computa una matriz de similitudes $\mathbf{S} \in \mathbb{R}^{n \times n}$:
+
+$$
+\mathbf{S} = \mathbf{Q} \mathbf{K}^T,
+$$
+
+donde cada entrada $S_{ij} = \mathbf{q}_i \cdot \mathbf{k}_j$ mide la afinidad del query $i$ con el key $j$. El producto punto es una buena medida de "cuanto se parecen": cuando los dos vectores apuntan en direcciones similares, el producto es grande; cuando son ortogonales, es cero; cuando apuntan en direcciones opuestas, es negativo. La slide 73 lo describe explicitamente como "cosine similarity" (estrictamente, cosine similarity es producto punto normalizado por las magnitudes; el producto punto sin normalizar combina similitud direccional y magnitud).
+
+**Paso 3.5: la justificacion del $\sqrt{d_k}$.** Aqui esta una de las contribuciones mas sutiles de Vaswani et al. (2017). Cuando $d_k$ es grande (digamos $d_k = 64$ o $128$), los productos punto $\mathbf{q}_i \cdot \mathbf{k}_j$ tienen varianza proporcional a $d_k$ (suma de $d_k$ productos de variables aleatorias independientes). Magnitudes grandes en los logits empujan la softmax a regiones donde una entrada domina y todas las demas colapsan a cero, **saturando** la funcion y produciendo gradientes cercanos a cero. La solucion es normalizar dividiendo por $\sqrt{d_k}$ para que la varianza de los logits se mantenga $O(1)$:
+
+$$
+\mathbf{S} \;\leftarrow\; \frac{\mathbf{Q} \mathbf{K}^T}{\sqrt{d_k}}.
+$$
+
+Sin este factor, los Transformers de gran $d_k$ no entrenan estable.
+
+**Paso 4: softmax por filas.** Se aplica softmax a cada fila de $\mathbf{S}$ para obtener una matriz de pesos de atencion $\mathbf{A}$:
+
+$$
+\mathbf{A} = \mathrm{softmax}\!\left(\frac{\mathbf{Q} \mathbf{K}^T}{\sqrt{d_k}}\right),
+$$
+
+donde cada fila $\mathbf{A}_{i,:}$ suma 1 y representa una distribucion de probabilidad sobre que values atender desde la posicion $i$. La slide 75 lo visualiza como una matriz $7 \times 7$ con gradientes rojos (mas oscuro = mas peso).
+
+**Paso 5: ponderar values.** Finalmente:
+
+$$
+\mathrm{Attention}(\mathbf{Q}, \mathbf{K}, \mathbf{V}) \;=\; \mathbf{A} \mathbf{V} \;=\; \mathrm{softmax}\!\left(\frac{\mathbf{Q} \mathbf{K}^T}{\sqrt{d_k}}\right) \mathbf{V} \;\in\; \mathbb{R}^{n \times d_v}.
+$$
+
+Cada fila del output es una combinacion ponderada de los values, donde los pesos vienen dados por la similitud query-key. Esta es la formula central del Transformer (slide 76).
+
+```mermaid
+graph LR
+  Q[Q] --> MM1[MatMul]
+  K[K] --> MM1
+  MM1 --> S[Scale 1/sqrt d_k]
+  S --> SM[Softmax]
+  SM --> MM2[MatMul]
+  V[V] --> MM2
+  MM2 --> O[Output]
+```
+
+---
+
+## 6. Multi-head attention: mecanica
+
+Una sola operacion de attention captura un solo "punto de vista" sobre la secuencia. Vaswani et al. observaron que es mucho mas potente computar **varias attentions en paralelo**, cada una con sus propias proyecciones $\mathbf{W}_{Q_i}, \mathbf{W}_{K_i}, \mathbf{W}_{V_i}$ aprendidas, y luego concatenar y proyectar:
+
+$$
+\mathrm{head}_i = \mathrm{Attention}(\mathbf{Q} \mathbf{W}_{Q_i}, \mathbf{K} \mathbf{W}_{K_i}, \mathbf{V} \mathbf{W}_{V_i}),
+$$
+
+$$
+\mathrm{MultiHead}(\mathbf{Q}, \mathbf{K}, \mathbf{V}) = \mathrm{Concat}(\mathrm{head}_1, \ldots, \mathrm{head}_h) \mathbf{W}^O.
+$$
+
+El lecture 2026 lo intuye en la slide 79 con tres imagenes de Iron Man: head 1 atiende al casco, head 2 al edificio del fondo, head 3 a un objeto distante. La idea es **diversidad de subespacios**: cada head aprende a fijarse en un aspecto distinto del input. En la practica, analisis post-hoc de Transformers entrenados muestran que algunos heads aprenden relaciones sintacticas (sujeto-verbo), otros relaciones semanticas, otros patrones posicionales (atender al token previo), etc.
+
+La configuracion estandar de Vaswani et al. usa $h = 8$ heads con $d_k = d_v = d_{\text{model}} / h = 64$ cuando $d_{\text{model}} = 512$. Esta eleccion mantiene el costo computacional total de multi-head approximately igual al de single-head: cada head opera en un subespacio mas pequeno, pero hay $h$ de ellos. La proyeccion final $\mathbf{W}^O \in \mathbb{R}^{h d_v \times d_{\text{model}}}$ recombina los outputs de todos los heads en el espacio original.
+
+```mermaid
+graph LR
+  X[Input X] --> H1[Head 1]
+  X --> H2[Head 2]
+  X --> H3[Head 3]
+  H1 --> C[Concat]
+  H2 --> C
+  H3 --> C
+  C --> L[Linear W^O]
+  L --> O[Output]
+```
+
+---
+
+## 7. Position encoding: tres enfoques
+
+El lecture solo muestra position encoding implicitamente en la slide 71 (la suma $\mathbf{e}_i \oplus \mathbf{p}_i$). Hay tres enfoques principales en la literatura:
+
+**1. Sinusoidal (Vaswani et al., 2017).** El paper original propone funciones senoidales y cosenoidales fijas (no aprendidas):
+
+$$
+PE_{(pos, 2i)} = \sin\!\left(\frac{pos}{10000^{2i/d}}\right), \qquad PE_{(pos, 2i+1)} = \cos\!\left(\frac{pos}{10000^{2i/d}}\right),
+$$
+
+donde $pos$ es la posicion absoluta y $i$ es el indice de la dimension. La eleccion de $10000^{2i/d}$ produce longitudes de onda en progresion geometrica desde $2\pi$ hasta $10000 \cdot 2\pi$. Ventajas: deterministico (no consume parametros), generaliza a longitudes de secuencia no vistas en entrenamiento (porque las funciones son continuas), y permite al modelo aprender a atender a posiciones relativas (porque $PE_{pos+k}$ se puede expresar como combinacion lineal de $PE_{pos}$ via identidades trigonometricas).
+
+**2. Learned position embeddings (BERT, GPT-2).** En vez de funciones fijas, se aprende una matriz de embeddings $\mathbf{E}_{\text{pos}} \in \mathbb{R}^{L \times d}$ exactamente como cualquier otra tabla de embeddings. Cada posicion $0, 1, \ldots, L-1$ tiene su propio vector aprendido. Suele alcanzar performance ligeramente superior al sinusoidal en tareas con longitudes acotadas, pero **no extrapola**: el modelo no sabe que hacer con posiciones $> L$.
+
+**3. RoPE (rotary position embedding).** Aplica rotaciones en pares de dimensiones del query y key, codificando posicion **relativa** (no absoluta) en el producto punto. Es el enfoque dominante en LLMs modernos (LLaMA, GPT-NeoX, varios open-source). Tiene la propiedad elegante de que el producto $\mathbf{q}_i^T \mathbf{k}_j$ depende solo de la diferencia $i - j$ y no de las posiciones absolutas, lo que extrapola mucho mejor a longitudes largas. Para detalles ver [fundamentos/mecanismo-atencion](/fundamentos/mecanismo-atencion).
+
+La eleccion entre los tres importa en la practica: BERT y GPT-2 usaron learned, los Transformers originales sinusoidal, y los LLMs post-2022 mayoritariamente RoPE o variantes (ALiBi, etc.).
+
+---
+
+## 8. Aplicaciones modernas que el lecture menciona
+
+La slide 80 cierra el lecture conectando self-attention con cinco aplicaciones modernas, organizadas en tres dominios: **Language Processing**, **Biological Sequences** y **Computer Vision**. Aqui se resume cada una.
+
+**BERT (Devlin et al., 2019, NAACL).** *Bidirectional Encoder Representations from Transformers*. Un Transformer **encoder-only** pre-entrenado con dos tareas auto-supervisadas: **masked language modeling** (predecir tokens enmascarados al azar, con contexto bidireccional) y **next sentence prediction** (decidir si dos oraciones son consecutivas). Cambio el paradigma de NLP a "pre-train + fine-tune": un solo modelo masivo se entrena una vez y se especializa con pocos datos a tareas downstream (clasificacion, NER, QA, etc.). Establecio estados del arte simultaneos en GLUE, SQuAD y otros benchmarks. Inicio la era de los foundation models en NLP.
+
+**GPT-3 (Brown et al., 2020, NeurIPS).** *Language models are few-shot learners*. Un Transformer **decoder-only** autoregresivo de $175 \times 10^9$ parametros, entrenado en cientos de billones de tokens de texto. La contribucion conceptual fue mostrar la **emergencia de few-shot learning sin fine-tuning**: dado un prompt con pocos ejemplos en contexto, el modelo aprende la tarea en tiempo de inferencia sin actualizar pesos. Esto inauguro el paradigma de **in-context learning** que define los LLMs modernos (ChatGPT, Claude, Gemini son descendientes directos de esta linea).
+
+**AlphaFold (Jumper et al., 2021, Nature).** *Highly accurate protein structure prediction with AlphaFold*. Aplico Transformers (con variantes equivariantes y geometric attention) al problema de predecir la estructura tridimensional de proteinas a partir de su secuencia de aminoacidos. Resolvio CASP14 con precision atomica, esencialmente cerrando un problema de 50 anos en biologia computacional. Demostro que self-attention generaliza mucho mas alla de NLP.
+
+**ESM (Lin et al., 2023, Science).** *Evolutionary-scale prediction of atomic-level protein structure*. Entreno Transformers gigantes solo en **secuencias** de proteinas (sin estructuras), usando masked language modeling al estilo BERT. Las representaciones aprendidas predicen contactos residuo-residuo, estabilidad termica y propiedades funcionales con precision comparable a AlphaFold pero usando solo evolucion natural como senal de entrenamiento. Es la version "GPT for proteins" del campo.
+
+**ViT (Dosovitskiy et al., 2020/2021, ICLR).** *An image is worth 16x16 words*. Trata cada parche $16 \times 16$ pixeles de una imagen como un token, los proyecta linealmente a embeddings, agrega position encodings y los procesa con un Transformer estandar. Demostro que la atencion **sin priors visuales** (sin convoluciones, sin pooling) puede igualar y superar a CNNs cuando se entrena a escala suficiente. Inauguro la era de los Vision Transformers que hoy dominan ImageNet, deteccion de objetos, segmentacion y modelos multimodales (CLIP, DINO, SAM).
+
+El patron es claro: el bloque computacional unico inventado en *Attention is all you need* se ha convertido en el sustrato universal del deep learning moderno, atravesando lenguaje, biologia, vision y mas alla. La slide 81 del lecture lo resume en su sexto takeaway: "Self-attention is the basis for many **large language models** -- stay tuned!".
