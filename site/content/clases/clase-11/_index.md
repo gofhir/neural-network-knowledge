@@ -16,6 +16,8 @@ Redes neuronales recurrentes para procesamiento de secuencias: vanilla RNN, conf
   {{< card link="/fundamentos/redes-recurrentes" title="Fundamento: RNNs" subtitle="Definicion, configuraciones, aplicaciones" icon="book-open" >}}
   {{< card link="/fundamentos/lstm-gru" title="Fundamento: LSTM y GRU" subtitle="Compuertas, ecuaciones, comparacion" icon="book-open" >}}
   {{< card link="/fundamentos/backpropagation-through-time" title="Fundamento: BPTT" subtitle="Algoritmo, vanishing/exploding, soluciones" icon="book-open" >}}
+  {{< card link="/videos/mit-6s191-rnn" title="Video MIT 6.S191 (2020)" subtitle="Ava Soleimany - mismo material en formato video" icon="film" >}}
+  {{< card link="/videos/mit-6s191-l2-2026" title="Video MIT 6.S191 (2026)" subtitle="Ava Amini - extiende a Transformers" icon="film" >}}
 {{< /cards >}}
 
 ## Papers de esta clase

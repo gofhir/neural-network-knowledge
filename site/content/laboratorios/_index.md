@@ -14,4 +14,6 @@ Exploracion en profundidad de los laboratorios del diplomado: librerias, concept
   {{< card link="lab-08" title="Lab 08 - Entrenamiento Avanzado" subtitle="Funciones de perdida, regularizacion y tareas auxiliares" icon="adjustments" >}}
   {{< card link="lab-09" title="Lab 09 - Visualizacion e Interpretabilidad" subtitle="Feature Visualization y Attribution en CNNs" icon="eye" >}}
   {{< card link="lab-10" title="Lab 10 - Optimizacion y Learning Rate" subtitle="GD, SGD, Adam, schedulers en CIFAR10" icon="trending-down" >}}
+  {{< card link="lab-11" title="Lab 11 - Redes Recurrentes (RNNs)" subtitle="RNN vanilla, LSTM y BiLSTM para clasificar nacionalidades" icon="refresh" >}}
+  {{< card link="lab-12" title="Lab 12 - Data Augmentation, Transfer Learning y Finetuning" subtitle="ResNet18 sobre flowers y BERT sobre Jigsaw toxic comments" icon="chip" >}}
 {{< /cards >}}
