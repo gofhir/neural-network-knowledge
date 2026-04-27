@@ -67,6 +67,7 @@ El video [`mit-6s191-rnn`](/videos/mit-6s191-rnn/) cubre el **mismo lecture** en
   {{< card link="/fundamentos/lstm-gru" title="Fundamento: LSTM y GRU" subtitle="Compuertas, ecuaciones, comparacion" icon="book-open" >}}
   {{< card link="/fundamentos/mecanismo-atencion" title="Fundamento: Attention" subtitle="Bahdanau/Luong/scaled dot-product" icon="book-open" >}}
   {{< card link="/videos/mit-6s191-rnn" title="Video MIT 6.S191 (2020)" subtitle="Mismo curso, lecture 2 version 2020 - Ava Soleimany" icon="film" >}}
+  {{< card link="/videos/mit-6s191-l3-2026" title="Video MIT 6.S191 (2026) L3" subtitle="Lecture siguiente del mismo curso — Deep Computer Vision" icon="film" >}}
 {{< /cards >}}
 
 ---
