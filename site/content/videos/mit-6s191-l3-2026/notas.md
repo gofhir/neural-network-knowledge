@@ -278,3 +278,179 @@ Cuando se entrena una CNN profunda end-to-end con clasificación de imágenes, l
 Esta jerarquía no se programa: emerge cuando se entrena una CNN profunda con un loss de clasificación end-to-end. Es una de las observaciones empíricas más importantes en deep learning, y el hilo que conecta la motivación inicial (¿podemos aprender features?) con la maquinaria desarrollada (convolución + pooling + ReLU apilados).
 
 En la siguiente sección veremos qué aplicaciones se construyen sobre esta arquitectura — clasificación, detección, segmentación, generación, conducción autónoma — y cómo se modifica el "head" de la red según la tarea.
+
+---
+
+## 15. Pipeline completo: feature learning + clasificación
+
+El pipeline canónico de una CNN para clasificación se descompone explícitamente en dos mitades *(slide 51)*:
+
+![Slide 51 — Backbone convolucional (feature learning) + cabecera de clasificación. La parte convolucional aprende representaciones; la parte densa decide la clase.](/videos/mit-6s191-l3-2026/slides/slide-51.png)
+
+1. **Feature learning (mitad convolucional):** apila bloques `Conv → ReLU → Pool` que aprenden la jerarquía de representaciones discutida en la sección 14.
+2. **Clasificación:** un *flatten* aplana el último volumen de feature maps a un vector, seguido de una o más capas densas y una softmax que produce $p(y \mid x)$ *(slide 52)*:
+
+$$
+\text{softmax}(y_i) = \frac{e^{y_i}}{\sum_j e^{y_j}}
+$$
+
+La softmax convierte logits arbitrarios en una distribución de probabilidad sobre las clases. Se entrena con cross-entropy negativa.
+
+---
+
+## 16. Implementación práctica (TensorFlow y PyTorch)
+
+La clase incluye implementaciones equivalentes en los dos frameworks dominantes *(slides 53-54)*. La estructura es idéntica; cambia solo el API.
+
+```python
+# TensorFlow / Keras
+import tensorflow as tf
+
+def generate_model():
+    return tf.keras.Sequential([
+        # primera capa convolucional
+        tf.keras.layers.Conv2D(32, filter_size=3, activation="relu"),
+        tf.keras.layers.MaxPool2D(pool_size=2, strides=2),
+        # segunda capa convolucional
+        tf.keras.layers.Conv2D(64, filter_size=3, activation="relu"),
+        tf.keras.layers.MaxPool2D(pool_size=2, strides=2),
+        # cabecera fully-connected
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(1024, activation="relu"),
+        tf.keras.layers.Dense(10, activation="softmax"),
+    ])
+```
+
+```python
+# PyTorch
+import torch.nn as nn
+
+def generate_model():
+    return nn.Sequential(
+        # primera capa convolucional
+        nn.Conv2d(in_channels=3,  out_channels=32, kernel_size=3),
+        nn.ReLU(),
+        nn.MaxPool2d(kernel_size=2, stride=2),
+        # segunda capa convolucional
+        nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3),
+        nn.ReLU(),
+        nn.MaxPool2d(kernel_size=2, stride=2),
+        # cabecera fully-connected
+        nn.Flatten(),
+        nn.Linear(64*6*6, 1024),
+        nn.ReLU(),
+        nn.Linear(1024, 10),
+    )
+```
+
+Notar que en PyTorch la activación es una capa explícita, mientras que Keras la pasa como argumento. La dimensión de entrada de la capa `Linear` (`64*6*6`) depende del shape espacial del último feature map, que en PyTorch debe calcularse manualmente; Keras lo infiere.
+
+---
+
+## 17. Una arquitectura, muchas aplicaciones
+
+La idea más potente del lecture: el **mismo backbone convolucional** sirve para una gran variedad de tareas; solo cambia la cabecera *(slides 55-56)*.
+
+![Slide 56 — El backbone aprende features genéricas; según la tarea (clasificación, detección, segmentación, control probabilístico), se intercambia la cabecera.](/videos/mit-6s191-l3-2026/slides/slide-56.png)
+
+| Tarea | Cabecera | Output |
+| --- | --- | --- |
+| **Clasificación** | FC + softmax | distribución sobre clases |
+| **Detección** | FC + regresión + softmax | bounding boxes con clase y posición |
+| **Segmentación** | upsampling (decoder convolucional) | máscara $H \times W$ con etiqueta por píxel |
+| **Control probabilístico** | regresión a parámetros de una distribución (e.g., $\mu, \sigma$) | comando de control con incertidumbre |
+
+Esta modularidad — backbone reutilizable + cabecera específica por tarea — es la base del **transfer learning** moderno: se preentrena el backbone en ImageNet, y se reemplaza/fine-tunea la cabecera para cada tarea downstream.
+
+---
+
+## 18. Clasificación médica: cribado de cáncer de mama
+
+La clase aterriza la utilidad práctica con un caso publicado en *Nature* *(slide 57)*: McKinney et al. 2020, "International evaluation of an AI system for breast cancer screening".
+
+- El sistema basado en CNN **superó a radiólogos expertos** en sensibilidad/especificidad para cáncer de mama detectado en mamografías a 1 año y a 2 años, en cohortes del Reino Unido y Estados Unidos.
+- En la inspección retrospectiva, la red detectó casos que los radiólogos humanos habían marcado como negativos (falsos negativos humanos detectados como verdaderos positivos por la red).
+
+Esta es una aplicación canónica del pipeline `Conv → ReLU → Pool` apilado, con una cabecera de clasificación binaria (cancer / no-cancer) entrenada con cross-entropy. La diferencia respecto al caso académico no es la arquitectura: es la curaduría del dataset, el etiquetado por consenso de expertos, y el seguimiento longitudinal de pacientes.
+
+---
+
+## 19. Detección de objetos: del sliding window a R-CNN
+
+Detección no es solo "qué hay en la imagen" sino también "**dónde** está y **cuántos** hay" *(slides 58-62)*.
+
+![Slide 58 — Detección: por cada objeto se predice la clase y la bounding box $(x, y, w, h)$.](/videos/mit-6s191-l3-2026/slides/slide-58.png)
+
+**Solución ingenua: sliding window** *(slide 60)*. Pasar una CNN clasificadora sobre cada parche de cada escala y posición posibles. Problema: combinatoriamente intratable — millones de pasadas por imagen.
+
+**R-CNN (Girshick et al. 2014)** *(slide 61)*: dividir el problema en dos etapas:
+
+![Slide 61 — Pipeline R-CNN: 1) input → 2) ~2000 region proposals (selective search) → 3) CNN sobre cada región (warpeada) → 4) clasificación.](/videos/mit-6s191-l3-2026/slides/slide-61.png)
+
+1. **Input:** imagen completa.
+2. **Region proposals:** un algoritmo no-aprendido (selective search) propone ~2000 regiones candidatas que podrían contener objetos.
+3. **CNN features:** cada región se warpea a tamaño fijo y pasa por una CNN.
+4. **Clasificación:** una cabecera por región decide la clase (o "no-objeto") y refina la bounding box.
+
+Problemas reconocidos en la slide *(slide 61)*:
+
+- **Lento:** 2000 forward passes de CNN por imagen → segundos por imagen, inviable en tiempo real.
+- **Brittle:** las region proposals dependen de selective search, un algoritmo hecho a mano que no se entrena con el resto.
+
+**Faster R-CNN (Ren et al. 2015)** *(slide 62)*: la red propone sus propias regiones. Una **Region Proposal Network (RPN)** aprende, end-to-end, dónde mirar. Una sola pasada convolucional sobre la imagen completa produce features compartidos que alimentan tanto la RPN como el clasificador. Resultado: orden de magnitud más rápido, end-to-end aprendible, y ya viable en tiempo casi-real.
+
+Para máximas velocidades, los detectores **single-shot** (YOLO, Redmon et al. 2016; SSD, Liu et al. 2016) eliminan la etapa de propuesta y predicen clases + bounding boxes directamente desde una grid sobre la imagen — la clase no profundiza en estos pero los menciona como evolución natural.
+
+---
+
+## 20. Segmentación semántica: redes fully-convolutional
+
+Si detección produce **bounding boxes**, segmentación produce una **etiqueta por píxel** *(slide 63)*. Para una imagen $H \times W$, la salida también es $H \times W$ pero con valores en $\{1, \dots, K\}$ — el "color" semántico de cada píxel.
+
+![Slide 63 — Fully Convolutional Network (FCN, Long et al. 2015): encoder convolucional que downsamplea, decoder convolucional que upsamplea con transposed convolution, salida $H \times W$ por píxel.](/videos/mit-6s191-l3-2026/slides/slide-63.png)
+
+La idea fundadora (Long et al. 2015): reemplazar las capas FC al final del backbone por más capas convolucionales, de modo que la salida también sea un mapa 2D — de ahí "fully convolutional". El reto es que el backbone reduce la resolución (por pooling), pero la salida tiene que volver a $H \times W$. Solución: capas de **transposed convolution** (a veces mal llamadas "deconvolution") que upsamplean los feature maps.
+
+La arquitectura encoder-decoder simétrica **U-Net** (Ronneberger et al. 2015) añade *skip connections* que copian features de alta resolución del encoder al decoder, permitiendo recuperar detalles finos perdidos por el downsampling. U-Net es el caballo de batalla de segmentación médica desde 2015.
+
+En código: `tf.keras.layers.Conv2DTranspose` y `torch.nn.ConvTranspose2d`.
+
+---
+
+## 21. Control continuo: visión para conducción autónoma
+
+El último gran caso del lecture *(slides 64-66)* es la conducción autónoma como una tarea **end-to-end de visión a control**. En vez de la pipeline clásica (percepción → planificación → control con módulos separados), la idea es entrenar una sola red que, dada cámara + mapa, emita directamente comandos de dirección con incertidumbre.
+
+![Slide 65 — Framework end-to-end (Amini et al. ICRA 2019): múltiples convolucionales sobre cámara y mapa coarse, fusión, regresión a parámetros $(\mu, \sigma)$ de una distribución de control.](/videos/mit-6s191-l3-2026/slides/slide-65.png)
+
+La salida no es un escalar (ángulo de volante) sino los parámetros $(\mu_i, \sigma_i)$ de una mezcla gaussiana sobre comandos de control. La pérdida es la log-verosimilitud negativa:
+
+$$
+\mathcal{L}(\theta \mid I, M) = -\log p(\theta \mid I, M)
+$$
+
+donde $\theta$ es el comando de control deseado, e $I, M$ son la imagen y el mapa coarse. Modelar incertidumbre permite que el sistema reconozca "no sé" en vez de comprometerse confiadamente con un comando equivocado — propiedad crítica en seguridad.
+
+La demo de la clase *(slide 66)* muestra un Toyota Prius modificado conduciendo en autopilot con esta política aprendida end-to-end (Amini et al. ICRA 2019).
+
+---
+
+## 22. Cierre: alcance e impacto
+
+El lecture cierra con un collage del impacto del campo *(slide 67)* y un resumen de tres bloques *(slide 68)*:
+
+| Bloque | Contenido |
+| --- | --- |
+| **Foundations** | ¿Por qué visión computacional? Imágenes como números. Convolución como extracción de features local. |
+| **CNNs** | Arquitectura: Conv + ReLU + Pool apilados. Aplicación a clasificación, ImageNet como benchmark. |
+| **Applications** | Segmentación, image captioning, control. Seguridad, medicina, robótica. |
+
+La slide final *(slide 69)* enlaza al **Lab 2: Facial Detection Systems**, donde los estudiantes implementan una CNN de detección facial, evaluando sesgos demográficos del modelo entrenado.
+
+---
+
+## Atribución
+
+> Material adaptado de **MIT 6.S191 (2026) Lecture 3: Deep Computer Vision**, Alexander Amini, 6 de enero de 2026.
+> [Video](https://www.youtube.com/watch?v=pqIcoskUuWs) — [Slides oficiales](https://introtodeeplearning.com/slides/6S191_MIT_DeepLearning_L3.pdf) — [Sitio del curso](https://introtodeeplearning.com/).
+> Notas en español como elaboración independiente. Sin afiliación oficial con MIT.
