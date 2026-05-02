@@ -36,3 +36,32 @@ def test_bpe_encode_shorter_than_chars():
     sample = "the king is dead"
     ids = tok.encode(sample)
     assert len(ids) <= len(sample)
+
+def test_bpe_save_load(tmp_path):
+    """Guardar y cargar preserva encode/decode identico."""
+    import os
+    corpus_path = os.path.join(os.path.dirname(__file__), "..", "shakespeare.txt")
+    corpus = open(corpus_path).read()
+    tok = BPETokenizer()
+    tok.train(corpus, num_merges=50)
+    path = str(tmp_path / "tok.json")
+    tok.save(path)
+    tok2 = BPETokenizer.load(path)
+    sample = "hamlet"
+    assert tok.encode(sample) == tok2.encode(sample)
+    assert tok.decode(tok.encode(sample)) == tok2.decode(tok2.encode(sample))
+
+def test_char_tokenizer_compat():
+    """CharTokenizer produce mismo encode que dict directo."""
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from _eval import build_char_maps
+    from _bpe import CharTokenizer
+    corpus_path = os.path.join(os.path.dirname(__file__), "..", "shakespeare.txt")
+    text = open(corpus_path).read()
+    c2i, i2c = build_char_maps(text)
+    tok = CharTokenizer(c2i, i2c)
+    sample = "hello world"
+    expected = [c2i[c] for c in sample if c in c2i]
+    assert tok.encode(sample) == expected
+    assert tok.decode(expected) == sample

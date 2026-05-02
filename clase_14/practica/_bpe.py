@@ -79,8 +79,30 @@ class BPETokenizer:
         return "".join(self.id_to_token.get(i, "") for i in ids)
 
     def save(self, path: str) -> None:
-        raise NotImplementedError("implement in Task 3")
+        data = {"vocab": self.vocab, "merges": self.merges}
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
     @classmethod
     def load(cls, path: str) -> "BPETokenizer":
-        raise NotImplementedError("implement in Task 3")
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        tok = cls()
+        tok.vocab = data["vocab"]
+        tok.id_to_token = {int(i): t for t, i in tok.vocab.items()}
+        tok.merges = [tuple(m) for m in data["merges"]]
+        return tok
+
+
+class CharTokenizer:
+    """Wrapper char-level que expone la interfaz BPETokenizer."""
+    def __init__(self, char_to_id: dict, id_to_char: dict):
+        self._c2i = char_to_id
+        self.id_to_token = id_to_char
+        self.vocab_size = len(char_to_id)
+
+    def encode(self, text: str) -> list[int]:
+        return [self._c2i[c] for c in text if c in self._c2i]
+
+    def decode(self, ids: list[int]) -> str:
+        return "".join(self.id_to_token.get(i, "") for i in ids)
