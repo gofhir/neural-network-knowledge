@@ -102,6 +102,27 @@ DPO refina el SFT con preferencias `(chosen, rejected)`. Saltea el reward model 
 
 ---
 
+## Camino 2.5 — BPE addendum (de char-level a subword)
+
+Camino 2 cerro con un puzzle: SFT funcionaba, pero DPO degradaba accuracy. La hipotesis principal: char-level es subóptimo — sin semantica de palabras, sin compresion de contexto, sin capacidad para tareas open-ended. Camino 2.5 reemplaza el tokenizador por **BPE desde cero** (1000 merges, vocab bilingue Shakespeare+Quijote, 1112 tokens) y rehace SFT+DPO sobre 4 tareas BPE-naturales: qa (memorizacion), repeat (igual que C2), complete-en (continuacion Shakespeare), complete-es (continuacion Quijote).
+
+**Resultado honesto**: BPE no es mejora automatica. Char-level gana qa (69% vs 19%) y repeat (100% vs 77%) — entropia por paso menor lo favorece. PERO BPE habilita complete-* que char-level no puede hacer en absoluto. DPO con beta=0.5 valido parcialmente la hipotesis del cap 29 (β=0.5 degrada menos que β=0.1 pero ambos siguen degradando). El cap 37 cierra con la leccion: char-level es pedagogico, BPE es produccion.
+
+### Fase 8 — BPE + SFT + DPO
+
+{{< cards >}}
+  {{< card link="30-bpe-desde-cero" title="30 - BPE desde cero" subtitle="Algoritmo merge frequencies, vocab bilingue 1112 tokens, corpus bias" icon="academic-cap" >}}
+  {{< card link="31-pretrain-bpe" title="31 - Pretrain con BPE" subtitle="Mini-LLaMA bilingue, loss 7.18 → 2.68, generacion cross-lingual" icon="cog" >}}
+  {{< card link="32-refactor-tokenizer" title="32 - Refactor tokenizer-agnostic" subtitle="CharTokenizer + BPETokenizer mismo interfaz, 11/11 tests" icon="cog" >}}
+  {{< card link="33-dataset-sft-bpe" title="33 - Dataset SFT-BPE" subtitle="4 tareas bilingues — qa, repeat, complete-en, complete-es" icon="academic-cap" >}}
+  {{< card link="34-sft-bpe" title="34 - SFT con BPE" subtitle="BPE-SFT peor que char-SFT en qa/repeat — leccion honesta" icon="chart-bar" >}}
+  {{< card link="35-dataset-dpo-bpe" title="35 - Dataset DPO-BPE" subtitle="3000 triples con rejected linguisticamente ricos" icon="academic-cap" >}}
+  {{< card link="36-dpo-bpe" title="36 - DPO-BPE + beta sweep" subtitle="β=0.1 vs β=0.5 — hipotesis cap 29 parcialmente validada" icon="cog" >}}
+  {{< card link="37-comparacion-char-vs-bpe" title="37 - Comparacion final char vs BPE" subtitle="Tabla maestra de los 6 modelos — cierre Camino 2.5" icon="sparkles" >}}
+{{< /cards >}}
+
+---
+
 ## Setup
 
 Antes de correr cualquier script:
@@ -147,6 +168,19 @@ Camino 2 (caps 22-29) requiere haber corrido `13_mini_llama.py` previamente para
 .venv/bin/python 21_train_dpo.py
 ```
 
+Camino 2.5 (caps 30-37) construye un BPETokenizer y reentrena Mini-LLaMA con vocab BPE:
+
+```bash
+.venv/bin/python 30_build_bpe.py
+.venv/bin/python 31_pretrain_bpe.py
+.venv/bin/python 32_tokenizer_refactor_demo.py
+.venv/bin/python 33_build_sft_bpe.py
+.venv/bin/python 34_train_sft_bpe.py
+.venv/bin/python 35_build_dpo_bpe.py
+.venv/bin/python 36_train_dpo_bpe.py
+.venv/bin/python 37_compare_char_vs_bpe.py
+```
+
 Tests unitarios para los helpers (`load_pretrained_mini_llama`, `generate_with_prompt`, `compute_logp_response`, `dpo_loss`, `build_char_maps`):
 
 ```bash
@@ -184,11 +218,22 @@ Camino 2 — De modelo base a asistente (SFT + DPO)
     23   dataset SFT 4 tareas
     24   SFT training con loss masking
     25   eval Base vs SFT
-  Fase 7: Direct Preference Optimization
+  Fase 7: Direct Preference Optimization (char-level)
     26   Bradley-Terry preferences
     27   derivacion de la loss DPO
     28   dataset DPO chosen + rejected
     29   DPO training + eval ← cierre Camino 2
+
+Camino 2.5 — BPE addendum (de char-level a subword)
+  Fase 8: BPE + SFT + DPO bilingue
+    30   BPE desde cero (1112 tokens, Shakespeare+Quijote)
+    31   pretrain Mini-LLaMA con BPE
+    32   refactor tokenizer-agnostic
+    33   dataset SFT-BPE 4 tareas (qa, repeat, complete-en, complete-es)
+    34   SFT con BPE + eval comparativo
+    35   dataset DPO-BPE 3000 triples
+    36   DPO + beta sweep (β=0.1 vs β=0.5)
+    37   comparacion final char vs BPE ← cierre Camino 2.5
 ```
 
 ## Que viene despues (Caminos pendientes)
