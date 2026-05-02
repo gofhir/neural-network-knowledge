@@ -251,6 +251,6 @@ Pista para la 3: con SFT no queremos destruir el conocimiento del base — pasos
 
 ## 8. Lo que viene
 
-En el [cap 25](../25-eval-sft) evaluamos cuantitativamente: corremos el modelo SFT contra el eval set (1000 ejemplos no vistos durante training) y comparamos exact-match con el base. Veremos numeros concretos del salto de accuracy, desglosados por tarea (reverse, upper, repeat, qa).
+En el [cap 25](../25-sft-eval) evaluamos cuantitativamente: corremos el modelo SFT contra el eval set (1000 ejemplos no vistos durante training) y comparamos exact-match con el base. Veremos numeros concretos del salto de accuracy, desglosados por tarea (reverse, upper, repeat, qa).
 
 Volver al [hub de practica](..) o a la [Clase 14](../..).

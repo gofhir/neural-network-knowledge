@@ -158,16 +158,37 @@ Los scripts viven en `clase_14/practica/` (fuera del sitio Hugo, en el repo prin
 ## El camino completo
 
 ```text
-01  vectores, dot product, embeddings, self-attention manual
-02  cross-entropy: -log(P_correcta)
-02b self-supervision: el dataset es su propio target
-03  gradient descent + autograd
-04  mini-Word2Vec entrenado (training end-to-end)
-05  Q/K/V con scaling sqrt(d_k)
-06  multi-head attention
-06b deep dive numerico: ¿se pierde info al dividir en cabezas?
-07  bloque Transformer (FFN + residual + LayerNorm)
-08  Mini-GPT entrenado en Shakespeare ← el momento "click" final
+Camino 1 — Construir el Transformer
+  Fase 1: Fundamentos del entrenamiento
+    01   vectores, dot product, embeddings, self-attention manual
+    02   cross-entropy: -log(P_correcta)
+    02b  self-supervision: el dataset es su propio target
+    03   gradient descent + autograd
+    04   mini-Word2Vec entrenado (training end-to-end)
+  Fase 2: La arquitectura
+    05   Q/K/V con scaling sqrt(d_k)
+    06   multi-head attention
+    06b  deep dive numerico de las cabezas
+    07   bloque Transformer (FFN + residual + LayerNorm)
+  Fase 3: Modelo final
+    08   Mini-GPT entrenado en Shakespeare
+  Fase 4: Experimentos
+    09-15 temperature, scaling, GELU, top-k, datasets
+  Fase 5: Modernizaciones LLaMA 2024
+    16   RMSNorm  17  SwiGLU  18  RoPE  19  GQA  20  KV-cache
+    21   Mini-LLaMA combinando las 5 ← cierre Camino 1
+
+Camino 2 — De modelo base a asistente (SFT + DPO)
+  Fase 6: Supervised Fine-Tuning
+    22   demo: el base no sigue instrucciones
+    23   dataset SFT 4 tareas
+    24   SFT training con loss masking
+    25   eval Base vs SFT
+  Fase 7: Direct Preference Optimization
+    26   Bradley-Terry preferences
+    27   derivacion de la loss DPO
+    28   dataset DPO chosen + rejected
+    29   DPO training + eval ← cierre Camino 2
 ```
 
 ## Que viene despues (Caminos pendientes)

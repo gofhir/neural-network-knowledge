@@ -125,6 +125,6 @@ Pista para la 3: el dataset tendria que incluir ejemplos del formato `INSTR/RESP
 
 ## 6. Que viene
 
-En el [cap 23](../23-sft-dataset) construimos un dataset sintetico de 4 tareas (reverse, upper, repeat, length) para SFT. Despues de SFT (caps 24-25), el mismo modelo va a responder estos cuatro prompts correctamente — sin cambiar la arquitectura, solo cambiando el dataset y siguiendo entrenando.
+En el [cap 23](../23-dataset-sft) construimos un dataset sintetico de 4 tareas (reverse, upper, repeat, length) para SFT. Despues de SFT (caps 24-25), el mismo modelo va a responder estos cuatro prompts correctamente — sin cambiar la arquitectura, solo cambiando el dataset y siguiendo entrenando.
 
 Volver al [hub de practica](..) o a la [Clase 14](../..).

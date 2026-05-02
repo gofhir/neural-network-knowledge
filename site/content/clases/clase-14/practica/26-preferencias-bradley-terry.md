@@ -6,7 +6,7 @@ math: true
 
 Cerramos Fase 6 con un Mini-LLaMA SFT que sigue 4 instrucciones. Algunas mejor (`repeat`, `qa` al 100%), otras parciales (`reverse`, `upper` al 21-23%). Y el formato general aprendido: drift de 40% a 0%. ¿Para que mas necesitamos?
 
-Fase 7 introduce **DPO** — Direct Preference Optimization. La idea: si SFT te enseña _que respuesta dar_, DPO te enseña _que respuesta es mejor entre dos_. Antes de tocar la loss DPO ([cap 27](../27-dpo-loss-derivation)), construimos la intuicion con preferencias y el modelo Bradley-Terry. Volvemos del [cap 25](../25-sft-eval) que cerro SFT.
+Fase 7 introduce **DPO** — Direct Preference Optimization. La idea: si SFT te enseña _que respuesta dar_, DPO te enseña _que respuesta es mejor entre dos_. Antes de tocar la loss DPO ([cap 27](../27-dpo-loss)), construimos la intuicion con preferencias y el modelo Bradley-Terry. Volvemos del [cap 25](../25-sft-eval) que cerro SFT.
 
 ---
 
@@ -119,7 +119,7 @@ En RLHF clasico (`Reinforcement Learning from Human Feedback`, popularizado por 
 2. **Reward model**: recolectar pares de preferencias humanas `(x, y_w, y_l)` y entrenar `r_phi(x, y)` — una red neuronal que predice rewards desde texto. La loss es la log-likelihood Bradley-Terry: `-log sigma(r_phi(x, y_w) - r_phi(x, y_l))`.
 3. **PPO**: usar `r_phi` como recompensa en un loop de Proximal Policy Optimization para empujar la policy `pi_theta` a generar respuestas con reward alto, regularizando con un termino KL contra una `pi_ref` para no irse muy lejos de SFT.
 
-DPO (Rafailov et al. 2023, paper [arxiv:2305.18290](https://arxiv.org/abs/2305.18290)) demostro que el paso 2 es innecesario. Hay una manera de entrenar la policy DIRECTAMENTE desde las preferencias, saltandose el reward model y el PPO. La derivacion es elegante: en [cap 27](../27-dpo-loss-derivation) la vemos paso a paso.
+DPO (Rafailov et al. 2023, paper [arxiv:2305.18290](https://arxiv.org/abs/2305.18290)) demostro que el paso 2 es innecesario. Hay una manera de entrenar la policy DIRECTAMENTE desde las preferencias, saltandose el reward model y el PPO. La derivacion es elegante: en [cap 27](../27-dpo-loss) la vemos paso a paso.
 
 La consecuencia practica: tres fases (SFT + RM + PPO) se reducen a dos (SFT + DPO). Menos hiperparametros, menos infraestructura, mas estabilidad.
 
@@ -135,7 +135,7 @@ $$
 
 Comparala con Bradley-Terry: misma estructura — `-log sigma(diferencia)`. La diferencia es que en lugar de rewards explicitos `r(y_w) - r(y_l)`, ahora hay una diferencia de log-ratios entre la policy y la referencia, escalada por un hiperparametro `beta`. Es como decir: el reward _implicito_ de cada respuesta es `beta * log(pi_theta / pi_ref)`. Maximizar la log-likelihood Bradley-Terry sobre esos rewards implicitos es lo que minimiza esta loss.
 
-En [cap 27](../27-dpo-loss-derivation) derivamos por que esta formula. En [cap 28](../28-dpo-dataset) construimos el dataset de pares. En [cap 29](../29-dpo-training) entrenamos.
+En [cap 27](../27-dpo-loss) derivamos por que esta formula. En [cap 28](../28-dataset-dpo) construimos el dataset de pares. En [cap 29](../29-dpo-training-eval) entrenamos.
 
 ---
 

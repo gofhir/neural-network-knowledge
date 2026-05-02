@@ -4,7 +4,7 @@ weight: 270
 math: true
 ---
 
-En [cap 26](../26-preferencias-bradley-terry) vimos que Bradley-Terry modela preferencias con `P(y_w succeq y_l) = sigma(r_w - r_l)`. RLHF clasico aprende ese reward `r` con un MLP separado y despues hace PPO. DPO se salta ese paso. ¿Como? La derivacion. En [cap 28](../28-dpo-dataset) construiremos el dataset de pares; aqui construimos la pieza matematica que justifica todo lo siguiente.
+En [cap 26](../26-preferencias-bradley-terry) vimos que Bradley-Terry modela preferencias con `P(y_w succeq y_l) = sigma(r_w - r_l)`. RLHF clasico aprende ese reward `r` con un MLP separado y despues hace PPO. DPO se salta ese paso. ¿Como? La derivacion. En [cap 28](../28-dataset-dpo) construiremos el dataset de pares; aqui construimos la pieza matematica que justifica todo lo siguiente.
 
 ---
 
