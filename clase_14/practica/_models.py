@@ -432,3 +432,19 @@ def generate_with_prompt(model, prompt, char_to_id, id_to_char, max_new_tokens=5
             break
     out_ids = x[0].tolist()
     return "".join(id_to_char.get(i, "") for i in out_ids)
+
+
+def compute_logp_response(model, prompt_ids, response_ids, device=None):
+    """log P(response | prompt) = sum log p_t para tokens de response."""
+    if device is None:
+        device = get_device()
+    full = torch.cat([prompt_ids, response_ids]).to(device).unsqueeze(0)
+    inp = full[:, :-1]
+    tgt = full[:, 1:]
+    logits, _ = model(inp)  # (1, T-1, V)
+    logp = torch.log_softmax(logits, dim=-1)
+    n_p = prompt_ids.shape[0]
+    resp_logits = logp[:, n_p-1:, :]              # (1, R, V)
+    resp_targets = tgt[:, n_p-1:].unsqueeze(-1)   # (1, R, 1)
+    chosen = resp_logits.gather(-1, resp_targets).squeeze(-1)  # (1, R)
+    return chosen.sum()

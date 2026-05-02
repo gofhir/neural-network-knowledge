@@ -3,7 +3,7 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
-from _models import MiniLLaMA, load_pretrained_mini_llama, generate_with_prompt
+from _models import MiniLLaMA, load_pretrained_mini_llama, generate_with_prompt, compute_logp_response
 
 
 def test_load_pretrained_smoke(tmp_path):
@@ -38,3 +38,13 @@ def test_generate_with_prompt_returns_string():
     out = generate_with_prompt(m, "abc", c2i, i2c, max_new_tokens=5, temperature=1.0, top_k=10, device="cpu")
     assert isinstance(out, str)
     assert len(out) >= 3  # al menos prompt copiado
+
+
+def test_compute_logp_response_shape():
+    cfg = dict(vocab_size=65, max_seq_len=64, d_model=64, h_q=2, h_kv=1, n_layers=2, d_ff=128)
+    m = MiniLLaMA(**cfg)
+    prompt_ids = torch.tensor([1,2,3,4,5], dtype=torch.long)
+    response_ids = torch.tensor([10,11,12,13], dtype=torch.long)
+    logp = compute_logp_response(m, prompt_ids, response_ids, device="cpu")
+    assert logp.dim() == 0
+    assert torch.isfinite(logp)
