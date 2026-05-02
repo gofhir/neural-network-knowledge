@@ -3,7 +3,7 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
-from _models import MiniLLaMA, load_pretrained_mini_llama
+from _models import MiniLLaMA, load_pretrained_mini_llama, generate_with_prompt
 
 
 def test_load_pretrained_smoke(tmp_path):
@@ -26,3 +26,15 @@ def test_load_pretrained_default_config_matches_training_script(tmp_path):
     torch.save(m.state_dict(), ckpt)
     loaded = load_pretrained_mini_llama(str(ckpt), device="cpu")  # no config=
     assert loaded.max_seq_len == 256
+
+
+def test_generate_with_prompt_returns_string():
+    cfg = dict(vocab_size=65, max_seq_len=64, d_model=64, h_q=2, h_kv=1, n_layers=2, d_ff=128)
+    m = MiniLLaMA(**cfg)
+    chars = list("abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ\n.,'?!:;-0123456789")
+    chars = chars[:65]
+    c2i = {c: i for i, c in enumerate(chars)}
+    i2c = {i: c for i, c in enumerate(chars)}
+    out = generate_with_prompt(m, "abc", c2i, i2c, max_new_tokens=5, temperature=1.0, top_k=10, device="cpu")
+    assert isinstance(out, str)
+    assert len(out) >= 3  # al menos prompt copiado

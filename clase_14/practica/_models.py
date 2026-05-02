@@ -407,3 +407,28 @@ def load_pretrained_mini_llama(checkpoint_path, device=None, config=None):
     model.to(device)
     model.eval()
     return model
+
+
+@torch.no_grad()
+def generate_with_prompt(model, prompt, char_to_id, id_to_char, max_new_tokens=50,
+                        temperature=1.0, top_k=None, device=None, stop_token="\n"):
+    """Genera texto condicionado en prompt char-level. Devuelve prompt + completion."""
+    if device is None:
+        device = get_device()
+    model.eval()
+    ids = [char_to_id[c] for c in prompt if c in char_to_id]
+    x = torch.tensor([ids], dtype=torch.long, device=device)
+    for _ in range(max_new_tokens):
+        x_cond = x[:, -model.max_seq_len:]
+        logits, _ = model(x_cond)
+        logits = logits[:, -1, :] / max(temperature, 1e-6)
+        if top_k is not None:
+            v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+            logits[logits < v[:, [-1]]] = -float("inf")
+        probs = torch.softmax(logits, dim=-1)
+        next_id = torch.multinomial(probs, num_samples=1)
+        x = torch.cat([x, next_id], dim=1)
+        if stop_token is not None and id_to_char.get(next_id.item(), "") == stop_token:
+            break
+    out_ids = x[0].tolist()
+    return "".join(id_to_char.get(i, "") for i in out_ids)
