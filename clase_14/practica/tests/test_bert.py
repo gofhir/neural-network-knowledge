@@ -99,3 +99,37 @@ def test_classification_head_uses_cls():
     x = torch.randint(0, 1115, (3, 20))
     logits = head(model(x))
     assert logits.shape == (3, 2)
+
+
+def test_mlm_mask_proportion():
+    import torch
+    from _bert_utils import apply_mlm_mask
+    ids = torch.randint(0, 1112, (1, 100))
+    masked_ids, labels = apply_mlm_mask(ids.clone(), mask_prob=0.15,
+                                         mask_id=1114, vocab_size=1115)
+    n_masked = (labels != -100).sum().item()
+    assert 5 <= n_masked <= 30
+
+
+def test_mlm_labels_minus100_for_unmasked():
+    import torch
+    from _bert_utils import apply_mlm_mask
+    ids = torch.randint(0, 1112, (1, 50))
+    _, labels = apply_mlm_mask(ids.clone(), mask_prob=0.15,
+                                mask_id=1114, vocab_size=1115)
+    assert (labels >= 0).sum() <= 50
+    assert (labels == -100).sum() + (labels >= 0).sum() == 50
+
+
+def test_mlm_special_tokens_never_masked():
+    """[CLS], [SEP], [MASK] nunca se enmascaran, incluso con mask_prob=1.0."""
+    import torch
+    from _bert_utils import apply_mlm_mask
+    ids = torch.tensor([[1112, 100, 200, 1113]])
+    _, labels = apply_mlm_mask(ids.clone(), mask_prob=1.0,
+                                mask_id=1114, vocab_size=1115,
+                                special_ids=(1112, 1113, 1114))
+    assert labels[0, 0].item() == -100
+    assert labels[0, -1].item() == -100
+    assert labels[0, 1].item() != -100
+    assert labels[0, 2].item() != -100
