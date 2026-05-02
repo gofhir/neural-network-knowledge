@@ -1,7 +1,7 @@
 """14_show_base_no_instructions.py - Cap 22: el problema.
 
 El Mini-LLaMA pretrained ignora el formato INSTR/RESP y genera Shakespeare-ish.
-Este script lo demuestra dándole prompts de instrucción y mostrando el output.
+Este script lo demuestra dandole prompts de instruccion y mostrando el output.
 """
 import torch
 from _models import load_pretrained_mini_llama, generate_with_prompt
