@@ -57,10 +57,26 @@ class BPETokenizer:
             tokens = new_tokens
 
     def encode(self, text: str) -> list[int]:
-        raise NotImplementedError("implement in Task 2")
+        """Aplicar merges aprendidos en orden para tokenizar el texto."""
+        tokens = [c for c in text if c in self.vocab]
+        for a, b in self.merges:
+            new_token = a + b
+            if new_token not in self.vocab:
+                continue
+            new_tokens: list[str] = []
+            i = 0
+            while i < len(tokens):
+                if i < len(tokens) - 1 and tokens[i] == a and tokens[i + 1] == b:
+                    new_tokens.append(new_token)
+                    i += 2
+                else:
+                    new_tokens.append(tokens[i])
+                    i += 1
+            tokens = new_tokens
+        return [self.vocab[t] for t in tokens if t in self.vocab]
 
     def decode(self, ids: list[int]) -> str:
-        raise NotImplementedError("implement in Task 2")
+        return "".join(self.id_to_token.get(i, "") for i in ids)
 
     def save(self, path: str) -> None:
         raise NotImplementedError("implement in Task 3")
