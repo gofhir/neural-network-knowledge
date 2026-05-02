@@ -209,6 +209,7 @@ def prepare_data(text, tokenizer=None, train_split=0.9):
 # ---------------------------------------------------------------------------
 # Mini-LLaMA: RMSNorm + SwiGLU + RoPE + GQA + KV-cache
 # ---------------------------------------------------------------------------
+# NOTE: classes below mirror 13_mini_llama.py — keep in sync.
 class RMSNorm(nn.Module):
     """Root Mean Square Layer Normalization (Zhang & Sennrich 2019)."""
     def __init__(self, d_model, eps=1e-6):
@@ -393,10 +394,12 @@ class MiniLLaMA(nn.Module):
         return idx
 
 
-def load_pretrained_mini_llama(checkpoint_path, device="mps", config=None):
+def load_pretrained_mini_llama(checkpoint_path, device=None, config=None):
     """Carga Mini-LLaMA desde checkpoint. config dict con keys del constructor."""
+    if device is None:
+        device = get_device()
     if config is None:
-        config = dict(vocab_size=65, max_seq_len=64, d_model=128,
+        config = dict(vocab_size=65, max_seq_len=256, d_model=128,
                       h_q=4, h_kv=2, n_layers=4, d_ff=384)
     model = MiniLLaMA(**config)
     state = torch.load(checkpoint_path, map_location=device)

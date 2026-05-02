@@ -15,3 +15,14 @@ def test_load_pretrained_smoke(tmp_path):
     assert loaded is not None
     for (k1, v1), (k2, v2) in zip(m.state_dict().items(), loaded.state_dict().items()):
         assert torch.allclose(v1, v2)
+
+
+def test_load_pretrained_default_config_matches_training_script(tmp_path):
+    """Defaults del helper deben matchear 13_mini_llama.py para que checkpoints carguen sin config."""
+    default_cfg = dict(vocab_size=65, max_seq_len=256, d_model=128,
+                       h_q=4, h_kv=2, n_layers=4, d_ff=384)
+    m = MiniLLaMA(**default_cfg)
+    ckpt = tmp_path / "fake.pt"
+    torch.save(m.state_dict(), ckpt)
+    loaded = load_pretrained_mini_llama(str(ckpt), device="cpu")  # no config=
+    assert loaded.max_seq_len == 256
