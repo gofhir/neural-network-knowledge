@@ -67,3 +67,35 @@ def test_bert_block_bidirectional():
     x2[0, 9] = x2[0, 9] * 10
     out1 = block(x1); out2 = block(x2)
     assert not torch.allclose(out1[0, 0], out2[0, 0], atol=1e-4)
+
+
+def test_mini_bert_forward_shape():
+    import torch
+    from _models import MiniBERT
+    model = MiniBERT(vocab_size=1115, max_seq_len=128, d_model=64,
+                     n_heads=4, n_layers=2, d_ff=256)
+    x = torch.randint(0, 1115, (2, 20))
+    h = model(x)
+    assert h.shape == (2, 20, 64)
+
+
+def test_mlm_head_shape():
+    import torch
+    from _models import MiniBERT, MLMHead
+    model = MiniBERT(vocab_size=1115, max_seq_len=128, d_model=64,
+                     n_heads=4, n_layers=2, d_ff=256)
+    head = MLMHead(d_model=64, vocab_size=1115)
+    x = torch.randint(0, 1115, (2, 20))
+    logits = head(model(x))
+    assert logits.shape == (2, 20, 1115)
+
+
+def test_classification_head_uses_cls():
+    import torch
+    from _models import MiniBERT, ClassificationHead
+    model = MiniBERT(vocab_size=1115, max_seq_len=128, d_model=64,
+                     n_heads=4, n_layers=2, d_ff=256)
+    head = ClassificationHead(d_model=64, n_classes=2)
+    x = torch.randint(0, 1115, (3, 20))
+    logits = head(model(x))
+    assert logits.shape == (3, 2)

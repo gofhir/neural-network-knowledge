@@ -424,6 +424,47 @@ class BERTBlock(nn.Module):
         return self.norm2(x + ff_out)
 
 
+class MiniBERT(nn.Module):
+    """Encoder-only: token emb + positional emb aprendido + N BERTBlocks."""
+    def __init__(self, vocab_size: int, max_seq_len: int = 128, d_model: int = 128,
+                 n_heads: int = 4, n_layers: int = 4, d_ff: int = 512):
+        super().__init__()
+        self.token_emb = nn.Embedding(vocab_size, d_model)
+        self.pos_emb   = LearnedPositionalEmbedding(max_seq_len, d_model)
+        self.blocks    = nn.ModuleList([
+            BERTBlock(d_model, n_heads, d_ff) for _ in range(n_layers)
+        ])
+        self.norm      = nn.LayerNorm(d_model)
+        self.max_seq_len = max_seq_len
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h = self.token_emb(x)
+        h = self.pos_emb(h)
+        for block in self.blocks:
+            h = block(h)
+        return self.norm(h)
+
+
+class MLMHead(nn.Module):
+    """Proyecta d_model → vocab_size para prediccion MLM."""
+    def __init__(self, d_model: int, vocab_size: int):
+        super().__init__()
+        self.linear = nn.Linear(d_model, vocab_size)
+
+    def forward(self, h: torch.Tensor) -> torch.Tensor:
+        return self.linear(h)
+
+
+class ClassificationHead(nn.Module):
+    """Toma el vector [CLS] (posicion 0) y proyecta a n_classes."""
+    def __init__(self, d_model: int, n_classes: int):
+        super().__init__()
+        self.linear = nn.Linear(d_model, n_classes)
+
+    def forward(self, h: torch.Tensor) -> torch.Tensor:
+        return self.linear(h[:, 0, :])
+
+
 def load_pretrained_mini_llama(checkpoint_path, device=None, config=None):
     """Carga Mini-LLaMA desde checkpoint. config dict con keys del constructor."""
     if device is None:
