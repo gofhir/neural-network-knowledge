@@ -448,3 +448,17 @@ def compute_logp_response(model, prompt_ids, response_ids, device=None):
     resp_targets = tgt[:, n_p-1:].unsqueeze(-1)   # (1, R, 1)
     chosen = resp_logits.gather(-1, resp_targets).squeeze(-1)  # (1, R)
     return chosen.sum()
+
+
+def dpo_loss(policy, ref, prompt_ids, chosen_ids, rejected_ids, beta=0.1, device=None):
+    """DPO loss para un único triple. Para batches, llamar y promediar."""
+    if device is None:
+        device = get_device()
+    logp_chosen_pi = compute_logp_response(policy, prompt_ids, chosen_ids, device=device)
+    logp_rejected_pi = compute_logp_response(policy, prompt_ids, rejected_ids, device=device)
+    with torch.no_grad():
+        logp_chosen_ref = compute_logp_response(ref, prompt_ids, chosen_ids, device=device)
+        logp_rejected_ref = compute_logp_response(ref, prompt_ids, rejected_ids, device=device)
+    log_ratio_w = logp_chosen_pi - logp_chosen_ref
+    log_ratio_l = logp_rejected_pi - logp_rejected_ref
+    return -torch.nn.functional.logsigmoid(beta * (log_ratio_w - log_ratio_l))

@@ -3,7 +3,7 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
-from _models import MiniLLaMA, load_pretrained_mini_llama, generate_with_prompt, compute_logp_response
+from _models import MiniLLaMA, load_pretrained_mini_llama, generate_with_prompt, compute_logp_response, dpo_loss
 
 
 def test_load_pretrained_smoke(tmp_path):
@@ -48,3 +48,16 @@ def test_compute_logp_response_shape():
     logp = compute_logp_response(m, prompt_ids, response_ids, device="cpu")
     assert logp.dim() == 0
     assert torch.isfinite(logp)
+
+
+def test_dpo_loss_zero_when_policy_equals_ref():
+    cfg = dict(vocab_size=65, max_seq_len=64, d_model=64, h_q=2, h_kv=1, n_layers=2, d_ff=128)
+    policy = MiniLLaMA(**cfg)
+    ref = MiniLLaMA(**cfg)
+    ref.load_state_dict(policy.state_dict())  # iguales
+    prompt = torch.tensor([1,2,3], dtype=torch.long)
+    chosen = torch.tensor([4,5,6], dtype=torch.long)
+    rejected = torch.tensor([7,8,9], dtype=torch.long)
+    loss = dpo_loss(policy, ref, prompt, chosen, rejected, beta=0.1, device="cpu")
+    # log σ(0) = -log(2) ≈ 0.6931
+    assert abs(loss.item() - 0.6931) < 0.01
