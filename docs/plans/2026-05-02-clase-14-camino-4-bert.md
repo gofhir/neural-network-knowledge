@@ -61,7 +61,6 @@ git commit -m "chore: branch Camino 4 — Mini-BERT encoder-only"
 # tests/test_bert.py
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import os
 from _bpe import BPETokenizer
 
 def test_bpe_special_tokens_extension():
@@ -372,6 +371,21 @@ def test_mlm_labels_minus100_for_unmasked():
     # Solo los enmascarados tienen label >= 0
     assert (labels >= 0).sum() <= 50
     assert (labels == -100).sum() + (labels >= 0).sum() == 50
+
+def test_mlm_special_tokens_never_masked():
+    """[CLS], [SEP], [MASK] nunca se enmascaran, incluso con mask_prob=1.0."""
+    import torch
+    from _bert_utils import apply_mlm_mask
+    # Secuencia: [CLS] tok tok [SEP]
+    ids = torch.tensor([[1112, 100, 200, 1113]])
+    _, labels = apply_mlm_mask(ids.clone(), mask_prob=1.0,
+                                mask_id=1114, vocab_size=1115,
+                                special_ids=(1112, 1113, 1114))
+    assert labels[0, 0].item() == -100   # [CLS] nunca enmascarado
+    assert labels[0, -1].item() == -100  # [SEP] nunca enmascarado
+    # Los tokens normales (pos 1, 2) SI deben estar enmascarados con prob=1.0
+    assert labels[0, 1].item() != -100
+    assert labels[0, 2].item() != -100
 ```
 
 **Step 2: Run, expect FAIL**
@@ -547,12 +561,12 @@ def cos_sim(a, b):
     return (a @ b) / (a.norm() * b.norm())
 
 print("Similaridad coseno entre embeddings de posicion (random init):")
-print(f"  pos 0 vs pos 1:  {cos_sim(weights[0], weights[1]):.4f} (cercanas)")
-print(f"  pos 0 vs pos 64: {cos_sim(weights[0], weights[64]):.4f} (lejanas)")
-print(f"  pos 0 vs pos 127:{cos_sim(weights[0], weights[127]):.4f} (max distancia)")
-
-print("\nNota: en random init la similitud es baja para todas.")
-print("Despues de training, posiciones cercanas tendran embeddings mas similares.")
+print(f"  pos 0 vs pos 1:  {cos_sim(weights[0], weights[1]):.4f}")
+print(f"  pos 0 vs pos 64: {cos_sim(weights[0], weights[64]):.4f}")
+print(f"  pos 0 vs pos 127:{cos_sim(weights[0], weights[127]):.4f}")
+print("\nNOTA: en random init estos valores son ruido — no tienen significado.")
+print("El patron posicional (cercanas mas similares) solo emerge DESPUES del MLM training.")
+print("Podemos re-correr este script post-training para ver la diferencia.")
 
 print("\n=== Comparacion con RoPE (cap 18) ===")
 print("""
@@ -911,7 +925,9 @@ print("\nSaved -> checkpoints/mini_bert_pretrained.pt")
 ```bash
 python 43_train_bert.py 2>&1 | tee /tmp/cap43_train.txt
 ```
-Expected: loss baja de ~7 (log 1115) a <3.
+Expected: **~3-5 minutos** en MPS (el masking Python loop toma ~10-20ms por batch). Loss baja de ~7.0 (log 1115) a <3.0.
+
+NOTA: Si tarda más de 7 minutos, revisar que `apply_mlm_mask` no esté llamándose con B×T muy grande. Con BATCH=32 y BLOCK=64 → 2112 iteraciones Python por batch × 3000 iters = normal.
 
 **Step 3: Commit script + Hugo chapter**
 
@@ -952,21 +968,27 @@ model.load_state_dict(ckpt["model"])
 mlm_head.load_state_dict(ckpt["mlm_head"])
 model.eval(); mlm_head.eval()
 
-def predict_mask(text_with_mask: str, top_k: int = 5):
-    """Predice el token [MASK] en el texto dado."""
-    ids = tok.encode_bert(text_with_mask)
-    if tok.mask_id not in ids:
-        print(f"  ERROR: no hay [MASK] en: {text_with_mask!r}")
-        return
-    mask_pos = ids.index(tok.mask_id)
-    x = torch.tensor([ids], dtype=torch.long, device=device)
+def predict_mask(left: str, right: str, top_k: int = 5):
+    """Predice el token entre left y right.
+
+    IMPORTANTE: NO pasar "[MASK]" como texto — el BPE lo tokenizaria como
+    chars individuales '[','M','A','S','K',']'. En su lugar, construimos
+    manualmente la secuencia: [CLS] + encode(left) + mask_id + encode(right) + [SEP].
+    """
+    l_ids = tok.encode(left)
+    r_ids = tok.encode(right)
+    ids = [tok.cls_id] + l_ids + [tok.mask_id] + r_ids + [tok.sep_id]
+    mask_pos = 1 + len(l_ids)  # posicion exacta del mask_id
+
+    x = torch.tensor([ids[:cfg["max_seq_len"]]], dtype=torch.long, device=device)
     with torch.no_grad():
         h = model(x)
         logits = mlm_head(h)
     probs = torch.softmax(logits[0, mask_pos], dim=-1)
     top_ids = probs.topk(top_k).indices.tolist()
     top_probs = probs.topk(top_k).values.tolist()
-    print(f"Texto: {text_with_mask!r}")
+    display = f"{left!r} [MASK] {right!r}"
+    print(f"Texto: {display}")
     print(f"Top-{top_k} predicciones:")
     for i, (tid, prob) in enumerate(zip(top_ids, top_probs)):
         tok_str = tok.id_to_token.get(tid, "?")
@@ -974,15 +996,16 @@ def predict_mask(text_with_mask: str, top_k: int = 5):
     print()
 
 print("=== Fill-in-the-blank con Mini-BERT ===\n")
+# Cada ejemplo: (left_context, right_context)
 examples = [
-    "To [MASK] or not to be",
-    "To be or not to [MASK]",
-    "En un [MASK] de la Mancha",
-    "The [MASK] is dead",
-    "No hay mal que por bien no [MASK]",
+    ("To ", " or not to be"),
+    ("To be or not to ", ""),
+    ("En un ", " de la Mancha"),
+    ("The ", " is dead"),
+    ("No hay mal que por bien no ", ""),
 ]
-for ex in examples:
-    predict_mask(ex)
+for left, right in examples:
+    predict_mask(left, right)
 ```
 
 **Step 2: Correr** → `/tmp/cap44_mlm.txt`
@@ -1121,12 +1144,12 @@ for split, n_each, fout in [
     print(f"[{split}] {len(examples)} ejemplos ({n_each} EN + {n_each} ES) → {fout}")
 
 print("\nEjemplos del train set:")
-import json as _json
-for ex in _json.loads(open("data/lang_train.jsonl").readlines()[0]), \
-           _json.loads(open("data/lang_train.jsonl").readlines()[1]):
-    decoded = tok.decode(ex["ids"])
-    lang = "EN" if ex["label"] == 0 else "ES"
-    print(f"  [{lang}] {decoded[:60]!r}...")
+with open("data/lang_train.jsonl") as f:
+    for line in list(f)[:2]:
+        ex = json.loads(line)
+        decoded = tok.decode(ex["ids"])
+        lang = "EN" if ex["label"] == 0 else "ES"
+        print(f"  [{lang}] {decoded[:60]!r}...")
 ```
 
 **Step 2: Correr** y commitear datasets
@@ -1183,14 +1206,14 @@ ITERS = 500
 BATCH = 32
 WD    = 0.01
 
+import random as _random
 train_data = [json.loads(l) for l in open("data/lang_train.jsonl")]
 params = list(model.parameters()) + list(cls_head.parameters())
 opt    = torch.optim.AdamW(params, lr=LR, weight_decay=WD)
 
 print(f"Fine-tuning: {ITERS} iters, LR={LR}\n")
 for it in range(ITERS):
-    batch = [train_data[i % len(train_data)]
-             for i in range(it * BATCH, (it + 1) * BATCH)]
+    batch = _random.sample(train_data, BATCH)  # muestreo aleatorio sin reemplazo
     max_len = max(len(ex["ids"]) for ex in batch)
     ids_t = torch.zeros(BATCH, max_len, dtype=torch.long, device=device)
     lbl_t = torch.zeros(BATCH, dtype=torch.long, device=device)
@@ -1271,8 +1294,10 @@ print(f"Accuracy EN/ES: {acc:.3f} ({correct}/{len(eval_data)})\n")
 # Registrar atencion del ultimo bloque
 attention_weights = {}
 def hook_fn(module, input, output):
-    # output es (attn_output, attn_weights) de nn.MultiheadAttention
-    if isinstance(output, tuple) and len(output) == 2:
+    # output: (attn_output, attn_weights) de nn.MultiheadAttention
+    # attn_weights shape: (B, T, T) — promedio sobre heads (average_attn_weights=True por defecto)
+    # Para ver pesos por head usar average_attn_weights=False en la init de MHA
+    if isinstance(output, tuple) and len(output) == 2 and output[1] is not None:
         attention_weights["last"] = output[1].detach().cpu()
 
 handle = model.blocks[-1].attn.register_forward_hook(hook_fn)
