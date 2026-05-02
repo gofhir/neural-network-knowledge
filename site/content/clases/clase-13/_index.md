@@ -16,6 +16,7 @@ Modelos Sequence-to-Sequence (Seq2Seq) usando RNNs con mecanismo de atencion. En
   {{< card link="/fundamentos/seq2seq" title="Fundamento: Seq2Seq" subtitle="Encoder-decoder, teacher forcing, beam search" icon="book-open" >}}
   {{< card link="/fundamentos/mecanismo-atencion" title="Fundamento: Attention" subtitle="Bahdanau/Luong/scaled dot-product, soft vs hard" icon="book-open" >}}
   {{< card link="/videos/mit-6s191-l2-2026" title="Video MIT 6.S191 (2026)" subtitle="Ava Amini - self-attention, multi-head, Transformer" icon="film" >}}
+  {{< card link="/clases/clase-14" title="Clase siguiente: Transformers" subtitle="Self-attention, multi-head, BERT, ViT, CLIP" icon="arrow-right" >}}
 {{< /cards >}}
 
 ## Papers de esta clase

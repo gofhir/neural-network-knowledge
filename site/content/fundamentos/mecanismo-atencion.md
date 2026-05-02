@@ -336,7 +336,7 @@ $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)
 
 En Bahdanau: query viene del decoder, keys/values del encoder → **cross-attention**. En Transformer, los tres vienen de la misma secuencia → **self-attention**.
 
-Ver el fundamento dedicado de Transformers (futuro) para detalles.
+Ver los fundamentos dedicados: [Self-Attention](self-attention) (mecanica de Q/K/V, scaled dot-product, multi-head) y [Arquitectura Transformer](transformer) (encoder-decoder completo, layer norm, residuals, FFN, masked y cross attention).
 
 ---
 
