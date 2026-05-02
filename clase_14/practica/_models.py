@@ -394,6 +394,19 @@ class MiniLLaMA(nn.Module):
         return idx
 
 
+class LearnedPositionalEmbedding(nn.Module):
+    """Embeddings de posicion aprendibles (BERT-style, no RoPE)."""
+    def __init__(self, max_seq_len: int, d_model: int):
+        super().__init__()
+        self.embedding = nn.Embedding(max_seq_len, d_model)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (B, T, d_model)
+        B, T, _ = x.shape
+        positions = torch.arange(T, device=x.device).unsqueeze(0)
+        return x + self.embedding(positions)
+
+
 def load_pretrained_mini_llama(checkpoint_path, device=None, config=None):
     """Carga Mini-LLaMA desde checkpoint. config dict con keys del constructor."""
     if device is None:

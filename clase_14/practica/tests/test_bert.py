@@ -27,3 +27,21 @@ def test_encode_bert_adds_cls_sep():
     assert ids[0] == tok.cls_id
     assert ids[-1] == tok.sep_id
     assert len(ids) >= 3
+
+
+def test_learned_pos_emb_shape():
+    import torch
+    from _models import LearnedPositionalEmbedding
+    emb = LearnedPositionalEmbedding(max_seq_len=128, d_model=64)
+    x = torch.zeros(2, 10, 64)
+    out = emb(x)
+    assert out.shape == (2, 10, 64)
+
+
+def test_learned_pos_emb_different_positions():
+    import torch
+    from _models import LearnedPositionalEmbedding
+    emb = LearnedPositionalEmbedding(max_seq_len=128, d_model=64)
+    x = torch.zeros(1, 5, 64)
+    out = emb(x)
+    assert not torch.all(out[0, 0] == out[0, 1])
