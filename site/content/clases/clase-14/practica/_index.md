@@ -11,7 +11,12 @@ Mapa de estudio progresivo para entender el Transformer construyendolo a mano en
 
 > La teoria de los Transformers se entiende leyendo papers. La intuicion solo se gana **escribiendo el codigo y mirando los numeros**.
 
-Esta seccion no asume conocimiento previo de PyTorch ni de redes neuronales — solo programacion basica. Cada concepto se construye encima del anterior. Al terminar los 9 capitulos, vas a haber construido un Transformer completo end-to-end, entrenado en Shakespeare, sin librerias de alto nivel.
+Esta seccion no asume conocimiento previo de PyTorch ni de redes neuronales — solo programacion basica. Cada concepto se construye encima del anterior.
+
+El viaje esta organizado en dos **Caminos**:
+
+- **Camino 1 (Fases 1-5, capitulos 01-21)**: construir el Transformer desde cero hasta un Mini-LLaMA char-level entrenado en Shakespeare. Cubre Vaswani 2017 → LLaMA 2024 modernizaciones.
+- **Camino 2 (Fases 6-7, capitulos 22-29)**: convertir el Mini-LLaMA en un asistente que sigue instrucciones, via SFT + DPO. El stack moderno post-pretraining usado por Llama-3-Instruct, Mistral-Instruct, Zephyr.
 
 ## Capitulos
 
@@ -67,6 +72,36 @@ Tu mini-GPT es la arquitectura de Vaswani 2017. LLaMA (2023) tiene 5 mejoras inc
   {{< card link="21-mini-llama" title="21 - Mini-LLaMA" subtitle="Las 5 modernizaciones combinadas: el estado del arte 2024 (en miniatura)" icon="sparkles" >}}
 {{< /cards >}}
 
+---
+
+## Camino 2 — De modelo base a asistente
+
+El Mini-LLaMA del cap 21 predice caracteres al estilo Shakespeare pero **no sigue instrucciones**. Camino 2 lo convierte en un asistente que respeta el formato `INSTR/RESP` y `Q/A`, aplicando el stack moderno post-pretraining: **SFT** (Supervised Fine-Tuning) + **DPO** (Direct Preference Optimization). Es el pipeline que hizo posible Llama-3-Instruct y similares.
+
+### Fase 6 — SFT (Supervised Fine-Tuning)
+
+Fine-tuneamos el base con un dataset sintetico de 4 tareas (reverse, upper, repeat, qa). Lo distintivo: **loss masking** sobre tokens de respuesta — el modelo aprende a generar la respuesta dado el prompt, no a memorizar prompts.
+
+{{< cards >}}
+  {{< card link="22-base-model-no-instructions" title="22 - El problema: base model no sigue instrucciones" subtitle="Demo del comportamiento del base — Shakespeare drift puro" icon="academic-cap" >}}
+  {{< card link="23-dataset-sft" title="23 - Dataset SFT: 4 tareas sinteticas" subtitle="5000 pares (instruccion, respuesta) char-level vocab-safe" icon="academic-cap" >}}
+  {{< card link="24-sft-training" title="24 - SFT training: loss masking" subtitle="El corazon de SFT — solo penalizar tokens de respuesta" icon="cog" >}}
+  {{< card link="25-sft-eval" title="25 - Eval SFT: Base vs SFT" subtitle="drift 40% → 0%, repeat/qa al 100%, lectura honesta de limitaciones" icon="chart-bar" >}}
+{{< /cards >}}
+
+### Fase 7 — DPO (Direct Preference Optimization)
+
+DPO refina el SFT con preferencias `(chosen, rejected)`. Saltea el reward model + PPO de RLHF clasico via la derivacion de Rafailov 2023. Honesto: en este setting (char-level, beta=0.1), DPO mantuvo el formato (drift 0%) pero degrado accuracy — leccion sobre tradeoffs reales del tuning.
+
+{{< cards >}}
+  {{< card link="26-preferencias-bradley-terry" title="26 - Preferencias y Bradley-Terry" subtitle="El modelo de preferencias 1952, demo numerica, RLHF clasico" icon="academic-cap" >}}
+  {{< card link="27-dpo-loss" title="27 - DPO loss: la derivacion" subtitle="Forma cerrada policy optima, log-ratios, KL implicito, beta" icon="cog" >}}
+  {{< card link="28-dataset-dpo" title="28 - Dataset DPO: chosen + rejected" subtitle="3000 triples mix base-sampled + cross-task" icon="academic-cap" >}}
+  {{< card link="29-dpo-training-eval" title="29 - DPO training + eval: cierre Camino 2" subtitle="Loss converge a 0.007 pero accuracy regresa — leccion sobre tradeoffs" icon="sparkles" >}}
+{{< /cards >}}
+
+---
+
 ## Setup
 
 Antes de correr cualquier script:
@@ -99,6 +134,25 @@ Para correr cualquier capitulo:
 .venv/bin/python 13_mini_llama.py
 ```
 
+Camino 2 (caps 22-29) requiere haber corrido `13_mini_llama.py` previamente para generar `checkpoints/mini_llama_base.pt`:
+
+```bash
+.venv/bin/python 14_show_base_no_instructions.py
+.venv/bin/python 15_build_sft_dataset.py
+.venv/bin/python 16_train_sft.py
+.venv/bin/python 17_eval_sft.py
+.venv/bin/python 18_dpo_intro.py
+.venv/bin/python 19_dpo_loss_derivation.py
+.venv/bin/python 20_build_dpo_dataset.py
+.venv/bin/python 21_train_dpo.py
+```
+
+Tests unitarios para los helpers (`load_pretrained_mini_llama`, `generate_with_prompt`, `compute_logp_response`, `dpo_loss`, `build_char_maps`):
+
+```bash
+.venv/bin/python -m pytest tests/ -v
+```
+
 Los scripts viven en `clase_14/practica/` (fuera del sitio Hugo, en el repo principal).
 
 ## El camino completo
@@ -116,16 +170,19 @@ Los scripts viven en `clase_14/practica/` (fuera del sitio Hugo, en el repo prin
 08  Mini-GPT entrenado en Shakespeare ← el momento "click" final
 ```
 
-## Que viene despues (proximos experimentos)
+## Que viene despues (Caminos pendientes)
 
-Variantes del mini-GPT para experimentar:
+Despues de cerrar Camino 2 (SFT + DPO), quedan varios caminos para profundizar:
 
-- Texto en español (Don Quijote).
-- Mas profundidad / mas heads / mas dim.
-- Reemplazar ReLU por GELU.
-- Sustituir LayerNorm por RMSNorm (LLaMA).
-- Implementar RoPE en lugar de positional embeddings aprendidos.
-- Dropout, weight decay, learning rate schedules.
+- **Camino 3 — Interpretabilidad mecanicista**: abrir el modelo entrenado y ver que hace cada componente. Attention pattern analysis, induction heads, QK/OV decomposition, circuit discovery. Inspirado en los Transformer Circuits de Anthropic.
+- **Camino 4 — BERT-style (encoder-only + MLM)**: el "otro paradigma" del Transformer. Masked Language Modeling, fine-tuning para clasificacion / NER / QA, comparacion BERT vs GPT.
+- **Camino 5 — ViT (Vision Transformer)**: llevar el Transformer a imagenes. Patches 16x16 como tokens, [class] token aprendible, entrenar en MNIST/CIFAR, multimodal extensions (CLIP).
+
+Y experimentos mas chicos sobre Camino 2:
+
+- Sweep de `beta` en DPO (0.1, 0.3, 0.5, 1.0): ¿como cambia el tradeoff accuracy vs preferences?
+- Early stopping en DPO basado en eval intermedio.
+- Limpiar el dataset DPO removiendo cross-task rejected.
 
 Mas alla del Transformer:
 
