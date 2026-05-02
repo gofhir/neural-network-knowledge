@@ -29,15 +29,17 @@ def test_load_pretrained_default_config_matches_training_script(tmp_path):
 
 
 def test_generate_with_prompt_returns_string():
+    from _bpe import CharTokenizer
     cfg = dict(vocab_size=65, max_seq_len=64, d_model=64, h_q=2, h_kv=1, n_layers=2, d_ff=128)
     m = MiniLLaMA(**cfg)
     chars = list("abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ\n.,'?!:;-0123456789")
     chars = chars[:65]
     c2i = {c: i for i, c in enumerate(chars)}
     i2c = {i: c for i, c in enumerate(chars)}
-    out = generate_with_prompt(m, "abc", c2i, i2c, max_new_tokens=5, temperature=1.0, top_k=10, device="cpu")
+    tokenizer = CharTokenizer(c2i, i2c)
+    out = generate_with_prompt(m, "abc", tokenizer, max_new_tokens=5, temperature=1.0, top_k=10, device="cpu")
     assert isinstance(out, str)
-    assert len(out) >= 3  # al menos prompt copiado
+    assert len(out) >= 3
 
 
 def test_compute_logp_response_shape():

@@ -410,14 +410,17 @@ def load_pretrained_mini_llama(checkpoint_path, device=None, config=None):
 
 
 @torch.no_grad()
-def generate_with_prompt(model, prompt, char_to_id, id_to_char, max_new_tokens=50,
+def generate_with_prompt(model, prompt, tokenizer, max_new_tokens=50,
                         temperature=1.0, top_k=None, device=None, stop_token="\n"):
-    """Genera texto condicionado en prompt char-level. Devuelve prompt + completion."""
+    """Genera texto condicionado en prompt. tokenizer debe tener .encode() y .decode()."""
     if device is None:
         device = get_device()
     model.eval()
-    ids = [char_to_id[c] for c in prompt if c in char_to_id]
+    ids = tokenizer.encode(prompt)
     x = torch.tensor([ids], dtype=torch.long, device=device)
+    # stop_token: solo funciona si codifica a exactamente 1 token
+    stop_ids = tokenizer.encode(stop_token) if stop_token else []
+    stop_id = stop_ids[0] if len(stop_ids) == 1 else None
     for _ in range(max_new_tokens):
         x_cond = x[:, -model.max_seq_len:]
         logits, _ = model(x_cond)
@@ -428,10 +431,9 @@ def generate_with_prompt(model, prompt, char_to_id, id_to_char, max_new_tokens=5
         probs = torch.softmax(logits, dim=-1)
         next_id = torch.multinomial(probs, num_samples=1)
         x = torch.cat([x, next_id], dim=1)
-        if stop_token is not None and id_to_char.get(next_id.item(), "") == stop_token:
+        if stop_id is not None and next_id.item() == stop_id:
             break
-    out_ids = x[0].tolist()
-    return "".join(id_to_char.get(i, "") for i in out_ids)
+    return tokenizer.decode(x[0].tolist())
 
 
 def compute_logp_response(model, prompt_ids, response_ids, device=None):
