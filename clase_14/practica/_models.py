@@ -407,6 +407,23 @@ class LearnedPositionalEmbedding(nn.Module):
         return x + self.embedding(positions)
 
 
+class BERTBlock(nn.Module):
+    """Bloque BERT: post-LayerNorm + MHA sin causal mask + FFN GELU."""
+    def __init__(self, d_model: int, n_heads: int, d_ff: int):
+        super().__init__()
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.attn  = nn.MultiheadAttention(d_model, n_heads, batch_first=True)
+        self.ff1   = nn.Linear(d_model, d_ff)
+        self.ff2   = nn.Linear(d_ff, d_model)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        attn_out, _ = self.attn(x, x, x)  # sin causal mask (bidireccional)
+        x = self.norm1(x + attn_out)
+        ff_out = self.ff2(F.gelu(self.ff1(x)))
+        return self.norm2(x + ff_out)
+
+
 def load_pretrained_mini_llama(checkpoint_path, device=None, config=None):
     """Carga Mini-LLaMA desde checkpoint. config dict con keys del constructor."""
     if device is None:

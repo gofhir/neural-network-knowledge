@@ -45,3 +45,25 @@ def test_learned_pos_emb_different_positions():
     x = torch.zeros(1, 5, 64)
     out = emb(x)
     assert not torch.all(out[0, 0] == out[0, 1])
+
+
+def test_bert_block_shape():
+    import torch
+    from _models import BERTBlock
+    block = BERTBlock(d_model=64, n_heads=4, d_ff=256)
+    x = torch.randn(2, 10, 64)
+    out = block(x)
+    assert out.shape == (2, 10, 64)
+
+
+def test_bert_block_bidirectional():
+    """El token 0 puede atender al token 9 (bidireccional, no causal)."""
+    import torch
+    from _models import BERTBlock
+    torch.manual_seed(42)
+    block = BERTBlock(d_model=64, n_heads=4, d_ff=256)
+    x = torch.randn(1, 10, 64)
+    x1 = x.clone(); x2 = x.clone()
+    x2[0, 9] = x2[0, 9] * 10
+    out1 = block(x1); out2 = block(x2)
+    assert not torch.allclose(out1[0, 0], out2[0, 0], atol=1e-4)
