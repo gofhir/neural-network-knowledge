@@ -440,3 +440,11 @@ Has construido la arquitectura completa de un LLM moderno desde cero.
 print("=" * 72)
 print("FIN. Has llegado al estado del arte 2024 (en miniatura).")
 print("=" * 72)
+
+
+# ---------------------------------------------------------------------------
+# Guardar checkpoint para Camino 2 (SFT/DPO sobre el base model)
+# ---------------------------------------------------------------------------
+os.makedirs("checkpoints", exist_ok=True)
+torch.save(model.state_dict(), "checkpoints/mini_llama_base.pt")
+print(f"\nSaved checkpoint -> checkpoints/mini_llama_base.pt")
