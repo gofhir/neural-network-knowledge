@@ -6,11 +6,13 @@ Este script lo demuestra dandole prompts de instruccion y mostrando el output.
 import torch
 from _models import load_pretrained_mini_llama, generate_with_prompt
 from _eval import build_char_maps
+from _bpe import CharTokenizer
 
 torch.manual_seed(1337)
 
 text = open("shakespeare.txt").read()
 c2i, i2c = build_char_maps(text)
+tokenizer = CharTokenizer(c2i, i2c)
 
 model = load_pretrained_mini_llama("checkpoints/mini_llama_base.pt")
 
@@ -25,7 +27,7 @@ print("=== Mini-LLaMA base (Camino 1) frente a prompts de instrucción ===\n")
 for p in prompts:
     print(f"--- Prompt ---\n{p}")
     print(f"--- Output ---")
-    out = generate_with_prompt(model, p, c2i, i2c, max_new_tokens=40,
+    out = generate_with_prompt(model, p, tokenizer, max_new_tokens=40,
                                temperature=0.8, top_k=10)
     print(out)
     print()

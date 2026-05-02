@@ -7,6 +7,7 @@ import torch
 from pathlib import Path
 from _models import load_pretrained_mini_llama, dpo_loss
 from _eval import build_char_maps, eval_exact_match, eval_drift, load_jsonl
+from _bpe import CharTokenizer
 
 torch.manual_seed(1337)
 
@@ -19,6 +20,7 @@ WD = 0.01
 
 text = Path("shakespeare.txt").read_text()
 c2i, i2c = build_char_maps(text)
+tokenizer = CharTokenizer(c2i, i2c)
 
 print("Cargando policy y ref desde SFT checkpoint...")
 policy = load_pretrained_mini_llama("checkpoints/mini_llama_sft.pt")
@@ -68,7 +70,7 @@ for name, ckpt in [
 ]:
     print(f"--- Evaluando {name} ---")
     m = load_pretrained_mini_llama(ckpt)
-    em = eval_exact_match(m, "data/sft_eval.jsonl", c2i, i2c, n_per_task=200)
+    em = eval_exact_match(m, "data/sft_eval.jsonl", tokenizer, n_per_task=200)
     results[name] = em
     print(f"exact_match: {em}\n")
 
@@ -93,5 +95,5 @@ for name, ckpt in [
     ("dpo",  "checkpoints/mini_llama_dpo.pt"),
 ]:
     m = load_pretrained_mini_llama(ckpt)
-    drift = eval_drift(m, ambiguous, c2i, i2c)
+    drift = eval_drift(m, ambiguous, tokenizer)
     print(f"{name}: drift = {drift:.3f}")

@@ -2,11 +2,13 @@
 import torch
 from _models import load_pretrained_mini_llama
 from _eval import build_char_maps, eval_exact_match, eval_qualitative, eval_drift
+from _bpe import CharTokenizer
 
 torch.manual_seed(1337)
 
 text = open("shakespeare.txt").read()
 c2i, i2c = build_char_maps(text)
+tokenizer = CharTokenizer(c2i, i2c)
 
 print("=== Eval Base vs SFT ===\n")
 results = {}
@@ -16,7 +18,7 @@ for name, ckpt in [
 ]:
     print(f"--- Evaluando {name} ---")
     model = load_pretrained_mini_llama(ckpt)
-    em = eval_exact_match(model, "data/sft_eval.jsonl", c2i, i2c, n_per_task=200)
+    em = eval_exact_match(model, "data/sft_eval.jsonl", tokenizer, n_per_task=200)
     results[name] = em
     print(f"exact_match: {em}\n")
 
@@ -34,7 +36,7 @@ prompts = [
     "Q: who wrote Hamlet?\nA: ",
 ]
 sft_model = load_pretrained_mini_llama("checkpoints/mini_llama_sft.pt")
-qual = eval_qualitative(sft_model, prompts, c2i, i2c, n_samples=3)
+qual = eval_qualitative(sft_model, prompts, tokenizer, n_samples=3)
 for p, samples in qual.items():
     print(f"\nPrompt: {p!r}")
     for i, s in enumerate(samples):
@@ -48,5 +50,5 @@ for name, ckpt in [
     ("sft",  "checkpoints/mini_llama_sft.pt"),
 ]:
     m = load_pretrained_mini_llama(ckpt)
-    drift = eval_drift(m, ambiguous, c2i, i2c)
+    drift = eval_drift(m, ambiguous, tokenizer)
     print(f"{name}: drift = {drift:.3f}")

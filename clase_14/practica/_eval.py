@@ -16,7 +16,7 @@ def load_jsonl(path):
         return [json.loads(line) for line in f]
 
 
-def eval_exact_match(model, dataset_jsonl, char_to_id, id_to_char,
+def eval_exact_match(model, dataset_jsonl, tokenizer,
                      n_per_task=200, max_new_tokens=20, device=None, temperature=0.1):
     """Por cada tarea, generar respuesta y comparar exact match."""
     examples = load_jsonl(dataset_jsonl)
@@ -29,7 +29,7 @@ def eval_exact_match(model, dataset_jsonl, char_to_id, id_to_char,
         correct = 0
         for ex in sample:
             full = generate_with_prompt(
-                model, ex["prompt"], char_to_id, id_to_char,
+                model, ex["prompt"], tokenizer,
                 max_new_tokens=max_new_tokens, temperature=temperature,
                 top_k=10, device=device, stop_token="\n",
             )
@@ -41,12 +41,12 @@ def eval_exact_match(model, dataset_jsonl, char_to_id, id_to_char,
     return results
 
 
-def eval_qualitative(model, prompts, char_to_id, id_to_char,
+def eval_qualitative(model, prompts, tokenizer,
                      n_samples=3, temperature=0.8, device=None):
     out = {}
     for p in prompts:
         out[p] = [
-            generate_with_prompt(model, p, char_to_id, id_to_char,
+            generate_with_prompt(model, p, tokenizer,
                                  max_new_tokens=30, temperature=temperature,
                                  top_k=10, device=device, stop_token="\n")
             for _ in range(n_samples)
@@ -54,14 +54,14 @@ def eval_qualitative(model, prompts, char_to_id, id_to_char,
     return out
 
 
-def eval_drift(model, ambiguous_prompts, char_to_id, id_to_char, device=None):
+def eval_drift(model, ambiguous_prompts, tokenizer, device=None):
     """Heurística: % de samples que contienen palabras Shakespeare-style."""
     shakespeare_markers = ["thou", "thee", "thy", "hath", "doth", "ye", "O ", "wilt"]
     drift_count = 0
     total = 0
     for p in ambiguous_prompts:
         for _ in range(5):
-            s = generate_with_prompt(model, p, char_to_id, id_to_char,
+            s = generate_with_prompt(model, p, tokenizer,
                                      max_new_tokens=40, temperature=0.8,
                                      top_k=20, device=device, stop_token="\n")
             comp = s[len(p):].lower()
