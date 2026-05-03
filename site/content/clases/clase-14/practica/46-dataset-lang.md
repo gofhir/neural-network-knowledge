@@ -30,7 +30,11 @@ La decision de WINDOW=64 no es arbitraria: el modelo MiniBERT fue preentrenado c
 
 El script usa `SEED=246` para tres propositos:
 1. `random.seed(SEED)` y `torch.manual_seed(SEED)` — reproducibilidad global.
-2. `random.Random(SEED + label)` — semilla distinta por idioma (246 para EN, 247 para ES), evitando que ambos idiomas muestreen las mismas posiciones relativas.
+2. `random.Random(SEED + label + split_offset)` — semilla distinta por idioma Y por split, evitando que train y eval muestreen las mismas ventanas:
+   - Train EN: SEED+0+0 = 246
+   - Train ES: SEED+1+0 = 247
+   - Eval EN: SEED+0+100 = 346
+   - Eval ES: SEED+1+100 = 347
 3. `random.shuffle(examples)` — mezcla determinista del conjunto combinado.
 
 El resultado es que cada ejecucion del script produce exactamente los mismos datasets. Esto es critico para reproducibilidad: si alguien descarga el repositorio y corre el script, obtiene los mismos archivos JSONL que estan commitidos.
@@ -89,8 +93,8 @@ es_text = Path("quijote.txt").read_text(encoding="utf-8")
 en_tokens = tok.encode(en_text)
 es_tokens = tok.encode(es_text)
 
-def sample_windows(tokens, n, label):
-    rng = random.Random(SEED + label)
+def sample_windows(tokens, n, label, split_offset=0):
+    rng = random.Random(SEED + label + split_offset)
     examples = []
     for _ in range(n):
         start = rng.randint(0, len(tokens) - WINDOW - 1)
@@ -101,12 +105,12 @@ def sample_windows(tokens, n, label):
 
 Path("data").mkdir(exist_ok=True)
 
-for split, n_each, fout in [
+for offset, (split, n_each, fout) in enumerate([
     ("train", 1000, "data/lang_train.jsonl"),
     ("eval",   250, "data/lang_eval.jsonl"),
-]:
-    examples = sample_windows(en_tokens, n_each, 0) + \
-               sample_windows(es_tokens, n_each, 1)
+]):
+    examples = sample_windows(en_tokens, n_each, 0, split_offset=offset * 100) + \
+               sample_windows(es_tokens, n_each, 1, split_offset=offset * 100)
     random.shuffle(examples)
     with open(fout, "w") as f:
         for ex in examples:
@@ -177,9 +181,9 @@ Este enfoque solo funciona cuando la fuente del dato es la etiqueta. No sirve pa
 
 ## 8. Preguntas de verificacion
 
-**1. El script usa `random.Random(SEED + label)` en lugar de el `random` global. ¿Por que?**
+**1. El script usa `random.Random(SEED + label + split_offset)` en lugar de el `random` global. ¿Por que?**
 
-Si ambas clases usaran el mismo generador global, la secuencia de posiciones de inicio para EN y ES dependeria del orden en que se llaman las funciones. Con generadores independientes por clase, la muestra de EN es identica independientemente de cuantas veces se llame la funcion para ES, y viceversa. Esto hace el dataset mas estable ante cambios de codigo que solo afectan a una clase.
+Si ambas clases usaran el mismo generador global, la secuencia de posiciones de inicio para EN y ES dependeria del orden en que se llaman las funciones. Con generadores independientes por clase y por split, la muestra de EN es identica independientemente de cuantas veces se llame la funcion para ES, y viceversa. El parametro `split_offset` es critico: sin el, train y eval inicializarian el RNG con la misma semilla, haciendo que el eval sea un subconjunto exacto del train (data leakage del 100%). Con `split_offset=0` para train y `split_offset=100` para eval, las semillas son disjuntas y los conjuntos son independientes.
 
 **2. ¿Que pasaria si se usara WINDOW=65 en lugar de WINDOW=64?**
 
