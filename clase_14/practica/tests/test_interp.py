@@ -1,7 +1,7 @@
 """tests/test_interp.py - tests TDD para _interp.py (Camino 3)."""
 import torch
 from _models import MiniGPT
-from _interp import cache_activations, logit_lens, patch_activation
+from _interp import cache_activations, logit_lens, patch_activation, qk_circuit, ov_circuit
 
 
 def _make_minigpt():
@@ -59,3 +59,17 @@ def test_patch_activation_changes_only_target_position():
     patched_logits = patch_activation(model, ids, {"blocks.1": (3, patch)})
     assert torch.allclose(clean_logits[0, :3], patched_logits[0, :3], atol=1e-5)
     assert not torch.allclose(clean_logits[0, 3], patched_logits[0, 3], atol=1e-5)
+
+
+def test_qk_circuit_shape():
+    W_Q = torch.randn(128, 32)
+    W_K = torch.randn(128, 32)
+    qk = qk_circuit(W_Q, W_K)
+    assert qk.shape == (128, 128)
+
+
+def test_ov_circuit_shape():
+    W_V = torch.randn(128, 32)
+    W_O = torch.randn(32, 128)
+    ov = ov_circuit(W_V, W_O)
+    assert ov.shape == (128, 128)

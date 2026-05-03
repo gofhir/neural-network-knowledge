@@ -43,6 +43,19 @@ def patch_activation(model, ids, patch_dict):
             h.remove()
 
 
+def qk_circuit(W_Q, W_K):
+    """QK circuit: W_Q @ W_K^T. Define como una cabeza decide a que atender.
+    Shape input: (d_model, d_head). Shape output: (d_model, d_model)."""
+    return W_Q @ W_K.T
+
+
+def ov_circuit(W_V, W_O):
+    """OV circuit: W_V @ W_O. Define que informacion mueve la cabeza
+    desde la fuente al destino. W_V: (d_model, d_head), W_O: (d_head, d_model).
+    Shape output: (d_model, d_model)."""
+    return W_V @ W_O
+
+
 @contextmanager
 def cache_activations(model, names):
     """Context manager que registra forward hooks en submodulos por nombre.
