@@ -1,5 +1,24 @@
 """_interp.py - helpers de interpretabilidad mecanicista para Camino 3."""
 from contextlib import contextmanager
+import torch
+import torch.nn as nn
+
+
+class SparseAutoencoder(nn.Module):
+    """Sparse Autoencoder estilo Bricken et al. 2023.
+    encoder: Linear + ReLU. decoder: Linear sin bias (evita shrinkage).
+    loss = MSE(reconstruction) + l1_coeff * L1(features)."""
+
+    def __init__(self, d_model, d_features, l1_coeff=1e-3):
+        super().__init__()
+        self.encoder = nn.Linear(d_model, d_features)
+        self.decoder = nn.Linear(d_features, d_model, bias=False)
+        self.l1_coeff = l1_coeff
+
+    def forward(self, x):
+        features = torch.relu(self.encoder(x))
+        recon = self.decoder(features)
+        return recon, features
 
 
 def logit_lens(model, residual):

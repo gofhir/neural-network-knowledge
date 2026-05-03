@@ -9,6 +9,7 @@ from _interp import (
     ov_circuit,
     previous_token_score,
     induction_score,
+    SparseAutoencoder,
 )
 
 
@@ -107,3 +108,24 @@ def test_induction_score_repeated_prompt():
     ids = torch.tensor([0, 1, 2, 3, 0])
     score = induction_score(attn, ids)
     assert score > 0.5
+
+
+def test_sae_reconstruction_loss_decreases():
+    torch.manual_seed(0)
+    sae = SparseAutoencoder(d_model=128, d_features=512, l1_coeff=1e-3)
+    x = torch.randn(64, 128)
+    opt = torch.optim.Adam(sae.parameters(), lr=1e-3)
+    initial_loss = None
+    final_loss = None
+    for step in range(200):
+        opt.zero_grad()
+        recon, features = sae(x)
+        recon_loss = ((x - recon) ** 2).mean()
+        l1_loss = features.abs().mean()
+        loss = recon_loss + sae.l1_coeff * l1_loss
+        loss.backward()
+        opt.step()
+        if step == 0:
+            initial_loss = recon_loss.item()
+        final_loss = recon_loss.item()
+    assert final_loss < initial_loss * 0.5
