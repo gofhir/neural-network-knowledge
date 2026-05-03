@@ -97,7 +97,6 @@ Una distancia de 19.862 indica que el modelo tiene margen amplio: no esta apenas
 ```python
 """48_eval_bert.py - Cap 48: accuracy + attention patterns + PCA [CLS]."""
 import json, torch
-import torch.nn.functional as F
 from _models import MiniBERT, ClassificationHead, get_device
 from _bpe import BPETokenizer
 
