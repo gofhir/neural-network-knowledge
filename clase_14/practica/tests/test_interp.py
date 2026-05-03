@@ -1,7 +1,15 @@
 """tests/test_interp.py - tests TDD para _interp.py (Camino 3)."""
 import torch
 from _models import MiniGPT
-from _interp import cache_activations, logit_lens, patch_activation, qk_circuit, ov_circuit
+from _interp import (
+    cache_activations,
+    logit_lens,
+    patch_activation,
+    qk_circuit,
+    ov_circuit,
+    previous_token_score,
+    induction_score,
+)
 
 
 def _make_minigpt():
@@ -73,3 +81,29 @@ def test_ov_circuit_shape():
     W_O = torch.randn(32, 128)
     ov = ov_circuit(W_V, W_O)
     assert ov.shape == (128, 128)
+
+
+def test_previous_token_score_perfect():
+    """Patron de atencion que mira EXACTAMENTE al anterior debe dar score = 1.0."""
+    T = 8
+    attn = torch.zeros(T, T)
+    for i in range(1, T):
+        attn[i, i - 1] = 1.0
+    score = previous_token_score(attn)
+    assert abs(score - 1.0) < 1e-6
+
+
+def test_previous_token_score_uniform_low():
+    T = 8
+    attn = torch.ones(T, T) / T
+    score = previous_token_score(attn)
+    assert score < 0.2
+
+
+def test_induction_score_repeated_prompt():
+    T = 5
+    attn = torch.zeros(T, T)
+    attn[4, 1] = 1.0
+    ids = torch.tensor([0, 1, 2, 3, 0])
+    score = induction_score(attn, ids)
+    assert score > 0.5

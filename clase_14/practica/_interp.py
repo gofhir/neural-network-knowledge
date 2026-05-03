@@ -56,6 +56,35 @@ def ov_circuit(W_V, W_O):
     return W_V @ W_O
 
 
+def previous_token_score(attn):
+    """Score [0, 1]: cuanto atiende cada posicion i a la i-1.
+    attn shape: (T, T). Asume causal (triangular inferior)."""
+    import torch
+    T = attn.shape[0]
+    if T < 2:
+        return 0.0
+    diag = torch.tensor([attn[i, i - 1].item() for i in range(1, T)])
+    return diag.mean().item()
+
+
+def induction_score(attn, ids):
+    """Score de induccion: para token repetido en posicion j, cuanto atiende
+    a la posicion i+1 (donde estaba el siguiente token la primera vez).
+    Patron: ...A B... A -> B."""
+    T = attn.shape[0]
+    scores = []
+    ids_list = ids.tolist() if hasattr(ids, "tolist") else list(ids)
+    for j in range(2, T):
+        tok = ids_list[j]
+        for i in range(j - 1):
+            if ids_list[i] == tok and i + 1 < j:
+                scores.append(attn[j, i + 1].item())
+                break
+    if not scores:
+        return 0.0
+    return sum(scores) / len(scores)
+
+
 @contextmanager
 def cache_activations(model, names):
     """Context manager que registra forward hooks en submodulos por nombre.
