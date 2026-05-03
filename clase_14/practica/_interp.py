@@ -2,6 +2,12 @@
 from contextlib import contextmanager
 
 
+def logit_lens(model, residual):
+    """Aplica head al residual stream para proyectar al vocab.
+    El residual debe ser POST-norm final (despues de ln_f en MiniGPT)."""
+    return model.head(residual)
+
+
 @contextmanager
 def cache_activations(model, names):
     """Context manager que registra forward hooks en submodulos por nombre.

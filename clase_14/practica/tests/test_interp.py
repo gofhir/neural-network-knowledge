@@ -1,7 +1,7 @@
 """tests/test_interp.py - tests TDD para _interp.py (Camino 3)."""
 import torch
 from _models import MiniGPT
-from _interp import cache_activations
+from _interp import cache_activations, logit_lens
 
 
 def _make_minigpt():
@@ -30,3 +30,17 @@ def test_cache_activations_cleanup_removes_hooks():
         pass
     n_hooks_after = sum(len(m._forward_hooks) for m in model.modules())
     assert n_hooks_after == n_hooks_before
+
+
+def test_logit_lens_consistent_with_full_forward():
+    """Logit lens del residual post-ln_f debe coincidir con el output del modelo."""
+    model = _make_minigpt()
+    model.eval()
+    ids = torch.zeros(1, 8, dtype=torch.long)
+    with torch.no_grad():
+        full_logits, _ = model(ids)
+    with cache_activations(model, ["ln_f"]) as cache:
+        with torch.no_grad():
+            model(ids)
+    lens_logits = logit_lens(model, cache["ln_f"])
+    assert torch.allclose(full_logits, lens_logits, atol=1e-5)
