@@ -45,6 +45,8 @@ Input (IDs de tokens: [CLS] w1 w2 ... wN [SEP])
 
 La diferencia estructural mas importante respecto al decoder: no hay mascara triangular inferior en la atencion. Cada posicion puede atender a todas las otras posiciones en ambas direcciones — de ahi el nombre "bidireccional".
 
+**Nota sobre LayerNorm:** Mini-BERT usa post-LayerNorm (norma DESPUES del residual), igual que el BERT original de 2018. La practica moderna prefiere pre-LayerNorm (norma ANTES del residual, como en GPT-2 y Mini-LLaMA) por mayor estabilidad durante el training. Para este curso usamos post-LN para ser fieles al paper original.
+
 ---
 
 ## 3. Conteo de parametros
@@ -55,7 +57,7 @@ Con la configuracion `vocab_size=1115, max_seq_len=128, d_model=128, n_heads=4, 
 |---|---|
 | Token Embedding | 1115 × 128 = 142,720 |
 | Pos Embedding | 128 × 128 = 16,384 |
-| BERTBlock × 4 (MHA + FFN + norms) | ~793,344 |
+| BERTBlock × 4 (MHA + FFN + norms) | 793,088 |
 | LayerNorm final | 256 |
 | **Total** | **952,448** |
 
