@@ -1,7 +1,7 @@
 """tests/test_interp.py - tests TDD para _interp.py (Camino 3)."""
 import torch
 from _models import MiniGPT
-from _interp import cache_activations, logit_lens
+from _interp import cache_activations, logit_lens, patch_activation
 
 
 def _make_minigpt():
@@ -44,3 +44,18 @@ def test_logit_lens_consistent_with_full_forward():
             model(ids)
     lens_logits = logit_lens(model, cache["ln_f"])
     assert torch.allclose(full_logits, lens_logits, atol=1e-5)
+
+
+def test_patch_activation_changes_only_target_position():
+    """En atencion causal, patchear posicion 3 cambia logits desde pos 3 en adelante,
+    no antes."""
+    torch.manual_seed(0)
+    model = _make_minigpt()
+    model.eval()
+    ids = torch.randint(0, 65, (1, 8))
+    with torch.no_grad():
+        clean_logits, _ = model(ids)
+    patch = torch.zeros(1, 1, 128)
+    patched_logits = patch_activation(model, ids, {"blocks.1": (3, patch)})
+    assert torch.allclose(clean_logits[0, :3], patched_logits[0, :3], atol=1e-5)
+    assert not torch.allclose(clean_logits[0, 3], patched_logits[0, 3], atol=1e-5)

@@ -8,6 +8,41 @@ def logit_lens(model, residual):
     return model.head(residual)
 
 
+def patch_activation(model, ids, patch_dict):
+    """Forward pass con activaciones reemplazadas en posiciones especificas.
+    patch_dict: {module_name: (position_or_slice, replacement_tensor)}.
+    replacement_tensor shape: (B, n_positions, d_model).
+    Si el modelo retorna tupla (logits, loss), retorna solo logits."""
+    import torch
+    handles = []
+    name_to_module = dict(model.named_modules())
+    for name, (positions, replacement) in patch_dict.items():
+        if name not in name_to_module:
+            raise KeyError(f"Module '{name}' not found in model")
+
+        def make_patch_hook(positions, replacement):
+            def hook(module, inputs, output):
+                is_tuple = isinstance(output, tuple)
+                out = output[0] if is_tuple else output
+                out = out.clone()
+                if isinstance(positions, int):
+                    out[:, positions:positions + 1] = replacement
+                else:
+                    out[:, positions] = replacement
+                return (out, *output[1:]) if is_tuple else out
+            return hook
+
+        handles.append(name_to_module[name].register_forward_hook(
+            make_patch_hook(positions, replacement)))
+    try:
+        with torch.no_grad():
+            result = model(ids)
+        return result[0] if isinstance(result, tuple) else result
+    finally:
+        for h in handles:
+            h.remove()
+
+
 @contextmanager
 def cache_activations(model, names):
     """Context manager que registra forward hooks en submodulos por nombre.
