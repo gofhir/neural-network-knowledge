@@ -78,6 +78,21 @@ class BPETokenizer:
     def decode(self, ids: list[int]) -> str:
         return "".join(self.id_to_token.get(i, "") for i in ids)
 
+    def add_special_tokens(self) -> None:
+        """Agrega [CLS], [SEP], [MASK] al vocab. Idempotente."""
+        for tok in ["[CLS]", "[SEP]", "[MASK]"]:
+            if tok not in self.vocab:
+                idx = len(self.vocab)
+                self.vocab[tok] = idx
+                self.id_to_token[idx] = tok
+        self.cls_id  = self.vocab["[CLS]"]
+        self.sep_id  = self.vocab["[SEP]"]
+        self.mask_id = self.vocab["[MASK]"]
+
+    def encode_bert(self, text: str) -> list[int]:
+        """Encode con [CLS] al inicio y [SEP] al final."""
+        return [self.cls_id] + self.encode(text) + [self.sep_id]
+
     def save(self, path: str) -> None:
         data = {"vocab": self.vocab, "merges": self.merges}
         with open(path, "w", encoding="utf-8") as f:

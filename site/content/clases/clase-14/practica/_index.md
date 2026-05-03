@@ -13,10 +13,12 @@ Mapa de estudio progresivo para entender el Transformer construyendolo a mano en
 
 Esta seccion no asume conocimiento previo de PyTorch ni de redes neuronales — solo programacion basica. Cada concepto se construye encima del anterior.
 
-El viaje esta organizado en dos **Caminos**:
+El viaje esta organizado en cuatro **Caminos**:
 
 - **Camino 1 (Fases 1-5, capitulos 01-21)**: construir el Transformer desde cero hasta un Mini-LLaMA char-level entrenado en Shakespeare. Cubre Vaswani 2017 → LLaMA 2024 modernizaciones.
 - **Camino 2 (Fases 6-7, capitulos 22-29)**: convertir el Mini-LLaMA en un asistente que sigue instrucciones, via SFT + DPO. El stack moderno post-pretraining usado por Llama-3-Instruct, Mistral-Instruct, Zephyr.
+- **Camino 2.5 (Fase 8, capitulos 30-37)**: rehacer SFT+DPO con BPE tokenizer bilingue Shakespeare+Quijote. Honesto sobre los tradeoffs char vs BPE.
+- **Camino 4 (Fases 9-11, capitulos 38-49)**: Mini-BERT encoder-only con MLM pretraining y fine-tuning a deteccion de idioma EN/ES. El "otro lado" del Transformer.
 
 ## Capitulos
 
@@ -123,6 +125,44 @@ Camino 2 cerro con un puzzle: SFT funcionaba, pero DPO degradaba accuracy. La hi
 
 ---
 
+## Camino 4 — Mini-BERT (Encoder-only + MLM)
+
+Caminos 1, 2 y 2.5 cubrieron el lado **decoder-only** de la familia Transformer (Mini-GPT y Mini-LLaMA: generan texto auto-regresivamente). Camino 4 cubre el lado **encoder-only**: bidireccionalidad, Masked Language Modeling, y el paradigma "pretrain masivo + fine-tuning ligero" que domino NLP entre 2018 y 2022. Reusa el BPETokenizer del cap 30 extendido con tres special tokens (`[CLS]`, `[SEP]`, `[MASK]`) y construye Mini-BERT (952K params) con MLM pretraining sobre Shakespeare+Quijote y fine-tuning a deteccion de idioma EN/ES (accuracy 0.998).
+
+### Fase 9 — Arquitectura encoder
+
+{{< cards >}}
+  {{< card link="38-encoder-vs-decoder" title="38 - Encoder vs Decoder" subtitle="Sin causal mask: cada token ve todos los demas. La diferencia estructural" icon="academic-cap" >}}
+  {{< card link="39-positional-embeddings" title="39 - Positional embeddings aprendidos" subtitle="nn.Embedding(max_seq_len, d_model). Comparacion con RoPE de LLaMA" icon="academic-cap" >}}
+  {{< card link="40-special-tokens" title="40 - Special tokens [CLS] [SEP] [MASK]" subtitle="Extension del BPE bilingue, encode_bert vs encode" icon="academic-cap" >}}
+  {{< card link="41-mini-bert" title="41 - Arquitectura Mini-BERT completa" subtitle="952K params, post-LN, comparacion con Mini-LLaMA" icon="cog" >}}
+{{< /cards >}}
+
+### Fase 10 — MLM pretraining
+
+{{< cards >}}
+  {{< card link="42-mlm-loss" title="42 - MLM loss (80/10/10)" subtitle="apply_mlm_mask, ignore_index=-100, simetria con SFT loss masking" icon="academic-cap" >}}
+  {{< card link="43-mlm-pretraining" title="43 - Pretraining MLM" subtitle="3000 iters Shakespeare+Quijote, loss 7.12 → 4.96" icon="cog" >}}
+  {{< card link="44-eval-mlm" title="44 - Eval MLM: predict_mask" subtitle="Top-k sobre [MASK], honesto: BPE bilingue dificulta el MLM" icon="chart-bar" >}}
+{{< /cards >}}
+
+### Fase 11 — Fine-tuning EN/ES
+
+{{< cards >}}
+  {{< card link="45-cls-head" title="45 - ClassificationHead sobre [CLS]" subtitle="d_model → 2 clases, 258 params, vector [CLS] como resumen" icon="academic-cap" >}}
+  {{< card link="46-dataset-lang" title="46 - Dataset EN/ES" subtitle="2000 train + 500 eval con ventanas de 64 tokens, sin leakage" icon="academic-cap" >}}
+  {{< card link="47-finetune-bert" title="47 - Fine-tuning con LR=2e-5" subtitle="500 iters, evitar catastrophic forgetting, loss 0.62 → 0.08" icon="cog" >}}
+  {{< card link="48-eval-bert" title="48 - Eval: accuracy + attention + PCA" subtitle="Accuracy 0.998, attention pattern del ultimo bloque, PCA de [CLS]" icon="chart-bar" >}}
+{{< /cards >}}
+
+### Cierre
+
+{{< cards >}}
+  {{< card link="49-comparativa-bert-gpt" title="49 - Comparativa BERT vs GPT" subtitle="Tabla tripartita, historia 2018-2026, Sentence-Transformers, RAG cross-encoders" icon="sparkles" >}}
+{{< /cards >}}
+
+---
+
 ## Setup
 
 Antes de correr cualquier script:
@@ -181,6 +221,22 @@ Camino 2.5 (caps 30-37) construye un BPETokenizer y reentrena Mini-LLaMA con voc
 .venv/bin/python 37_compare_char_vs_bpe.py
 ```
 
+Camino 4 (caps 38-49) construye Mini-BERT desde cero — encoder-only con MLM pretraining y fine-tuning a deteccion de idioma. Requiere `data/bpe_tokenizer.json` (cap 30):
+
+```bash
+.venv/bin/python 38_encoder_vs_decoder.py
+.venv/bin/python 39_positional_embeddings.py
+.venv/bin/python 40_special_tokens.py
+.venv/bin/python 41_mini_bert.py
+.venv/bin/python 42_mlm_loss.py
+.venv/bin/python 43_train_bert.py
+.venv/bin/python 44_eval_mlm.py
+.venv/bin/python 45_cls_head.py
+.venv/bin/python 46_dataset_lang.py
+.venv/bin/python 47_finetune_bert.py
+.venv/bin/python 48_eval_bert.py
+```
+
 Tests unitarios para los helpers (`load_pretrained_mini_llama`, `generate_with_prompt`, `compute_logp_response`, `dpo_loss`, `build_char_maps`):
 
 ```bash
@@ -234,14 +290,31 @@ Camino 2.5 — BPE addendum (de char-level a subword)
     35   dataset DPO-BPE 3000 triples
     36   DPO + beta sweep (β=0.1 vs β=0.5)
     37   comparacion final char vs BPE ← cierre Camino 2.5
+
+Camino 4 — Mini-BERT (encoder-only + MLM)
+  Fase 9: Arquitectura encoder
+    38   encoder vs decoder (sin causal mask)
+    39   positional embeddings aprendidos
+    40   special tokens [CLS] [SEP] [MASK]
+    41   Mini-BERT 952K params (post-LN, MHA, GELU)
+  Fase 10: MLM pretraining
+    42   MLM loss (80/10/10 masking, ignore_index=-100)
+    43   pretrain MLM 3000 iters (Shakespeare+Quijote)
+    44   eval MLM: predict_mask top-k
+  Fase 11: Fine-tuning EN/ES
+    45   ClassificationHead sobre [CLS]
+    46   dataset EN/ES (ventanas 64 tokens, sin leakage)
+    47   fine-tuning LR=2e-5 (anti-catastrophic forgetting)
+    48   eval: accuracy 0.998 + attention + PCA [CLS]
+  Cierre
+    49   comparativa BERT vs GPT ← cierre Camino 4
 ```
 
 ## Que viene despues (Caminos pendientes)
 
-Despues de cerrar Camino 2 (SFT + DPO), quedan varios caminos para profundizar:
+Despues de cerrar Camino 4 (Mini-BERT), quedan caminos para profundizar:
 
 - **Camino 3 — Interpretabilidad mecanicista**: abrir el modelo entrenado y ver que hace cada componente. Attention pattern analysis, induction heads, QK/OV decomposition, circuit discovery. Inspirado en los Transformer Circuits de Anthropic.
-- **Camino 4 — BERT-style (encoder-only + MLM)**: el "otro paradigma" del Transformer. Masked Language Modeling, fine-tuning para clasificacion / NER / QA, comparacion BERT vs GPT.
 - **Camino 5 — ViT (Vision Transformer)**: llevar el Transformer a imagenes. Patches 16x16 como tokens, [class] token aprendible, entrenar en MNIST/CIFAR, multimodal extensions (CLIP).
 
 Y experimentos mas chicos sobre Camino 2:

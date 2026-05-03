@@ -394,6 +394,77 @@ class MiniLLaMA(nn.Module):
         return idx
 
 
+class LearnedPositionalEmbedding(nn.Module):
+    """Embeddings de posicion aprendibles (BERT-style, no RoPE)."""
+    def __init__(self, max_seq_len: int, d_model: int):
+        super().__init__()
+        self.embedding = nn.Embedding(max_seq_len, d_model)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (B, T, d_model)
+        B, T, _ = x.shape
+        positions = torch.arange(T, device=x.device).unsqueeze(0)
+        return x + self.embedding(positions)
+
+
+class BERTBlock(nn.Module):
+    """Bloque BERT: post-LayerNorm + MHA sin causal mask + FFN GELU."""
+    def __init__(self, d_model: int, n_heads: int, d_ff: int):
+        super().__init__()
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.attn  = nn.MultiheadAttention(d_model, n_heads, batch_first=True)
+        self.ff1   = nn.Linear(d_model, d_ff)
+        self.ff2   = nn.Linear(d_ff, d_model)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        attn_out, _ = self.attn(x, x, x)  # sin causal mask (bidireccional)
+        x = self.norm1(x + attn_out)
+        ff_out = self.ff2(F.gelu(self.ff1(x)))
+        return self.norm2(x + ff_out)
+
+
+class MiniBERT(nn.Module):
+    """Encoder-only: token emb + positional emb aprendido + N BERTBlocks."""
+    def __init__(self, vocab_size: int, max_seq_len: int = 128, d_model: int = 128,
+                 n_heads: int = 4, n_layers: int = 4, d_ff: int = 512):
+        super().__init__()
+        self.token_emb = nn.Embedding(vocab_size, d_model)
+        self.pos_emb   = LearnedPositionalEmbedding(max_seq_len, d_model)
+        self.blocks    = nn.ModuleList([
+            BERTBlock(d_model, n_heads, d_ff) for _ in range(n_layers)
+        ])
+        self.norm      = nn.LayerNorm(d_model)
+        self.max_seq_len = max_seq_len
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h = self.token_emb(x)
+        h = self.pos_emb(h)
+        for block in self.blocks:
+            h = block(h)
+        return self.norm(h)
+
+
+class MLMHead(nn.Module):
+    """Proyecta d_model → vocab_size para prediccion MLM."""
+    def __init__(self, d_model: int, vocab_size: int):
+        super().__init__()
+        self.linear = nn.Linear(d_model, vocab_size)
+
+    def forward(self, h: torch.Tensor) -> torch.Tensor:
+        return self.linear(h)
+
+
+class ClassificationHead(nn.Module):
+    """Toma el vector [CLS] (posicion 0) y proyecta a n_classes."""
+    def __init__(self, d_model: int, n_classes: int):
+        super().__init__()
+        self.linear = nn.Linear(d_model, n_classes)
+
+    def forward(self, h: torch.Tensor) -> torch.Tensor:
+        return self.linear(h[:, 0, :])
+
+
 def load_pretrained_mini_llama(checkpoint_path, device=None, config=None):
     """Carga Mini-LLaMA desde checkpoint. config dict con keys del constructor."""
     if device is None:
