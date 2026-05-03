@@ -44,7 +44,7 @@ def get_batch():
     sep_col = torch.full((BATCH, 1), tok.sep_id, dtype=torch.long)
     input_ids = torch.cat([cls_col, windows, sep_col], dim=1)  # (B, 66)
     masked_ids, labels = apply_mlm_mask(
-        input_ids.clone(), mask_prob=0.15,
+        input_ids, mask_prob=0.15,
         mask_id=tok.mask_id, vocab_size=vocab_size,
         special_ids=(tok.cls_id, tok.sep_id, tok.mask_id)
     )
