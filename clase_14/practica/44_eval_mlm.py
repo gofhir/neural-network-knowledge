@@ -7,7 +7,7 @@ device = get_device()
 tok = BPETokenizer.load("data/bpe_tokenizer.json")
 tok.add_special_tokens()
 
-ckpt = torch.load("checkpoints/mini_bert_pretrained.pt", map_location=device)
+ckpt = torch.load("checkpoints/mini_bert_pretrained.pt", map_location=device, weights_only=False)
 cfg  = ckpt["config"]
 model    = MiniBERT(**cfg).to(device)
 mlm_head = MLMHead(d_model=cfg["d_model"], vocab_size=cfg["vocab_size"]).to(device)
@@ -28,12 +28,16 @@ def predict_mask(left: str, right: str, top_k: int = 5):
     mask_pos = 1 + len(l_ids)  # posicion exacta del mask_id
 
     x = torch.tensor([ids[:cfg["max_seq_len"]]], dtype=torch.long, device=device)
+    if mask_pos >= x.shape[1]:
+        print(f"[WARN] mask truncada fuera de ventana (pos {mask_pos} >= {x.shape[1]})")
+        return
     with torch.no_grad():
         h = model(x)
         logits = mlm_head(h)
     probs = torch.softmax(logits[0, mask_pos], dim=-1)
-    top_ids = probs.topk(top_k).indices.tolist()
-    top_probs = probs.topk(top_k).values.tolist()
+    top = probs.topk(top_k)
+    top_ids   = top.indices.tolist()
+    top_probs = top.values.tolist()
     display = f"{left!r} [MASK] {right!r}"
     print(f"Texto: {display}")
     print(f"Top-{top_k} predicciones:")
