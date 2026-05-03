@@ -8,7 +8,7 @@ math: true
 
 BERT introduce 3 tokens especiales que no existen en el vocab BPE — estan fuera del espacio de texto natural. Son instrucciones para el modelo.
 
-Un tokenizador BPE aprende su vocabulario a partir del corpus. Si entrenas sobre el Quijote y Shakespeare, los tokens del vocab son fragmentos de esas obras: caracteres, silabas, palabras frecuentes. Ninguna frase del Quijote empieza con `[CLS]` ni contiene `[MASK]`. Esos tokens no emergen del corpus — se insertan de forma artifical por disenio del arquitecto.
+Un tokenizador BPE aprende su vocabulario a partir del corpus. Si entrenas sobre el Quijote y Shakespeare, los tokens del vocab son fragmentos de esas obras: caracteres, silabas, palabras frecuentes. Ninguna frase del Quijote empieza con `[CLS]` ni contiene `[MASK]`. Esos tokens no emergen del corpus — se insertan de forma artificial por disenio del arquitecto.
 
 Este es el punto clave: cuando el tokenizador tiene 1112 tokens aprendidos del corpus, agregar `[CLS]`, `[SEP]` y `[MASK]` extiende el vocab a 1115 con tres entradas que tienen IDs consecutivos pero ningun texto de entrenamiento BPE los genero. El modelo aprende a usarlos unicamente por su posicion y funcion durante el pretraining.
 
@@ -22,7 +22,7 @@ Este es el punto clave: cuando el tokenizador tiene 1112 tokens aprendidos del c
 
 Su funcion no es representar contenido. Cuando la secuencia pasa por los $N$ bloques de atencion, el vector en la posicion 0 acumula informacion de toda la secuencia via self-attention. Al final del ultimo bloque, ese vector — que llamamos $\mathbf{h}_{[CLS]}$ — se usa como representacion de toda la oracion para tareas de clasificacion.
 
-**Por que [CLS] no tiene contenido semantico propio:** Al inicio del training, el embedding de `[CLS]` es un vector aleatorio. No corresponde a ninguna palabra, no tiene significado lingüistico previo. Lo que ocurre durante el pretraining MLM es que el modelo aprende, de forma implicita, a concentrar en ese vector informacion util sobre el contexto completo. No hay ninguna supervision directa que le diga "en la posicion 0 pon un resumen de la frase" — ese comportamiento emerge como efecto secundario de que todas las otras posiciones atienden a `[CLS]` y viceversa.
+**Por que [CLS] no tiene contenido semantico propio:** Al inicio del training, el embedding de `[CLS]` es un vector aleatorio. No corresponde a ninguna palabra, no tiene significado linguistico previo. Lo que ocurre durante el pretraining MLM es que el modelo aprende, de forma implicita, a concentrar en ese vector informacion util sobre el contexto completo. No hay ninguna supervision directa que le diga "en la posicion 0 pon un resumen de la frase" — ese comportamiento emerge como efecto secundario de que todas las otras posiciones atienden a `[CLS]` y viceversa.
 
 En fine-tuning, se agrega una capa lineal sobre $\mathbf{h}_{[CLS]}$:
 
@@ -60,7 +60,7 @@ Esto obliga al modelo a aprender representaciones contextuales ricas: para prede
 
 ## 3. Por que [CLS] en lugar del promedio de todos los tokens
 
-Una alternativa obvia seria usar el promedio de los vectores de salida de todos los tokens como representacion de la secuencia. iFor que BERT usa un token dedicado en vez de pooling?
+Una alternativa obvia seria usar el promedio de los vectores de salida de todos los tokens como representacion de la secuencia. iPor que BERT usa un token dedicado en vez de pooling?
 
 Hay tres razones de disenio:
 

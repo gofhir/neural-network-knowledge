@@ -1,5 +1,4 @@
 """40_special_tokens.py - Cap 40: [CLS], [MASK], [SEP] en accion."""
-from pathlib import Path
 from _bpe import BPETokenizer
 
 tok = BPETokenizer.load("data/bpe_tokenizer.json")
