@@ -173,7 +173,7 @@ Los pares con mayor score en `QK_emb` son consistentes:
 - `query=\n -> key=w/K/:/,`: cuando la query es un salto de linea, la cabeza prefiere atender a tokens estructurales o consonantes prominentes.
 - `query=' ' -> key=':'`: espacios atienden a dos puntos.
 
-Esto sugiere que la cabeza es **structure-aware**: tiene patrones especificos para tokens que delimitan estructura (saltos de linea, espacios, puntuacion). El previous-token score alto del cap 54 es un epifenómeno: en texto continuo, cada token (que suele ser una letra) atiende al anterior — pero el patron dominante de la cabeza es manejar la estructura.
+Esto sugiere que la cabeza es **structure-aware**: tiene patrones especificos para tokens que delimitan estructura (saltos de linea, espacios, puntuacion). El previous-token score alto del cap 54 es un epifenomeno: en texto continuo, cada token (que suele ser una letra) atiende al anterior — pero el patron dominante de la cabeza es manejar la estructura.
 
 ### El OV transforma `\n` en otros tokens estructurales
 
