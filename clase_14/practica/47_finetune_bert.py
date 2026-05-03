@@ -2,14 +2,10 @@
 import json, torch, random as _random
 import torch.nn.functional as F
 from pathlib import Path
-from _bpe import BPETokenizer
 from _models import MiniBERT, ClassificationHead, get_device
 
 torch.manual_seed(1337)
 device = get_device()
-
-tok = BPETokenizer.load("data/bpe_tokenizer.json")
-tok.add_special_tokens()
 
 ckpt = torch.load("checkpoints/mini_bert_pretrained.pt", map_location=device, weights_only=False)
 cfg  = ckpt["config"]
@@ -24,7 +20,8 @@ ITERS = 500
 BATCH = 32
 WD    = 0.01
 
-train_data = [json.loads(l) for l in open("data/lang_train.jsonl")]
+with open("data/lang_train.jsonl") as f:
+    train_data = [json.loads(l) for l in f]
 params = list(model.parameters()) + list(cls_head.parameters())
 opt    = torch.optim.AdamW(params, lr=LR, weight_decay=WD)
 

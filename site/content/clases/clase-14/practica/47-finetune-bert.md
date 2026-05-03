@@ -133,9 +133,9 @@ Saved -> checkpoints/mini_bert_finetuned.pt
 
 ## 6. Analisis de la caida: de 0.6275 a 0.0764
 
-El punto de partida esperado para un clasificador binario aleatorio es `log(2) ≈ 0.6931`. La iter 0 da `0.6275` — ligeramente por debajo porque la semilla `1337` inicializa la cabeza con pesos que ya tienen una pequena sesion positiva. Este es el punto de partida legitimo: el encoder todavia no ha visto ningun gradiente de clasificacion, y la cabeza es aleatoria.
+El punto de partida esperado para un clasificador binario aleatorio es `log(2) ≈ 0.6931`. La iter 0 da `0.6275` — ligeramente por debajo porque la semilla `1337` inicializa la cabeza con pesos que ya tienen un pequeno sesgo positivo. Este es el punto de partida legitimo: el encoder todavia no ha visto ningun gradiente de clasificacion, y la cabeza es aleatoria.
 
-La caida en las primeras 50 iteraciones es drástica: de `0.6275` a `0.0623`. El encoder ya tenia representaciones ricas — simplemente habia que ensenarle a la cabeza como leer el vector `[CLS]`. En las primeras decenas de iters, el gradiente ajusta la cabeza radicalmente mientras el encoder cambia muy poco (LR bajo).
+La caida en las primeras 50 iteraciones es drastica: de `0.6275` a `0.0623`. El encoder ya tenia representaciones ricas — simplemente habia que ensenarle a la cabeza como leer el vector `[CLS]`. En las primeras decenas de iters, el gradiente ajusta la cabeza radicalmente mientras el encoder cambia muy poco (LR bajo).
 
 De iter 50 a iter 400, la convergencia continua de forma monotona: `0.0623 → 0.0026`. Las representaciones del encoder se ajustan finamente para que los vectores `[CLS]` de EN y ES queden bien separados en el espacio d_model=128.
 
@@ -171,7 +171,7 @@ El valor `0.6931` es la entropia de una distribucion uniforme sobre 2 clases —
 
 **2. ¿Que pasaria si se congelara el encoder y solo se entrenara la cabeza?**
 
-En frozen fine-tuning, `model.requires_grad_(False)` antes de crear el optimizer. Solo `cls_head.parameters()` recibirian gradientes. Las 258 parametros de la cabeza aprenderían a leer los vectores `[CLS]` del encoder congelado. Si las representaciones preentrenadas son buenas, el accuracy seria similar — posiblemente un poco menor porque el encoder no puede ajustarse a la tarea. La ventaja es que frozen fine-tuning es mucho mas rapido y computacionalmente economico. En BERT original, frozen fine-tuning (llamado "feature-based") logra resultados ligeramente peores que full fine-tuning en la mayoria de benchmarks.
+En frozen fine-tuning, `model.requires_grad_(False)` antes de crear el optimizer. Solo `cls_head.parameters()` recibirian gradientes. Las 258 parametros de la cabeza aprenderian a leer los vectores `[CLS]` del encoder congelado. Si las representaciones preentrenadas son buenas, el accuracy seria similar — posiblemente un poco menor porque el encoder no puede ajustarse a la tarea. La ventaja es que frozen fine-tuning es mucho mas rapido y computacionalmente economico. En BERT original, frozen fine-tuning (llamado "feature-based") logra resultados ligeramente peores que full fine-tuning en la mayoria de benchmarks.
 
 **3. ¿Por que el loss final (iter 499) es mayor que el de iter 450?**
 
