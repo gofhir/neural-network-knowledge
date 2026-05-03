@@ -16,8 +16,8 @@ es_text = Path("quijote.txt").read_text(encoding="utf-8")
 en_tokens = tok.encode(en_text)
 es_tokens = tok.encode(es_text)
 
-def sample_windows(tokens, n, label):
-    rng = random.Random(SEED + label)
+def sample_windows(tokens, n, label, split_offset=0):
+    rng = random.Random(SEED + label + split_offset)
     examples = []
     for _ in range(n):
         start = rng.randint(0, len(tokens) - WINDOW - 1)
@@ -28,12 +28,12 @@ def sample_windows(tokens, n, label):
 
 Path("data").mkdir(exist_ok=True)
 
-for split, n_each, fout in [
+for offset, (split, n_each, fout) in enumerate([
     ("train", 1000, "data/lang_train.jsonl"),
     ("eval",   250, "data/lang_eval.jsonl"),
-]:
-    examples = sample_windows(en_tokens, n_each, 0) + \
-               sample_windows(es_tokens, n_each, 1)
+]):
+    examples = sample_windows(en_tokens, n_each, 0, split_offset=offset * 100) + \
+               sample_windows(es_tokens, n_each, 1, split_offset=offset * 100)
     random.shuffle(examples)
     with open(fout, "w") as f:
         for ex in examples:
