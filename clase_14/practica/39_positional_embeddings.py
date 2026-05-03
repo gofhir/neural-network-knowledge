@@ -4,7 +4,6 @@ Muestra como se ven los embeddings de posicion aprendidos
 y los compara conceptualmente con RoPE del cap 18.
 """
 import torch
-import torch.nn as nn
 from _models import LearnedPositionalEmbedding
 
 torch.manual_seed(42)
