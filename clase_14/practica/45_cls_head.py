@@ -13,8 +13,8 @@ model = MiniBERT(**cfg).to(device)
 model.load_state_dict(ckpt["model"])
 model.eval()
 
-# Cabeza de clasificacion: 128 → 2 (EN=0, ES=1)
-cls_head = ClassificationHead(d_model=128, n_classes=2).to(device)
+# Cabeza de clasificacion: cfg["d_model"] → 2 (EN=0, ES=1)
+cls_head = ClassificationHead(d_model=cfg["d_model"], n_classes=2).to(device)
 
 print("=== [CLS] como clasificador ===\n")
 print(f"ClassificationHead: Linear(128, 2)")
@@ -43,7 +43,7 @@ print("""
 BERT podria usar promedio de todos los tokens como representacion.
 Usar [CLS] es una decision de diseno:
   1. [CLS] es un token sin contenido propio — aprende libremente a ser 'resumen'
-  2. Permite arquitecturas de dos-torres (cross-encoder) eficientes
+  2. Permite encodificacion conjunta de pares (cross-encoder) eficiente
   3. El promedio puede mezclar señales de tokens no relevantes
   4. En practica: ambos funcionan; [CLS] es el estandar BERT
 """)

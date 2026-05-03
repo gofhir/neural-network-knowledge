@@ -18,7 +18,10 @@ Este es el mecanismo que permite el fine-tuning eficiente de BERT en tareas de c
 
 El token `[CLS]` no tiene contenido semantico propio. En el vocabulario BPE es simplemente un identificador especial, y en la secuencia de entrada ocupa siempre la posicion 0 antes de cualquier texto. Eso es exactamente lo que lo hace util.
 
-Durante el pretraining MLM, el modelo no predice el token en la posicion 0 (esa posicion no se enmascara). El `[CLS]` esta presente en todas las secuencias pero nunca es objetivo de ninguna prediccion. Sus pesos de embedding existen, pero no reciben gradiente directo del objetivo MLM.
+Durante el pretraining MLM, el modelo no predice el token en la posicion 0 (esa posicion no se enmascara). El `[CLS]` esta presente en todas las secuencias pero nunca es objetivo de ninguna prediccion. Sus pesos de embedding no reciben gradiente del objetivo de prediccion MLM directamente
+— [CLS] nunca es la posicion objetivo. Sin embargo, si recibe gradiente indirectamente:
+cada token de la secuencia atiende a [CLS] en la atencion bidireccional, y el backprop
+fluye por esos pesos de atencion hasta el embedding de [CLS].
 
 Cuando llega el fine-tuning de clasificacion, la cabeza lineal se conecta al vector `[CLS]` y si recibe gradiente. El modelo aprende a usar esa posicion como espacio de representacion para la tarea especifica. En pocas iteraciones de fine-tuning, `[CLS]` se convierte en un "resumen" de la oracion optimizado para la clasificacion que le pedimos.
 
@@ -105,7 +108,7 @@ print("""
 BERT podria usar promedio de todos los tokens como representacion.
 Usar [CLS] es una decision de diseno:
   1. [CLS] es un token sin contenido propio — aprende libremente a ser 'resumen'
-  2. Permite arquitecturas de dos-torres (cross-encoder) eficientes
+  2. Permite encodificacion conjunta de pares (cross-encoder) eficiente
   3. El promedio puede mezclar señales de tokens no relevantes
   4. En practica: ambos funcionan; [CLS] es el estandar BERT
 """)
@@ -135,7 +138,7 @@ Los logits son aleatorios (cabeza no entrenada) — fine-tuning en cap 47.
 BERT podria usar promedio de todos los tokens como representacion.
 Usar [CLS] es una decision de diseno:
   1. [CLS] es un token sin contenido propio — aprende libremente a ser 'resumen'
-  2. Permite arquitecturas de dos-torres (cross-encoder) eficientes
+  2. Permite encodificacion conjunta de pares (cross-encoder) eficiente
   3. El promedio puede mezclar señales de tokens no relevantes
   4. En practica: ambos funcionan; [CLS] es el estandar BERT
 ```
@@ -164,7 +167,7 @@ El script incluye cuatro razones. Vamos a expandirlas:
 
 Un token de contenido como `"king"` ya tiene un significado semantico consolidado — sus embeddings y pesos de atencion estan sesgados por las coocurrencias de la palabra "king" en el corpus. `[CLS]` no tiene ese sesgo: es un token artificial, sin ocurrencias en texto natural, que el modelo solo ve como marcador de inicio de secuencia. Cuando se aplica fine-tuning, sus representaciones son "terreno virgen" que el modelo puede moldear libremente para la tarea.
 
-### Razon 2: Arquitecturas de dos-torres (cross-encoder)
+### Razon 2: Encodificacion conjunta de pares (cross-encoder)
 
 En tareas de similitud de pares (por ejemplo: "¿son estas dos oraciones semanticamente equivalentes?"), se pueden pasar dos oraciones juntas: `[CLS] oracion_A [SEP] oracion_B [SEP]`. El vector `[CLS]` al final contiene la representacion de la interaccion completa entre ambas oraciones. Esta arquitectura es la base de los cross-encoders usados en retrieval y ranking. El promedio de tokens no tiene una posicion natural para acumular informacion de dos oraciones separadas.
 
