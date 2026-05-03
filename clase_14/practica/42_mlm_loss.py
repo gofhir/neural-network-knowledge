@@ -38,8 +38,13 @@ print(f"\nTokens enmascarados: {n_masked}/{ids.shape[1]} = {n_masked/ids.shape[1
 # Calcular la loss MLM
 masked_ids_dev = masked_ids.to(device)
 labels_dev     = labels.to(device)
-h = model(masked_ids_dev)
-logits = mlm_head(h)  # (1, T, vocab_size)
+
+model.eval()
+mlm_head.eval()
+
+with torch.no_grad():
+    h = model(masked_ids_dev)
+    logits = mlm_head(h)  # (1, T, vocab_size)
 
 loss = F.cross_entropy(
     logits.view(-1, vocab_size),
