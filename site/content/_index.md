@@ -83,5 +83,9 @@ cascade:
 <span class="stat-number">27</span>
 <span class="stat-label">Fundamentos</span>
 </div>
+<div class="stat-item">
+<span class="stat-number">7</span>
+<span class="stat-label">Dominios</span>
+</div>
 </div>
 </div>
