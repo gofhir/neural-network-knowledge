@@ -1,0 +1,11 @@
+{{- $name := .Get "name" -}}
+{{- $years := .Get "years" -}}
+<div class="timeline-era">
+  <div class="timeline-era-header">
+    <div class="timeline-era-years">{{ $years }}</div>
+    <div class="timeline-era-name">{{ $name }}</div>
+  </div>
+  <div class="timeline-hitos-grid">
+    {{- .Inner -}}
+  </div>
+</div>

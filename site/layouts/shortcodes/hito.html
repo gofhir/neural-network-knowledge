@@ -1,0 +1,21 @@
+{{- $year := .Get "year" -}}
+{{- $name := .Get "name" -}}
+{{- $status := .Get "status" | default "minimal" -}}
+{{- $link := .Get "link" | default "" -}}
+{{- $body := .Inner | markdownify -}}
+{{- if and (ne $status "minimal") (ne $link "") -}}
+<a href="{{ $link | relURL }}" class="timeline-hito timeline-hito-{{ $status }}">
+  <div class="timeline-hito-year">{{ $year }}</div>
+  <div class="timeline-hito-name">{{ $name }}</div>
+  <div class="timeline-hito-body">{{ $body }}</div>
+  {{- if eq $status "deep" -}}
+  <span class="timeline-hito-readmore">Leer más →</span>
+  {{- end -}}
+</a>
+{{- else -}}
+<div class="timeline-hito timeline-hito-{{ $status }}">
+  <div class="timeline-hito-year">{{ $year }}</div>
+  <div class="timeline-hito-name">{{ $name }}</div>
+  <div class="timeline-hito-body">{{ $body }}</div>
+</div>
+{{- end -}}
