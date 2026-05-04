@@ -161,3 +161,62 @@ Swin Transformer (2021) combinó lo mejor de ambos mundos: jerarquía y atenció
 ### Qué viene
 
 La frontera actual son los **modelos visuales fundacionales** entrenados a la escala de los LLMs, capaces de razonar sobre imágenes complejas (GPT-4V, Gemini, Claude con visión), y los **modelos generativos de video** que requieren coherencia temporal — la próxima gran prueba.
+
+## Estado del arte hoy
+
+{{< callout type="info" >}}
+
+**Visión como sub-modalidad de los foundation models (2024-2025).** La visión moderna no compite por sí sola; aparece como capacidad nativa de modelos generales.
+
+- **GPT-4V / GPT-5 Vision** — análisis de imágenes complejas, gráficos, diagramas, documentos.
+- **Claude Vision** — Anthropic. Foco en comprensión profunda de imágenes técnicas y diagramas.
+- **Gemini 2.5 Pro Vision** — multimodal nativo desde el pretraining.
+- **SAM 2** — Meta. Segmentación zero-shot extendida a video.
+- **Stable Diffusion 3 / Imagen 3** — generación texto-imagen producción.
+- **Sora** — OpenAI. Generación de video con coherencia temporal extendida.
+- **DINOv2** — Meta. Foundation model self-supervised para visión, base de muchas pipelines downstream.
+
+{{< /callout >}}
+
+## Casos de uso reales
+
+- **Conducción autónoma**: Tesla FSD, Waymo, Cruise — detección, segmentación, predicción de trayectorias en tiempo real.
+- **Diagnóstico médico**: dermatología, radiología, oftalmología — desde Inception en retinopatía diabética (2016) hasta foundation models médicos actuales.
+- **Búsqueda visual**: Google Lens, Pinterest Lens, Amazon — search por imagen + texto combinado (CLIP-style).
+- **Moderación de contenido**: detección de NSFW, copyright, deepfakes a escala en redes sociales.
+- **Robótica industrial**: pick-and-place, control de calidad, inspección visual.
+- **Generación creativa**: Midjourney, Stable Diffusion, Adobe Firefly — del concept art al diseño de producto.
+- **OCR y comprensión de documentos**: facturas, formularios, contratos — donde visión + texto se cruzan.
+
+## Qué viene
+
+Las apuestas activas en visión hoy: **modelos generativos de video con coherencia temporal extendida** (más allá de Sora), **agentes visuales** (modelos que actúan sobre interfaces gráficas como humanos), **3D nativo** (Gaussian splatting, NeRFs como paso previo a foundation models 3D), **visión embebida** (modelos eficientes para edge), y **vision-language-action** para robótica (RT-2, π0). La integración cada vez más profunda con LLMs hace probable que el campo de "visión por computador" como disciplina aislada se diluya en favor de modelos multimodales generales.
+
+## Recursos relacionados
+
+**Fundamentos:**
+- [Redes convolucionales](/fundamentos/redes-convolucionales).
+- [Vision Transformer](/fundamentos/vision-transformer).
+- [Transfer learning](/fundamentos/transfer-learning).
+- [Data augmentation](/fundamentos/data-augmentation).
+- [Regularización](/fundamentos/regularizacion).
+- [Aprendizaje contrastivo](/fundamentos/aprendizaje-contrastivo).
+
+**Papers:**
+- [AlexNet (Krizhevsky 2012)](/papers/alexnet-krizhevsky-2012).
+- [VGGNet (Simonyan 2014)](/papers/vggnet-simonyan-2014).
+- [GoogLeNet (Szegedy 2014)](/papers/googlenet-szegedy-2014).
+- [ResNet (He 2015)](/papers/resnet-he-2015).
+- [ViT (Dosovitskiy 2021)](/papers/vit-dosovitskiy-2021).
+- [Batch Normalization (Ioffe 2015)](/papers/batch-norm-ioffe-2015).
+- [Dropout (Srivastava 2014)](/papers/dropout-srivastava-2014).
+- [Mixup (Zhang 2017)](/papers/mixup-zhang-2017).
+- [Transferable features (Yosinski 2014)](/papers/transferable-features-yosinski-2014).
+
+**Clases del diplomado:**
+- Clases sobre CNNs, ResNets y backbones modernas.
+- Clases sobre ViT y atención visual.
+
+---
+
+*Última actualización: 2026-05-03.*
