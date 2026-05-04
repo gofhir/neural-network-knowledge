@@ -152,3 +152,59 @@ Tres ideas que se combinaron:
 ### Qué viene
 
 Esta es la era actual. Las direcciones activas — razonamiento extendido (chain-of-thought, o1, agentes), contexto largo, multimodalidad nativa, herramientas, modelos pequeños competitivos — se desarrollan en paralelo, sin un sucesor claro todavía.
+
+## Estado del arte hoy
+
+{{< callout type="info" >}}
+
+**Frontier LLMs (2024-2025).** Los modelos punteros combinan escala (∼1T parámetros), entrenamiento sobre billones de tokens curados, RLHF/DPO y técnicas de razonamiento extendido.
+
+- **GPT-5** — OpenAI. Razonamiento por defecto, contexto extendido, capacidades multimodales nativas (texto + imagen + audio).
+- **Claude Opus 4.7** — Anthropic. Contexto de 1M tokens, foco en razonamiento sostenido y uso de herramientas en tareas largas.
+- **Gemini 2.5** — Google DeepMind. Multimodal nativo desde el pretraining, integración profunda con búsqueda y herramientas.
+- **LLaMA 4** — Meta. Open weights, pesos abiertos competitivos a frontera cerrada en muchos benchmarks.
+- **DeepSeek-R1** — DeepSeek. Modelo de razonamiento abierto entrenado con RL puro sobre cadenas de pensamiento.
+
+{{< /callout >}}
+
+## Casos de uso reales
+
+- **Asistentes conversacionales** (ChatGPT, Claude, Gemini): productividad general, redacción, programación.
+- **Búsqueda semántica y RAG**: Google AI Overviews, Perplexity, asistentes corporativos sobre documentación interna.
+- **Generación de código**: GitHub Copilot, Cursor, Claude Code — completación, refactor y agentes que ejecutan tareas extremo a extremo.
+- **Traducción automática**: DeepL, Google Translate (modelos NMT actuales son Transformers descendientes directos de Seq2Seq + atención).
+- **Extracción de información estructurada**: del texto libre a JSON conforme a esquema — facturas, historias clínicas, contratos.
+- **Moderación y clasificación a escala**: filtros de spam, detección de toxicidad, triaje de tickets de soporte.
+
+## Qué viene
+
+Las apuestas activas hoy — sin un ganador claro — incluyen: **razonamiento explícito** (modelos como o-series y R1 que producen chain-of-thought antes de responder), **agentes** (LLMs que ejecutan secuencias largas de acciones con herramientas), **contextos extra-largos** (millones de tokens, memoria persistente entre conversaciones), **modelos pequeños competitivos** (eficiencia por destilación e instrucción cuidada), y **arquitecturas más allá del Transformer** (Mamba, RWKV, mezclas de expertos a gran escala). Cuál de estas líneas marca el siguiente salto cualitativo es la pregunta abierta de 2025.
+
+## Recursos relacionados
+
+**Fundamentos:**
+- [Embeddings distribuidos](/fundamentos/embeddings-distribuidos) — word2vec, GloVe, embeddings contextuales.
+- [Redes recurrentes](/fundamentos/redes-recurrentes) y [LSTM/GRU](/fundamentos/lstm-gru).
+- [Seq2Seq](/fundamentos/seq2seq) y [mecanismo de atención](/fundamentos/mecanismo-atencion).
+- [Self-attention](/fundamentos/self-attention) y [Transformer](/fundamentos/transformer).
+- [Positional encoding](/fundamentos/positional-encoding).
+- [BPE — tokenización](/fundamentos/bpe).
+- [BERT](/fundamentos/bert) y [pretraining BERT](/fundamentos/pretraining-bert).
+- [SFT](/fundamentos/sft), [DPO](/fundamentos/dpo) y [KL implícito](/fundamentos/kl-implicito).
+- [Foundation models](/fundamentos/foundation-models).
+
+**Papers:**
+- [Attention is All You Need (Vaswani 2017)](/papers/attention-is-all-you-need-vaswani-2017).
+- [BERT (Devlin 2018)](/papers/bert-devlin-2018).
+- [Seq2Seq (Sutskever 2014)](/papers/seq2seq-sutskever-2014).
+- [Bahdanau attention (2015)](/papers/bahdanau-attention-2015).
+- [LSTM (Hochreiter 1997)](/papers/lstm-hochreiter-1997).
+- [GRU (Cho 2014)](/papers/gru-cho-2014).
+
+**Clases del diplomado:**
+- Clase 13 — RNNs, seq2seq y atención.
+- Clase 14 — Transformer, GPT, BERT, alineamiento.
+
+---
+
+*Última actualización: 2026-05-03.*
