@@ -20,8 +20,8 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
     {{< hito year="1948" name="n-gramas (Shannon)" status="minimal" >}}
       Modelos de lenguaje basados en frecuencias de secuencias cortas. **Por qué importó:** estableció el problema de predecir la siguiente palabra y la métrica de perplexity.
     {{< /hito >}}
-    {{< hito year="2003" name="Bengio NNLM" status="covered" link="/fundamentos/embeddings-distribuidos" >}}
-      Primera red neuronal para modelar lenguaje; introduce embeddings densos aprendidos.
+    {{< hito year="2003" name="Bengio NNLM" status="minimal" >}}
+      Primera red neuronal que aprende simultáneamente embeddings densos y un modelo de lenguaje probabilístico end-to-end. **Por qué importó:** validó la idea de representaciones distribuidas aprendidas, base conceptual de toda la era siguiente.
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de embeddings" years="2013-2017" >}}
@@ -31,13 +31,13 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
     {{< hito year="2014" name="GloVe" status="minimal" >}}
       Embeddings basados en factorización de la matriz de coocurrencias global. **Por qué importó:** alternativa a word2vec con mejor uso de estadísticas globales del corpus.
     {{< /hito >}}
-    {{< hito year="2014" name="FastText" status="minimal" >}}
+    {{< hito year="2016" name="FastText" status="minimal" >}}
       Embeddings que descomponen palabras en n-gramas de caracteres. **Por qué importó:** maneja palabras fuera de vocabulario y morfología rica.
     {{< /hito >}}
   {{< /era >}}
-  {{< era name="Era recurrente y seq2seq" years="2014-2016" >}}
-    {{< hito year="2014" name="LSTM aplicado a NLP" status="deep" link="/fundamentos/lstm-gru" >}}
-      Redes con memoria de largo plazo capaces de modelar dependencias entre tokens distantes.
+  {{< era name="Era recurrente y seq2seq" years="1997-2016" >}}
+    {{< hito year="1997" name="LSTM (Hochreiter & Schmidhuber)" status="deep" link="/fundamentos/lstm-gru" >}}
+      Redes con memoria de largo plazo capaces de modelar dependencias entre tokens distantes. La aplicación masiva a NLP llega ~17 años después con seq2seq.
     {{< /hito >}}
     {{< hito year="2014" name="Seq2Seq (Sutskever)" status="deep" link="/fundamentos/seq2seq" >}}
       Encoder-decoder con LSTMs: el primer modelo que traducía oraciones completas extremo a extremo.
