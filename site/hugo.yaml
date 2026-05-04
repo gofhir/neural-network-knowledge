@@ -16,6 +16,9 @@ menu:
     - name: Fundamentos
       pageRef: /fundamentos
       weight: 10
+    - name: Dominios
+      pageRef: /dominios
+      weight: 15
     - name: Clases
       pageRef: /clases
       weight: 20
