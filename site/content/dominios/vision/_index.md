@@ -56,11 +56,11 @@ Tres tensiones recorren toda la historia: (1) cómo construir **invariancia a tr
     {{< hito year="2015" name="Faster R-CNN" status="minimal" >}}
       Region Proposal Network integrado dentro de la CNN. **Por qué importó:** detección viable en tiempo casi real.
     {{< /hito >}}
-    {{< hito year="2016" name="YOLO" status="minimal" >}}
-      Detección como única regresión sobre toda la imagen. **Por qué importó:** detección a 60+ FPS, abrió la puerta a robótica y video.
-    {{< /hito >}}
     {{< hito year="2015" name="U-Net" status="minimal" >}}
       Encoder-decoder con skip connections para segmentación médica. **Por qué importó:** sigue siendo el caballo de batalla de segmentación biomédica.
+    {{< /hito >}}
+    {{< hito year="2016" name="YOLO" status="minimal" >}}
+      Detección como única regresión sobre toda la imagen. **Por qué importó:** detección a 60+ FPS, abrió la puerta a robótica y video.
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era Transformer" years="2020-presente" >}}
