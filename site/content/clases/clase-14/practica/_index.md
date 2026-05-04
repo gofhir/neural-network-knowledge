@@ -13,12 +13,13 @@ Mapa de estudio progresivo para entender el Transformer construyendolo a mano en
 
 Esta seccion no asume conocimiento previo de PyTorch ni de redes neuronales — solo programacion basica. Cada concepto se construye encima del anterior.
 
-El viaje esta organizado en cuatro **Caminos**:
+El viaje esta organizado en cinco **Caminos**:
 
 - **Camino 1 (Fases 1-5, capitulos 01-21)**: construir el Transformer desde cero hasta un Mini-LLaMA char-level entrenado en Shakespeare. Cubre Vaswani 2017 → LLaMA 2024 modernizaciones.
 - **Camino 2 (Fases 6-7, capitulos 22-29)**: convertir el Mini-LLaMA en un asistente que sigue instrucciones, via SFT + DPO. El stack moderno post-pretraining usado por Llama-3-Instruct, Mistral-Instruct, Zephyr.
 - **Camino 2.5 (Fase 8, capitulos 30-37)**: rehacer SFT+DPO con BPE tokenizer bilingue Shakespeare+Quijote. Honesto sobre los tradeoffs char vs BPE.
 - **Camino 4 (Fases 9-11, capitulos 38-49)**: Mini-BERT encoder-only con MLM pretraining y fine-tuning a deteccion de idioma EN/ES. El "otro lado" del Transformer.
+- **Camino 3 (Fases 12-16, capitulos 50-63)**: interpretabilidad mecanicista — abrir Mini-LLaMA y Mini-BERT con hooks, activation patching, sparse autoencoders. La frontera 2024-2026 inspirada en Anthropic Circuits Thread.
 
 ## Capitulos
 
@@ -163,6 +164,51 @@ Caminos 1, 2 y 2.5 cubrieron el lado **decoder-only** de la familia Transformer 
 
 ---
 
+## Camino 3 — Interpretabilidad mecanicista
+
+Caminos 1-4 construyeron modelos que funcionan. Camino 3 abre la caja: ver QUE hace cada componente, mapear circuitos causales, descomponer la superposition con sparse autoencoders. Construido desde cero (sin TransformerLens) sobre Mini-LLaMA y Mini-BERT — fiel a la pedagogia "you build it, you understand it" del curso. Inspirado en el [Anthropic Circuits Thread](https://transformer-circuits.pub/).
+
+### Fase 12 — Hooks y residual stream (fundacional)
+
+{{< cards >}}
+  {{< card link="50-forward-hooks" title="50 - Forward hooks" subtitle="cache_activations con register_forward_hook, context manager para cleanup" icon="academic-cap" >}}
+  {{< card link="51-residual-stream" title="51 - Residual stream: la autopista" subtitle="Cada bloque LEE y ESCRIBE delta. Bloque 3 escribe ||delta||/||in||=1.64" icon="academic-cap" >}}
+  {{< card link="52-logit-lens" title="52 - Logit lens: capa por capa" subtitle="Honesto: Mini-LLaMA NO predice 'b' tras 'To be or not to' — limitacion escala" icon="chart-bar" >}}
+{{< /cards >}}
+
+### Fase 13 — Atencion por dentro
+
+{{< cards >}}
+  {{< card link="53-attention-heatmaps" title="53 - Heatmaps de atencion" subtitle="ASCII heatmaps de las 16 cabezas (4 capas x 4 heads)" icon="academic-cap" >}}
+  {{< card link="54-previous-token-heads" title="54 - Previous-token heads" subtitle="block.2 head.0 con score 0.547 — top-1 sobre 50 prompts" icon="cog" >}}
+  {{< card link="55-induction-heads" title="55 - Induction heads (no emergen)" subtitle="Honesto: top score 0.057 — escala insuficiente vs GPT-2 small" icon="chart-bar" >}}
+  {{< card link="56-qk-ov-decomposition" title="56 - QK / OV decomposition" subtitle="La cabeza top-prev-token NO es copy head: ||OV-I||/||I||=1.04" icon="cog" >}}
+{{< /cards >}}
+
+### Fase 14 — Causalidad e intervencion
+
+{{< cards >}}
+  {{< card link="57-activation-patching" title="57 - Activation patching" subtitle="Del correlacional al causal: flujo del speaker hacia posicion 12" icon="cog" >}}
+  {{< card link="58-circuit-discovery" title="58 - Head-level patching" subtitle="Descripcion != causalidad: top prev-token tiene recovery NEGATIVO (-2.7%)" icon="sparkles" >}}
+{{< /cards >}}
+
+### Fase 15 — Frontera moderna (SAEs)
+
+{{< cards >}}
+  {{< card link="59-superposition" title="59 - Superposition" subtitle="Toy model: 5 features en 2 dim. Cluster colapsado + anti-pareo emerge" icon="academic-cap" >}}
+  {{< card link="60-train-sae" title="60 - Entrenar un SAE" subtitle="d_model=128 -> d_features=512, 98.4% var explicada, L0=166" icon="cog" >}}
+  {{< card link="61-interpret-sae" title="61 - Interpretar features del SAE" subtitle="47% features monosemanticas (242/512): chars, puntuacion, separadores" icon="chart-bar" >}}
+{{< /cards >}}
+
+### Fase 16 — Contraste BERT y cierre
+
+{{< cards >}}
+  {{< card link="62-interp-bert" title="62 - Interpretabilidad en Mini-BERT" subtitle="Capa 3 distingue idiomas: EN -> [SEP], ES -> [CLS]. Cosine 0.002 entre [CLS]" icon="academic-cap" >}}
+  {{< card link="63-comparativa-interp-frontera" title="63 - Comparativa + frontera 2026" subtitle="Tabla maestra, Anthropic Circuits, SAEs a escala, mech interp para alignment" icon="sparkles" >}}
+{{< /cards >}}
+
+---
+
 ## Setup
 
 Antes de correr cualquier script:
@@ -237,6 +283,24 @@ Camino 4 (caps 38-49) construye Mini-BERT desde cero — encoder-only con MLM pr
 .venv/bin/python 48_eval_bert.py
 ```
 
+Camino 3 (caps 50-63) abre Mini-LLaMA y Mini-BERT con tecnicas de interpretabilidad mecanicista. Requiere los checkpoints de Camino 1 (`mini_llama_base.pt`) y Camino 4 (`mini_bert_finetuned.pt`):
+
+```bash
+.venv/bin/python 50_forward_hooks.py
+.venv/bin/python 51_residual_stream.py
+.venv/bin/python 52_logit_lens.py
+.venv/bin/python 53_attention_heatmaps.py
+.venv/bin/python 54_previous_token_heads.py
+.venv/bin/python 55_induction_heads.py
+.venv/bin/python 56_qk_ov_decomposition.py
+.venv/bin/python 57_activation_patching.py
+.venv/bin/python 58_circuit_discovery.py
+.venv/bin/python 59_superposition.py
+.venv/bin/python 60_train_sae.py
+.venv/bin/python 61_interpret_sae.py
+.venv/bin/python 62_interp_bert.py
+```
+
 Tests unitarios para los helpers (`load_pretrained_mini_llama`, `generate_with_prompt`, `compute_logp_response`, `dpo_loss`, `build_char_maps`):
 
 ```bash
@@ -308,14 +372,25 @@ Camino 4 — Mini-BERT (encoder-only + MLM)
     48   eval: accuracy 0.998 + attention + PCA [CLS]
   Cierre
     49   comparativa BERT vs GPT ← cierre Camino 4
+
+Camino 3 — Interpretabilidad mecanicista (caps 50-63)
+  Fase 12: Hooks y residual stream
+    50-52  forward hooks, residual stream, logit lens
+  Fase 13: Atencion por dentro
+    53-56  heatmaps, prev-token, induction (no emerge), QK/OV decomp
+  Fase 14: Causalidad
+    57-58  activation patching, head-level (descripcion != causalidad)
+  Fase 15: Frontera SAE
+    59-61  superposition, train SAE, interpretar features (47% monosemanticas)
+  Fase 16: BERT + cierre
+    62-63  interp Mini-BERT, comparativa + frontera 2026 ← cierre Camino 3
 ```
 
 ## Que viene despues (Caminos pendientes)
 
-Despues de cerrar Camino 4 (Mini-BERT), quedan caminos para profundizar:
+Despues de cerrar Camino 3 (interpretabilidad), queda un camino para profundizar:
 
-- **Camino 3 — Interpretabilidad mecanicista**: abrir el modelo entrenado y ver que hace cada componente. Attention pattern analysis, induction heads, QK/OV decomposition, circuit discovery. Inspirado en los Transformer Circuits de Anthropic.
-- **Camino 5 — ViT (Vision Transformer)**: llevar el Transformer a imagenes. Patches 16x16 como tokens, [class] token aprendible, entrenar en MNIST/CIFAR, multimodal extensions (CLIP).
+- **Camino 5 — ViT (Vision Transformer)**: llevar el Transformer a imagenes. Patches 16x16 como tokens, [class] token aprendible, entrenar en MNIST/CIFAR, multimodal extensions (CLIP). Las tecnicas de interpretabilidad del Camino 3 se transfieren directamente — solo cambia la modalidad.
 
 Y experimentos mas chicos sobre Camino 2:
 
