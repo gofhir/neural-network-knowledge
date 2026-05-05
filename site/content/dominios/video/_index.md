@@ -84,3 +84,87 @@ Tres tensiones definen el campo: (1) cómo **modelar movimiento sin desperdiciar
     {{< /hito >}}
   {{< /era >}}
 {{< /timeline >}}
+
+## Era 1 — Pre-deep / handcrafted (2003-2013)
+
+### Problema heredado
+
+A inicios de los 2000s la visión por computador clásica había desarrollado descriptores robustos para imágenes (SIFT, HOG, SURF). Pero video era 16+ veces más datos y necesitaba capturar **movimiento** — la información que define qué está pasando. Aplicar SIFT cuadro por cuadro pierde justamente lo importante.
+
+### Idea clave
+
+**Extender los descriptores de imagen a volúmenes espacio-temporales.** HOG3D, Cuboids 3D y SIFT 3D (2008) trataban regiones del video como volúmenes 3D y calculaban descriptores invariantes. Más exitoso aún fue **Dense Trajectories** (Wang & Schmid, 2011): seguir puntos densamente sobre la imagen vía flujo óptico durante varios frames, generando trayectorias que luego se describen con HOG (apariencia), HOF (flujo óptico) y MBH (gradiente del flujo). iDT (2013) refinó la idea compensando el movimiento de cámara y agregando Fisher Vectors para la representación final.
+
+Esa pipeline — handcrafted features + Bag-of-Words + SVM — fue estado del arte en HMDB-51 y UCF-101 durante varios años, e increíblemente seguía superando a las primeras CNNs de video durante 2014-2015.
+
+### Qué la destronó
+
+Los handcrafted features tenían un techo: cada nueva tarea requería diseñar features específicas, y el espacio de patrones espacio-temporales era enorme. Cuando AlexNet había mostrado que CNN-2D aprendían mejores features que SIFT en imágenes, era cuestión de tiempo que pasara lo mismo con video — pero requería más cómputo, más datos etiquetados (Kinetics, 2017) y mejores arquitecturas que la transferencia ingenua de CNN-2D.
+
+## Era 2 — Two-stream y 3D-CNN tempranas (2014-2015)
+
+### Problema heredado
+
+Karpathy et al. (CVPR 2014) hicieron el experimento natural: ¿qué pasa si tomas una CNN-2D entrenada en imágenes y la aplicas a video? Probaron varias estrategias de fusión temporal (early, late, slow, single-frame) sobre Sports-1M. Resultado descorazonador: el modelo single-frame era casi tan bueno como los temporales — la CNN no estaba aprovechando la dimensión temporal del video.
+
+### Idea clave
+
+Dos respuestas paralelas:
+
+1. **Two-Stream** (Simonyan & Zisserman, 2014): si la CNN-2D no aprende movimiento por sí sola, dáselo explícitamente. Una stream procesa RGB (apariencia), otra stream procesa **flujo óptico precomputado** (movimiento). Las predicciones se fusionan al final. Superó a iDT y se volvió el patrón estándar 2014-2018.
+
+2. **C3D** (Tran et al., 2015): convoluciones 3D aprendidas extremo a extremo. Un kernel $3 \times 3 \times 3$ procesa simultáneamente espacio y tiempo. Costoso en parámetros y datos, pero conceptualmente más limpio que two-stream — el modelo aprende el movimiento, no se le da gratis.
+
+### Qué la destronó
+
+Two-stream dependía de flujo óptico precomputado (caro, ruidoso, requiere preprocesamiento). C3D era costoso y no escalaba bien en profundidad. Ambos cedieron a la siguiente generación: 3D-CNN inflated desde modelos 2D bien entrenados.
+
+## Era 3 — 3D-CNN profundas (2017-2019)
+
+### Problema heredado
+
+C3D era profundo solo hasta ~8 capas; redes mucho más profundas no entrenaban bien sobre video desde cero. Two-stream tenía cota dura por su dependencia del flujo óptico. La pregunta natural: ¿se puede aprovechar el progreso enorme de CNN-2D en ImageNet y transferirlo a video?
+
+### Idea clave
+
+**Inflar arquitecturas 2D preentrenadas a 3D.** I3D (Carreira & Zisserman, DeepMind, 2017) toma una CNN-2D entrenada en ImageNet (típicamente Inception-V1) y "infla" cada filtro 2D de tamaño $k \times k$ a un filtro 3D $k \times k \times k$, replicando los pesos a lo largo de la dimensión temporal. La inicialización transfiere la representación visual aprendida en imágenes; el fine-tuning sobre el nuevo dataset Kinetics-400 ajusta la dimensión temporal. I3D destronó a iDT y two-stream simultáneamente.
+
+R(2+1)D (Tran et al., FAIR, 2018) propuso una factorización: cada bloque hace una convolución 2D (espacial) seguida de una 1D (temporal). Mejor accuracy con menos parámetros — y demuestra que separar espacio y tiempo es pedagógicamente útil incluso para el modelo.
+
+SlowFast (Feichtenhofer et al., FAIR, 2019) llevó la idea a su versión más bonita: **dos pathways paralelas** inspiradas en la división Magnocellular/Parvocellular del sistema visual humano. Una "slow" a baja frame rate captura apariencia con muchos canales; una "fast" a alta frame rate captura movimiento con pocos canales. Estado del arte en Kinetics y AVA durante 2019-2020.
+
+### Qué la destronó
+
+Las 3D-CNN tenían un sesgo inductivo de localidad espacial y temporal — un kernel $3 \times 3 \times 3$ solo ve un vecindario inmediato. Para acciones largas o relaciones espaciales globales, esto era un cuello de botella. La pregunta abierta de finales de 2010s era si la atención (ya dominante en NLP y avanzando en visión con ViT) podía superar a las 3D-CNN en video.
+
+## Era 4 — Video Transformers (2021-2022)
+
+### Problema heredado
+
+ViT había mostrado que un Transformer puro sobre parches de imagen, con suficiente data, supera a CNNs. La extensión natural a video no era trivial: aplicar ViT cuadro por cuadro pierde temporal; aplicar atención sobre todos los parches de todos los frames escala cuadráticamente — un clip de 16 frames a 14×14 parches son ~3000 tokens, vs ~200 en una imagen estática.
+
+### Idea clave
+
+**Atención factorizada espacio-tiempo.** TimeSformer (Bertasius et al., FAIR, 2021) tokeniza cada frame como ViT y aplica dos atenciones por bloque: una espacial (dentro de cada frame), una temporal (a través de frames en la misma posición espacial). Cuadrático $O(T \cdot S^2 + S \cdot T^2)$ en lugar de $O((TS)^2)$. Superó a 3D-CNN profundas con menos cómputo.
+
+ViViT (Arnab et al., Google, 2021) sistematizó el espacio: cuatro variantes de factorización (joint, factorized encoder, factorized self-attention, factorized dot-product). MViT (Fan et al., FAIR, 2021) agregó jerarquía estilo CNN — resolución decreciente, canales crecientes — para eficiencia. Video Swin (2022) extendió Swin a 3D con ventanas espacio-temporales desplazadas, recuperando sesgo inductivo local.
+
+### Qué la destronó
+
+Para 2022 los Video Transformers dominaban benchmarks de comprensión (Kinetics-600/700, Something-Something-V2). Pero la frontera del campo se movió hacia algo que ningún Video Transformer puro podía hacer: **generar** video coherente desde texto. Eso requería arquitecturas distintas — modelos de difusión.
+
+## Era 5 — Generación + foundation (2022-presente)
+
+### Problema heredado
+
+La comprensión de video estaba madura; la generación apenas comenzaba. Modelos texto-a-imagen (DALL·E 2, Stable Diffusion, Imagen) habían explotado en 2022. La pregunta abierta: ¿se podía generar video coherente — apariencia + movimiento + identidad consistente — y a qué duración?
+
+### Idea clave
+
+**Diffusion + escala + tokens latentes.** Make-A-Video (Meta, 2022) e Imagen Video (Google, 2022) combinaron modelos texto-a-imagen preentrenados con módulos temporales aprendidos sobre video sin etiquetas, generando clips de pocos segundos. Stable Video Diffusion (2023) democratizó la idea con open weights.
+
+El salto cualitativo llegó con **Sora** (OpenAI, 2024): generación de hasta 60 segundos con coherencia temporal extendida, física aproximada y resolución alta. Internamente, Sora opera sobre **tokens de video latentes** (parches espacio-temporales comprimidos), aplicando un Transformer de difusión que escala con cómputo de forma similar a los LLMs. Veo (Google DeepMind, 2024) ofreció una alternativa con foco en 4K (Veo 2) y control de cámara. Kling (Kuaishou, 2024) demostró que China alcanzó paridad rápidamente. Runway Gen-3 llevó la generación a producción para creadores y estudios.
+
+### Qué viene
+
+Las apuestas activas: **coherencia física genuina** (más allá de Sora — conservación de masa, identidad estable, causalidad correcta), **video largo generativo** (5+ minutos coherentes con narrativa), **edición de video por prompt** (modificar contenido existente, no solo generar nuevo), **vision-language-action** para robótica (RT-2, π0 — pendientes en la Ola 5 de Dominios), y **modelos eficientes** para edge/móvil. La pregunta abierta de 2025: si frontier LLMs absorben video nativamente como entrada (GPT-4o, Gemini 2.5) y la generación converge en arquitecturas tipo Sora, ¿queda "video" como dominio aislado o se diluye en multimodal general?
