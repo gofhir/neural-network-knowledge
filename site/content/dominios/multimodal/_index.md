@@ -78,3 +78,87 @@ Tres tensiones definen el campo: (1) cómo **alinear modalidades sin pares anota
     {{< /hito >}}
   {{< /era >}}
 {{< /timeline >}}
+
+## Era 1 — Captioning temprano (2014-2016)
+
+### Problema heredado
+
+A inicios de los 2010s la visión por computador y el procesamiento de lenguaje vivían en silos: las CNNs clasificaban imágenes en categorías cerradas, los RNNs traducían texto. Conectar ambas modalidades era un problema abierto. La **descripción automática de imágenes** (image captioning) se volvió el primer terreno de prueba: dada una foto, generar una oración que la describa.
+
+### Idea clave
+
+**Combinar el encoder de visión con el decoder de lenguaje.** Show and Tell (Vinyals et al., 2015) tomó una CNN preentrenada en ImageNet, extrajo el vector de la última capa antes de la clasificación y lo pasó como estado inicial a una LSTM que generaba la descripción palabra por palabra. La arquitectura era una traducción directa de Seq2Seq: en lugar de "encoder de oración fuente", "encoder de imagen".
+
+Show, Attend and Tell (Xu et al., 2015) agregó **atención sobre regiones** de la imagen: en cada paso del decoder el modelo aprende a mirar dónde necesita. Las visualizaciones del paper — el modelo mirando una pelota mientras genera la palabra "ball" — se volvieron icónicas.
+
+### Qué la destronó
+
+La atención uniforme sobre la grilla de features convolucionales no respetaba la estructura del mundo: los objetos no son píxeles aislados sino regiones cohesivas. La idea natural era operar sobre **objetos detectados** en lugar de la grilla densa.
+
+## Era 2 — Atención visual estructurada (2017-2018)
+
+### Problema heredado
+
+Show, Attend and Tell atendía a una grilla 14x14 de features convolucionales — geometría arbitraria que no se alinea con los objetos reales en la escena. Las preguntas de VQA como *"¿de qué color es la pelota a la izquierda del hombre?"* exigen razonar sobre objetos, sus atributos y sus relaciones. Una grilla uniforme no provee esa estructura.
+
+### Idea clave
+
+**Atender a regiones detectadas, no a píxeles uniformes.** Anderson et al. (2018) propusieron usar Faster R-CNN para detectar 36 regiones por imagen, y atender sobre esas regiones desde el decoder de lenguaje. Las regiones traen consigo features semánticamente coherentes (objetos, partes), y la atención sobre ellas es interpretable.
+
+En paralelo, Santoro et al. (2017) introdujeron **Relation Networks**: un módulo que razona explícitamente sobre **pares** de objetos. Para cada par $(o_i, o_j)$ se calcula una función de relación, y las relaciones se agregan para responder la pregunta. Resolvió el dataset CLEVR — un benchmark de razonamiento visual sintético — donde CNNs puras fallaban.
+
+### Qué la destronó
+
+Estas arquitecturas eran ad hoc para captioning/VQA. Cada nueva tarea requería diseñar un módulo nuevo. Faltaba un **paradigma de pretraining transferible** — el equivalente a BERT para multimodal.
+
+## Era 3 — Pretraining multimodal (2019-2020)
+
+### Problema heredado
+
+BERT (2018) había mostrado que pretraining masivo + fine-tuning destronaba a soluciones especializadas en NLP. La pregunta natural: ¿se puede aplicar la misma receta a texto + imagen?
+
+### Idea clave
+
+**BERT-style para texto e imagen.** ViLBERT (Lu et al., 2019) propuso dos torres BERT — una para texto, otra para imagen como secuencia de regiones detectadas — con **cross-attention** entre ellas en cada capa. El pretraining usa Masked Language Modeling extendido: enmascarar tokens de texto, predecirlos con contexto visual; enmascarar regiones, predecirlas con contexto textual.
+
+LXMERT (Tan & Bansal, 2019) fijó el patrón con tres encoders (texto, visión, cross-modal) y cinco tareas de pretraining sobre Conceptual Captions. UNITER y OSCAR (2020) lo simplificaron a un solo Transformer unificado, agregando **etiquetas de objetos** como anclas semánticas que aproximan textos e imágenes en el mismo vocabulario.
+
+### Qué la destronó
+
+Estos modelos dependían de **detectores Faster R-CNN preentrenados** — caros, lentos y un cuello de botella conceptual. Y los datasets curados (Conceptual Captions, COCO) eran pequeños comparados con el texto disponible para pretraining de NLP. CLIP demostró que se podía evitar ambos problemas con datos web ruidosos a escala.
+
+## Era 4 — Contrastiva y zero-shot (2021-2022)
+
+### Problema heredado
+
+Los modelos de pretraining multimodal eran lentos (cada imagen requería detección + atención cruzada profunda) y limitados a las tareas vistas en pretraining. Cambiar el dominio de aplicación requería fine-tuning. La pregunta abierta: ¿hay una arquitectura más simple que aprenda representaciones genéricamente útiles?
+
+### Idea clave
+
+**Aprendizaje contrastivo a escala web.** CLIP (Radford et al., 2021) entrenó un encoder de texto (Transformer) y uno de imagen (ViT o ResNet) sobre 400 millones de pares imagen-caption raspados de internet. La pérdida es contrastiva: dado un batch de N pares, el modelo debe identificar cuál caption corresponde a cuál imagen entre las $N \times N$ combinaciones posibles.
+
+El resultado son dos encoders cuyos embeddings viven en un **espacio compartido**. Para clasificar zero-shot una imagen entre clases arbitrarias, basta describir cada clase como texto ("una foto de un akita"), embeber esos textos, embeber la imagen, y elegir la clase con mayor similitud coseno. CLIP iguala o supera a modelos supervisados especializados en docenas de benchmarks sin haber visto un solo ejemplo de las tareas.
+
+ALIGN (2021, Google) replicó la idea a 1.8B pares ruidosos. BLIP (2022) unificó entendimiento y generación. El paradigma se volvió la base de toda la generación texto-imagen posterior — Stable Diffusion, DALL·E 2 e Imagen condicionan sobre el text encoder de CLIP.
+
+### Qué la destronó
+
+CLIP entendía pero no generaba, y no razonaba. Su embedding compartido es útil pero los detalles finos (composición, conteo, posiciones relativas) escapan a la similitud coseno. La frontera se movió a integrar visión **dentro** de los LLMs y a generación cross-modal de alta fidelidad.
+
+## Era 5 — VLMs y generación (2022-presente)
+
+### Problema heredado
+
+CLIP había abierto dos preguntas: (1) cómo darle visión a un LLM general sin reentrenarlo desde cero, y (2) cómo invertir el proceso — generar imagen y video desde texto, no solo entenderlos.
+
+### Idea clave
+
+Dos líneas convergentes:
+
+1. **Modelos visión-lenguaje (VLMs).** Flamingo (DeepMind, 2022) introdujo el patrón "**LLM congelado + adaptador visual**": un encoder de imagen (ViT preentrenado) produce tokens visuales que se inyectan en el LLM vía cross-attention adaptado, sin tocar los pesos del LLM. LLaVA (2023) lo simplificó a un proyector lineal entre CLIP-ViT y LLaMA, entrenado con instrucciones sintéticas generadas por GPT-4. GPT-4V, Gemini y Claude llevaron la idea a producción con visión nativa desde el pretraining.
+
+2. **Generación texto-a-imagen/video.** Stable Diffusion, DALL·E 2 e Imagen (2022) usan **modelos de difusión** condicionados en el text encoder de CLIP o T5. La difusión aprende a denoise iterativamente desde ruido gaussiano hasta la imagen final, guiada por el embedding de texto en cada paso. Sora (2024) y Veo (2024-2025) extendieron la receta a video con coherencia temporal de 10-60 segundos.
+
+### Qué viene
+
+El campo está convergiendo hacia **modelos any-to-any** que aceptan y producen cualquier combinación de modalidades (texto, imagen, audio, video, acción). Las direcciones activas: agentes visuales que actúan sobre interfaces gráficas, generación de video con física correcta, integración con robótica vía Vision-Language-Action (RT-2, π0, OpenVLA — pendientes de la Ola 4 de Dominios), y modelos pequeños multimodales competentes (eficiencia por destilación). La pregunta abierta: si los frontier LLMs se vuelven multimodales nativos por defecto, ¿queda "multimodal" como disciplina aislada o se diluye en el modelado general de secuencias?
