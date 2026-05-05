@@ -165,3 +165,56 @@ En paralelo, AudioLM (Google, 2022) mostró que la generación de audio (música
 ### Qué viene
 
 La convergencia con los frontier LLMs es el hito en marcha: GPT-4o y Gemini 2.5 ya procesan audio nativamente como entrada/salida, sin pipeline ASR→LLM→TTS. La latencia conversacional bajó a <300ms (Sesame, ChatGPT Voice). En generación, las apuestas activas son **música con control fino** (estems separables, edición por prompt), **audio espacial 3D** para AR/VR, y **detección de deepfakes de voz** como contramedida a la clonación. La pregunta abierta: si los frontier LLMs absorben audio nativamente, ¿queda "audio" como dominio aislado o pasa a ser una modalidad más en modelos generales?
+
+## Estado del arte hoy
+
+{{< callout type="info" >}}
+
+**Frontier audio (2024-2025).** El audio se está integrando nativamente a los foundation models generales. La generación (música, voz, sonido) alcanza calidad de producción y la conversación por voz baja a latencia humana.
+
+- **Whisper v3** — OpenAI. ASR multilingüe estándar industrial; 100 idiomas, robusto a ruido y acentos.
+- **GPT-4o / Gemini 2.5 audio nativo** — frontier LLMs con entrada/salida de voz directa, sin pipeline.
+- **Sesame** — TTS conversacional con prosodia natural, latencia <300ms para diálogo en tiempo real.
+- **ElevenLabs Multilingual v3** — TTS de producción con expresividad y control fino; clonación de voz desde segundos.
+- **VALL-E 2 / NaturalSpeech 3** — TTS zero-shot con calidad de hablante humano.
+- **Suno v4 / Udio v2** — música generativa por texto, calidad comercial; millones de usuarios activos.
+- **MusicGen / Stable Audio 2** — generación de música y efectos para creadores y producción.
+
+{{< /callout >}}
+
+## Casos de uso reales
+
+- **ASR en producción**: Zoom Live Transcript, Otter.ai, Apple Dictation, Google Recorder, transcripción de podcasts.
+- **Asistentes de voz**: Alexa, Siri, Google Assistant; nueva generación con voz directa (ChatGPT Voice, Gemini Live).
+- **Subtítulos automáticos**: YouTube, Twitch, plataformas de streaming, accesibilidad en tiempo real.
+- **Audiolibros y TTS comercial**: Audible AI Narration, Google Play Books — TTS de producción.
+- **Música generativa**: Suno y Udio para creadores; Stable Audio para producción profesional; MusicGen open-source.
+- **Clonación de voz**: ElevenLabs para localización de contenido, accesibilidad, dubs multilingües.
+- **Análisis de llamadas**: contact centers, compliance regulatorio, análisis de sentiment y QA.
+- **Salud y diagnóstico**: detección de Parkinson, depresión y disfonía a partir de voz.
+
+## Qué viene
+
+Las apuestas activas en audio: **modelos de audio nativos en frontier LLMs** (audio in / audio out sin pipeline ASR→LLM→TTS, latencia <300ms), **música generativa con control fino** (estems separables, edición por prompt sobre piezas existentes), **detección de deepfakes de voz** como contramedida industrial a la clonación masiva, **audio espacial generativo** (3D, binaural) para AR/VR, y **foundation models multilingües** que cubran los 7,000 idiomas humanos — Whisper aún cubre <100. La pregunta abierta: ¿cuándo el "asistente de voz" será indistinguible de una llamada con un humano competente?
+
+## Recursos relacionados
+
+**Fundamentos (predecesores conceptuales):**
+- [LSTM y GRU](/fundamentos/lstm-gru) — base de DeepSpeech, RNN-T y todos los ASR pre-Transformer.
+- [Mecanismo de atención](/fundamentos/mecanismo-atencion) — fundamento de Listen, Attend and Spell y de los Transformers de audio actuales.
+- [Self-attention](/fundamentos/self-attention) y [Transformer](/fundamentos/transformer) — la arquitectura sobre la que corren Whisper, AudioLM y VALL-E.
+- [Aprendizaje contrastivo](/fundamentos/aprendizaje-contrastivo) — el principio que vertebra wav2vec.
+
+**Papers (predecesores adyacentes):**
+- [LSTM (Hochreiter 1997)](/papers/lstm-hochreiter-1997) — la red recurrente sobre la que se construyó toda la era 2-3.
+- [Bahdanau attention (2015)](/papers/bahdanau-attention-2015) — el mecanismo de atención que LAS adaptó a audio.
+- [Seq2Seq (Sutskever 2014)](/papers/seq2seq-sutskever-2014) — el patrón encoder-decoder.
+- [Attention is All You Need (Vaswani 2017)](/papers/attention-is-all-you-need-vaswani-2017) — la arquitectura que reemplazó RNNs en audio post-2020.
+
+**Dominios relacionados:**
+- [Texto / NLP](/dominios/texto) — donde nacieron LSTM, atención, Transformer y self-supervised, todos transferidos luego a audio.
+- [Multimodal](/dominios/multimodal) — donde audio se combina con texto e imagen en frontier LLMs.
+
+---
+
+*Última actualización: 2026-05-05.*
