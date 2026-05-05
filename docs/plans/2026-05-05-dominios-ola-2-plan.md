@@ -1,3 +1,69 @@
+# Sección Dominios — Ola 2 (Multimodal) Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Reemplazar el stub `dominios/multimodal/` con una página completa de dominio Multimodal que reaproveche el material existente (CLIP, show-and-tell, show-attend-tell, bottom-up-attention, relation-networks) y narre la evolución desde captioning temprano hasta los VLMs y modelos generativos actuales.
+
+**Architecture:** Una sola página Markdown (`site/content/dominios/multimodal/_index.md`) construida incrementalmente en 3 commits siguiendo el molde de Texto/Visión: Task 1 = front matter + intro + timeline; Task 2 = era subsections; Task 3 = SOTA + casos + recursos. La infraestructura (shortcodes `timeline`/`era`/`hito`, CSS, menú principal, landing) ya existe y se mergeó en `main` con la Ola 1.
+
+**Tech Stack:** Hugo + tema Hextra (vendored vía `go.mod`), Markdown con shortcodes Hugo, KaTeX para fórmulas inline, FlexSearch para búsqueda. baseURL del site: `/neural-network-knowledge/`.
+
+**Diseño de referencia:** [docs/plans/2026-05-05-dominios-ola-2-design.md](2026-05-05-dominios-ola-2-design.md).
+
+**Convenciones del codebase verificadas:**
+- Shortcodes ya disponibles: `{{< timeline >}}`, `{{< era name="..." years="..." >}}`, `{{< hito year="..." name="..." status="..." link="..." >}}`. CSS soporta light/dark + responsive.
+- Status taxonomy: `deep` (Fundamento dedicado), `covered` (mencionado en otro Fundamento/Paper), `minimal` (descripción inline 2-3 líneas, sin enlace).
+- Front matter para páginas de dominio: `title`, `weight` (multimodal=5), `sidebar.open: true`. `type: docs` cascadea desde `dominios/_index.md`.
+- Hextra `{{< callout type="info" >}}` para SOTA box.
+- Sin Co-Authored-By en commits (preferencia del usuario).
+- Español con tildes correctas en contenido nuevo.
+
+**Working directory:** `/Users/robertoaraneda/projects/personal/courses/ia-uc/`. **Branch:** `feat/dominios-ola-2` (ya creada desde `main` en la sesión actual; verificar con `git branch --show-current`).
+
+**Comando de build local recurrente:** `cd site && hugo --gc --minify` para validación de producción; `hugo server` para dev local.
+
+**Estado actual de `site/content/dominios/multimodal/_index.md`** (stub heredado de Ola 1):
+```markdown
+---
+title: "Multimodal"
+weight: 5
+sidebar:
+  open: true
+---
+
+# Multimodal
+
+Puentes entre modalidades: image captioning, CLIP, modelos visión-lenguaje y generación texto-imagen.
+
+> **Página en construcción.** Esta sección estará disponible en una próxima ola de la sección Dominios. Ver el plan en [docs/plans/2026-05-03-dominios-design.md](https://github.com/robertoaraneda/diplomado-ia-uc/blob/main/docs/plans/2026-05-03-dominios-design.md).
+```
+
+Task 1 sobrescribe completamente este stub.
+
+---
+
+## Task 1: Front matter + problema central + línea de tiempo
+
+**Files:**
+- Modify: `site/content/dominios/multimodal/_index.md` (sobrescribir el stub completo)
+
+**Step 1: Verificar fundamentos y papers referenciados**
+
+Antes de escribir, validar que cada `link` apunta a un archivo existente. Si alguno falta, downgradear ese hito a `status="minimal"` y eliminar `link`.
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+# Fundamentos
+ls site/content/fundamentos/{aprendizaje-contrastivo,foundation-models}.md 2>&1
+# Papers
+ls site/content/papers/{show-and-tell-vinyals-2015,show-attend-tell-xu-2015,bottom-up-attention-anderson-2018,relation-networks-santoro-2017,clip-radford-2021}.md 2>&1
+```
+
+Expected: los 7 archivos existen (verificado en exploración del diseño). Si alguno faltara, reportar y downgradear.
+
+**Step 2: Sobrescribir el stub con el siguiente contenido EXACTO**
+
+```markdown
 ---
 title: "Multimodal"
 weight: 5
@@ -34,7 +100,7 @@ Tres tensiones definen el campo: (1) cómo **alinear modalidades sin pares anota
     {{< hito year="2018" name="Bottom-Up and Top-Down Attention" status="covered" link="/papers/bottom-up-attention-anderson-2018" >}}
       Anderson et al.: la atención visual opera sobre regiones detectadas con Faster R-CNN, no sobre la grilla densa. Estado del arte en captioning y VQA durante 2018-2019.
     {{< /hito >}}
-    {{< hito year="2019" name="GQA / VCR" status="minimal" >}}
+    {{< hito year="2018-2019" name="GQA / VCR" status="minimal" >}}
       Hudson & Manning (GQA), Zellers et al. (VCR): benchmarks de razonamiento visual con preguntas composicionales y de sentido común. **Por qué importó:** revelaron lo lejos que estaban los modelos de razonar realmente.
     {{< /hito >}}
   {{< /era >}}
@@ -78,6 +144,91 @@ Tres tensiones definen el campo: (1) cómo **alinear modalidades sin pares anota
     {{< /hito >}}
   {{< /era >}}
 {{< /timeline >}}
+```
+
+**Step 3: Verify build**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc/site
+hugo --gc --minify
+```
+
+Expected: build limpio, 282+ pages, solo el warning preexistente del shortcode `tabs`.
+
+**Step 4: Curl-based validation**
+
+```bash
+hugo server -D --port 1313 > /tmp/hugo-task1-ola2.log 2>&1 &
+sleep 3
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/multimodal/
+
+curl -s -o /tmp/multimodal.html -w "HTTP %{http_code}\n" "$URL"
+
+# H1
+grep "<h1[^>]*>Multimodal" /tmp/multimodal.html | head -1
+
+# Sections
+grep -c "El problema central" /tmp/multimodal.html
+grep -c "Línea de tiempo" /tmp/multimodal.html
+
+# Timeline
+grep -c 'class="timeline-container"' /tmp/multimodal.html
+
+# 5 eras
+grep -c 'class="timeline-era"' /tmp/multimodal.html
+
+# 17 hitos (3+3+3+3+5)
+grep -c 'class="timeline-hito timeline-hito-' /tmp/multimodal.html
+
+# Era headers
+grep "Era de captioning temprano" /tmp/multimodal.html | head -1
+grep "Era de atención visual estructurada" /tmp/multimodal.html | head -1
+grep "Era de pretraining multimodal" /tmp/multimodal.html | head -1
+grep "Era contrastiva y zero-shot" /tmp/multimodal.html | head -1
+grep "Era de VLMs y generación" /tmp/multimodal.html | head -1
+
+# Some hito names
+grep "Show and Tell" /tmp/multimodal.html | head -1
+grep "CLIP" /tmp/multimodal.html | head -1
+grep "Sora" /tmp/multimodal.html | head -1
+grep "DALL·E" /tmp/multimodal.html | head -1
+
+# Status mix
+grep -c 'class="timeline-hito timeline-hito-deep"' /tmp/multimodal.html  # 1 (CLIP)
+grep -c 'class="timeline-hito timeline-hito-covered"' /tmp/multimodal.html  # 5 (show-and-tell, show-attend-tell, relation-networks, bottom-up, GPT-4V/Gemini)
+grep -c 'class="timeline-hito timeline-hito-minimal"' /tmp/multimodal.html  # 11
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+Expected:
+- HTTP 200.
+- 1 `timeline-container`.
+- 5 `timeline-era`.
+- 17 hitos (1 deep + 5 covered + 11 minimal).
+- All 5 era names and key hito names present.
+
+**Step 5: Commit**
+
+```bash
+git add site/content/dominios/multimodal/_index.md
+git commit -m "feat(dominios/multimodal): problema central + linea de tiempo (5 eras)"
+```
+
+NO Co-Authored-By trailer.
+
+---
+
+## Task 2: Eras explicadas (5 subsecciones)
+
+**Files:**
+- Modify: `site/content/dominios/multimodal/_index.md` (apend al final, después del `{{< /timeline >}}`)
+
+**Step 1: Apender el siguiente contenido al final del archivo**
+
+```markdown
 
 ## Era 1 — Captioning temprano (2014-2016)
 
@@ -162,6 +313,78 @@ Dos líneas convergentes:
 ### Qué viene
 
 El campo está convergiendo hacia **modelos any-to-any** que aceptan y producen cualquier combinación de modalidades (texto, imagen, audio, video, acción). Las direcciones activas: agentes visuales que actúan sobre interfaces gráficas, generación de video con física correcta, integración con robótica vía Vision-Language-Action (RT-2, π0, OpenVLA — pendientes de la Ola 4 de Dominios), y modelos pequeños multimodales competentes (eficiencia por destilación). La pregunta abierta: si los frontier LLMs se vuelven multimodales nativos por defecto, ¿queda "multimodal" como disciplina aislada o se diluye en el modelado general de secuencias?
+```
+
+**Step 2: Verify build**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc/site
+hugo --gc --minify
+```
+
+**Step 3: Curl-based validation**
+
+```bash
+hugo server -D --port 1313 > /tmp/hugo-task2-ola2.log 2>&1 &
+sleep 3
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/multimodal/
+
+curl -s -o /tmp/multimodal.html "$URL"
+
+# 5 era H2s
+grep -c '<h2[^>]*>Era ' /tmp/multimodal.html  # should be 5
+
+# Subsections (each H3 generates 2 anchor refs in HTML)
+grep -c "Problema heredado" /tmp/multimodal.html  # 10 expected
+grep -c "Idea clave" /tmp/multimodal.html  # 10
+grep -c "Qué la destronó" /tmp/multimodal.html  # 8 (eras 1-4)
+grep -c "Qué viene" /tmp/multimodal.html  # 2 (era 5)
+
+# KaTeX inline math from Era 2
+grep -E 'o_i|o_j' /tmp/multimodal.html | head -1
+grep -E 'N \\times N|N\\\\times N|N \\\\times N' /tmp/multimodal.html | head -1
+
+# Specific phrases
+grep "Vinyals et al., 2015" /tmp/multimodal.html | head -1
+grep "Anderson et al. (2018)" /tmp/multimodal.html | head -1
+grep "Radford et al., 2021" /tmp/multimodal.html | head -1
+grep "Flamingo (DeepMind, 2022)" /tmp/multimodal.html | head -1
+grep "LLM congelado" /tmp/multimodal.html | head -1
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+**Step 4: Commit**
+
+```bash
+git add site/content/dominios/multimodal/_index.md
+git commit -m "feat(dominios/multimodal): eras explicadas (5 subsecciones narrativas)"
+```
+
+NO Co-Authored-By trailer.
+
+---
+
+## Task 3: SOTA + casos de uso + qué viene + recursos
+
+**Files:**
+- Modify: `site/content/dominios/multimodal/_index.md` (apend al final)
+
+**Step 1: Verificar fundamentos y papers para los recursos**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+ls site/content/fundamentos/{aprendizaje-contrastivo,foundation-models,mecanismo-atencion,self-attention,vision-transformer}.md 2>&1
+ls site/content/papers/{show-and-tell-vinyals-2015,show-attend-tell-xu-2015,bottom-up-attention-anderson-2018,relation-networks-santoro-2017,clip-radford-2021,bahdanau-attention-2015}.md 2>&1
+```
+
+Si alguno falta, eliminar el bullet correspondiente y reportar.
+
+**Step 2: Apender al final del archivo**
+
+```markdown
 
 ## Estado del arte hoy
 
@@ -216,3 +439,185 @@ Las apuestas activas en multimodal hoy: **modelos any-to-any** (entrada y salida
 ---
 
 *Última actualización: 2026-05-05.*
+```
+
+**Step 3: Verify build**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc/site
+hugo --gc --minify
+```
+
+**Step 4: Curl-based validation**
+
+```bash
+hugo server -D --port 1313 > /tmp/hugo-task3-ola2.log 2>&1 &
+sleep 3
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/multimodal/
+
+curl -s -o /tmp/multimodal.html "$URL"
+
+# Sections
+grep -c "Estado del arte hoy" /tmp/multimodal.html  # 3 (heading + TOC + anchor)
+grep -c "Casos de uso reales" /tmp/multimodal.html  # 3
+grep -c "Recursos relacionados" /tmp/multimodal.html  # 3
+
+# Callout
+grep -c "callout" /tmp/multimodal.html | head -1
+
+# SOTA bullets
+grep "GPT-5" /tmp/multimodal.html | head -1
+grep "Gemini 2.5" /tmp/multimodal.html | head -1
+grep "Sora 2" /tmp/multimodal.html | head -1
+grep "DINOv2" /tmp/multimodal.html | head -1
+
+# Resource links
+grep -oE 'href="[^"]*fundamentos/aprendizaje-contrastivo"' /tmp/multimodal.html | head -1
+grep -oE 'href="[^"]*papers/clip-radford-2021"' /tmp/multimodal.html | head -1
+grep -oE 'href="[^"]*dominios/texto"' /tmp/multimodal.html | head -1
+grep -oE 'href="[^"]*dominios/vision"' /tmp/multimodal.html | head -1
+
+# Last update
+grep "Última actualización: 2026-05-05" /tmp/multimodal.html | head -1
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+**Step 5: Commit**
+
+```bash
+git add site/content/dominios/multimodal/_index.md
+git commit -m "feat(dominios/multimodal): SOTA, casos de uso, que viene y recursos"
+```
+
+NO Co-Authored-By trailer.
+
+---
+
+## Task 4: Verificación final, build de producción y push
+
+**Files:** ninguno nuevo.
+
+**Step 1: Build limpio de producción**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+rm -rf site/public site/resources/_gen 2>/dev/null
+cd site && hugo --gc --minify
+```
+
+Expected: build sin errores ni warnings nuevos. 282+ pages.
+
+**Step 2: FlexSearch indexa la página nueva**
+
+```bash
+python3 -c "
+import json
+d = json.load(open('public/es.search-data.json'))
+keys = [k for k in d.keys() if 'multimodal' in k.lower()]
+print('Multimodal entries:', len(keys))
+for k in keys:
+    print(' -', k, '|', d[k].get('title', '?') if isinstance(d[k], dict) else '?')
+" 2>&1
+# Search for content terms
+grep -c "CLIP\|Flamingo\|DALL·E\|Stable Diffusion" public/es.search-data.json
+```
+
+Expected: la página `/neural-network-knowledge/dominios/multimodal/` aparece en el índice. Términos clave presentes.
+
+**Step 3: Verificar que los stubs siguen renderizando**
+
+Audio, video, robotica, estructurados deben seguir renderizando correctamente como stubs (la Ola 2 no debe tocarlos):
+
+```bash
+ls public/dominios/audio/index.html public/dominios/video/index.html public/dominios/robotica/index.html public/dominios/estructurados/index.html
+```
+
+Expected: los 4 archivos existen.
+
+**Step 4: Inspección de contenido (curl)**
+
+```bash
+hugo server > /tmp/hugo-final-ola2.log 2>&1 &
+sleep 4
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/multimodal/
+curl -s -o /tmp/multimodal-final.html "$URL"
+
+# Word count rough estimate (counts words; expect 800-1500)
+python3 -c "
+import re
+html = open('/tmp/multimodal-final.html').read()
+# Strip tags crudely
+text = re.sub(r'<[^>]+>', ' ', html)
+text = re.sub(r'\s+', ' ', text).strip()
+words = text.split()
+print('Approx word count:', len(words))
+"
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+Note: this is an approximate count including some HTML tag content noise; expect 1500-3000 because the count includes navigation chrome. Just verify the page is non-empty.
+
+**Step 5: Push y abrir PR**
+
+```bash
+git push -u origin feat/dominios-ola-2
+```
+
+Expected: push exitoso.
+
+```bash
+gh pr create --base main --head feat/dominios-ola-2 --title "feat(dominios): Ola 2 — Multimodal" --body "$(cat <<'EOF'
+## Summary
+
+Página completa para el dominio **Multimodal** de la sección Dominios. Patrón idéntico al de Texto/Visión (Ola 1).
+
+- **Línea de tiempo de 5 eras**: captioning temprano (2014-2016) → atención visual estructurada (2017-2018) → pretraining multimodal (2019-2020) → contrastivo y zero-shot (2021-2022) → VLMs y generación (2022-presente).
+- **17 hitos** distribuidos 3+3+3+3+5: 1 `deep` (CLIP → aprendizaje-contrastivo), 5 `covered` (show-and-tell, show-attend-tell, relation-networks, bottom-up-attention, GPT-4V/Gemini → foundation-models), 11 `minimal`.
+- **Eras explicadas** (5 subsecciones con Problema heredado / Idea clave / Qué la destronó o Qué viene).
+- **Estado del arte 2024-2025**, casos de uso, qué viene, recursos.
+
+Reaprovecha 5 fundamentos y 6 papers existentes; sin nuevas dependencias de infraestructura.
+
+Diseño: [`docs/plans/2026-05-05-dominios-ola-2-design.md`](docs/plans/2026-05-05-dominios-ola-2-design.md). Plan: [`docs/plans/2026-05-05-dominios-ola-2-plan.md`](docs/plans/2026-05-05-dominios-ola-2-plan.md).
+
+## Test plan
+
+- [ ] `cd site && hugo --gc --minify` build limpio.
+- [ ] Inspección visual desktop + móvil + dark mode en `/dominios/multimodal/`.
+- [ ] Búsqueda FlexSearch encuentra "CLIP", "Flamingo", "DALL·E", "Sora" y lleva a la página nueva.
+- [ ] Click en hitos `deep` (CLIP) y `covered` (show-and-tell, show-attend-tell, etc.) lleva a Fundamentos / Papers existentes (no 404).
+- [ ] Stubs (audio, video, robotica, estructurados) siguen renderizando correctamente con su mensaje "Página en construcción".
+EOF
+)"
+```
+
+Reportar la URL de la PR creada.
+
+**No commit en este task** — solo verificación, push y PR.
+
+---
+
+## Definition of Done — Ola 2
+
+- [ ] `/dominios/multimodal/` página completa: 5 eras + 17 hitos en timeline + 5 era subsections + SOTA + casos + qué viene + recursos.
+- [ ] Mínimo 800 palabras de prosa narrativa fuera de la timeline.
+- [ ] Todos los `link` en hitos resuelven a archivos existentes.
+- [ ] `hugo --gc --minify` build limpio (282+ pages, sin warnings nuevos).
+- [ ] FlexSearch indexa la página nueva.
+- [ ] Stubs de Olas 3-4 (audio, video, robotica, estructurados) intactos.
+- [ ] Branch `feat/dominios-ola-2` pusheada y PR abierta contra `main`.
+- [ ] Commits sin Co-Authored-By trailer.
+
+## Riesgos durante implementación
+
+1. **Algún paper referenciado falta** — Verificar con `ls` antes de Task 1; downgradear a `minimal` si falta y reportar.
+2. **El fundamento `aprendizaje-contrastivo.md` no cubre lo suficiente para CLIP `deep`** — Verificado en exploración: el archivo trata CLIP en profundidad. OK.
+3. **Solapamiento con Era 5 de Visión (CLIP, Sora, Stable Diffusion)** — Intencional. Cada página los enmarca desde su ángulo. No es un bug.
+4. **KaTeX `$o_i$`, `$o_j$`, `$N \times N$` no renderizan** — Verificar en curl checks de Task 2; ajustar escapado si hay problema.
+5. **El usuario puede mergear ramas paralelas durante la sesión** (sucedió en Ola 1) — Si pasa: verificar estado tras cada subagent invocation con `git branch --show-current` y `git log --oneline -3`. Cherry-pick si necesario.
