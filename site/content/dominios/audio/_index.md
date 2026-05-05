@@ -39,17 +39,17 @@ Dos sub-problemas con tensiones opuestas vertebran el campo: **ASR / comprensió
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era end-to-end con atención" years="2014-2018" >}}
-    {{< hito year="2014" name="CTC loss" status="covered" link="/fundamentos/lstm-gru" >}}
-      Graves: *Connectionist Temporal Classification* — pérdida que permite entrenar secuencia-a-secuencia sin alineamiento explícito entre audio y texto. Resolvió el problema central de DeepSpeech.
+    {{< hito year="2014" name="CTC loss" status="minimal" >}}
+      Graves et al. (ICML 2006), aplicado a ASR end-to-end por DeepSpeech 1 en 2014: *Connectionist Temporal Classification* es una pérdida que permite entrenar secuencia-a-secuencia sin alineamiento explícito entre audio y texto. **Por qué importó:** resolvió el problema central de DeepSpeech y se volvió la pérdida estándar de ASR neural.
     {{< /hito >}}
-    {{< hito year="2015" name="Listen, Attend and Spell" status="covered" link="/fundamentos/mecanismo-atencion" >}}
-      Chan et al. (Google): primer ASR puramente atencional. Encoder-decoder con atención al estilo Bahdanau, sin CTC. Ortografía aprendida implícitamente.
+    {{< hito year="2015" name="Listen, Attend and Spell" status="minimal" >}}
+      Chan et al. (Google): primer ASR puramente atencional. Encoder-decoder con atención al estilo Bahdanau, sin CTC. **Por qué importó:** demostró que ASR podía hacerse como traducción audio→texto, con ortografía aprendida implícitamente.
     {{< /hito >}}
     {{< hito year="2015" name="DeepSpeech 2" status="minimal" >}}
       Amodei et al. (Baidu): escala de DeepSpeech 1 — más datos, más profundidad, RNN bidireccional con CTC. **Por qué importó:** mostró que ASR neural podía escalar a calidad de producto en inglés y mandarín.
     {{< /hito >}}
-    {{< hito year="2017" name="RNN-Transducer" status="minimal" >}}
-      Graves: combinación de CTC con un modelo de lenguaje interno autoregresivo. **Por qué importó:** el algoritmo de ASR streaming de producción en Google y Apple — funciona online sin esperar el final de la oración.
+    {{< hito year="2012/2017" name="RNN-Transducer" status="minimal" >}}
+      Graves (propuesta original 2012; consolidación de producción ~2017): combinación de CTC con un modelo de lenguaje interno autoregresivo. **Por qué importó:** el algoritmo de ASR streaming de producción en Google y Apple — funciona online sin esperar el final de la oración.
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era self-supervised" years="2019-2021" >}}
@@ -65,7 +65,7 @@ Dos sub-problemas con tensiones opuestas vertebran el campo: **ASR / comprensió
   {{< /era >}}
   {{< era name="Era de foundation models" years="2022-presente" >}}
     {{< hito year="2022" name="Whisper" status="minimal" >}}
-      Radford et al. (OpenAI): Transformer encoder-decoder entrenado sobre 680,000 horas de audio multilingüe pareado con texto raspado de internet. **Por qué importó:** ASR robusto a ruido, acentos y multilingüe sin fine-tuning, ya estándar industrial. v3 (2023) extiende a 99 idiomas.
+      Radford et al. (OpenAI): Transformer encoder-decoder entrenado sobre 680,000 horas de audio multilingüe pareado con texto raspado de internet. **Por qué importó:** ASR robusto a ruido, acentos y multilingüe sin fine-tuning, ya estándar industrial. Multilingüe desde v1 (~99 idiomas); v3 (nov 2023) refina rendimiento y agrega cantonés (100 idiomas totales).
     {{< /hito >}}
     {{< hito year="2022" name="AudioLM" status="minimal" >}}
       Borsos et al. (Google): genera audio coherente continuando un prompt de pocos segundos, modelando audio como secuencia de tokens cuantizados. **Por qué importó:** mostró que la "generación pura" de audio (música, ambiente, voz) era viable con la receta autoregresiva tipo GPT.
