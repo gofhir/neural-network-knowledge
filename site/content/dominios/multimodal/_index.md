@@ -34,7 +34,7 @@ Tres tensiones definen el campo: (1) cómo **alinear modalidades sin pares anota
     {{< hito year="2018" name="Bottom-Up and Top-Down Attention" status="covered" link="/papers/bottom-up-attention-anderson-2018" >}}
       Anderson et al.: la atención visual opera sobre regiones detectadas con Faster R-CNN, no sobre la grilla densa. Estado del arte en captioning y VQA durante 2018-2019.
     {{< /hito >}}
-    {{< hito year="2018-2019" name="GQA / VCR" status="minimal" >}}
+    {{< hito year="2019" name="GQA / VCR" status="minimal" >}}
       Hudson & Manning (GQA), Zellers et al. (VCR): benchmarks de razonamiento visual con preguntas composicionales y de sentido común. **Por qué importó:** revelaron lo lejos que estaban los modelos de razonar realmente.
     {{< /hito >}}
   {{< /era >}}
