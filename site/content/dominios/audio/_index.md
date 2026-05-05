@@ -81,3 +81,87 @@ Dos sub-problemas con tensiones opuestas vertebran el campo: **ASR / comprensió
     {{< /hito >}}
   {{< /era >}}
 {{< /timeline >}}
+
+## Era 1 — Acústica clásica (1980-2010)
+
+### Problema heredado
+
+El audio es una serie temporal de altísima frecuencia. Una grabación de 10 segundos a 16 kHz son 160,000 muestras — una secuencia inviable para modelar directamente con cualquier técnica pre-2010. El reto era convertir esa señal en una representación discreta y compacta que algoritmos clásicos (HMMs, SVMs) pudieran procesar.
+
+### Idea clave
+
+**Espectrograma + modelos generativos.** El procesamiento de voz clásico parte de proyectar el audio a un espectrograma (típicamente MFCC), que descarta la fase y conserva información perceptualmente relevante en ~13-40 coeficientes por frame de 10ms. Sobre esa secuencia se ajustan **HMMs con emisiones gaussianas** (HMM-GMM): cada fonema es un HMM de 3 estados, cada estado emite MFCCs según una mezcla de gaussianas estimadas con EM. Para reconocer una palabra, se decodifica con Viterbi sobre la concatenación de HMMs por fonemas.
+
+El modelo de lenguaje (n-gramas sobre transcripciones) se integra con el modelo acústico vía Weighted Finite-State Transducers — una composición de autómatas que combina acústica, pronunciación y lenguaje en un solo grafo decodificable.
+
+### Qué la destronó
+
+HMM-GMM tenían un techo: las gaussianas son discriminativas pobres entre fonemas que se traslapan en el espacio acústico. Hinton et al. mostraron en 2011 que reemplazar las gaussianas por una DNN (que aprende discriminativamente) bajaba el WER en ~30%. La era clásica terminó.
+
+## Era 2 — Deep speech híbrido (2011-2014)
+
+### Problema heredado
+
+HMM-GMM saturaba: agregar más gaussianas o más datos no mejoraba significativamente. La capacidad expresiva del modelo acústico era la cota.
+
+### Idea clave
+
+**DNN reemplazando GMM dentro del HMM.** Hinton, Mohamed y Dahl (2011) entrenaron una red profunda que recibe un contexto de ~11 frames de MFCC y predice la probabilidad posterior de cada estado del HMM. La estructura HMM se mantiene (decoding Viterbi, integración con WFST), pero las emisiones son ahora discriminativas. La caída en WER fue inmediata y reproducible.
+
+Kaldi (Povey et al., 2011) cristalizó la pila — ingeniería WFST + alineamiento + entrenamiento DNN — en un toolkit open-source que se volvió estándar industrial.
+
+DeepSpeech 1 (Hannun et al., Baidu, 2014) dio el salto natural siguiente: si la DNN predice fonemas, ¿por qué no eliminarla del HMM y predecir directamente caracteres? Una CNN sobre el espectrograma + RNN bidireccional + CTC loss colapsó tres décadas de pipeline en un solo modelo entrenable end-to-end.
+
+### Qué la destronó
+
+DeepSpeech aún dependía de un decoder externo con modelo de lenguaje, y CTC tiene la suposición fuerte de que las predicciones por frame son condicionalmente independientes (lo cual es falso para lenguaje). La frontera natural era reemplazar CTC por **atención**.
+
+## Era 3 — End-to-end con atención (2014-2018)
+
+### Problema heredado
+
+CTC funcionaba pero era rígido: emisión por frame con independencia condicional y un decoder Viterbi externo. Bahdanau et al. acababan de demostrar que la atención resolvía traducción automática sin alineamientos explícitos. La pregunta natural: ¿se puede hacer ASR como si fuera traducción audio→texto?
+
+### Idea clave
+
+**ASR como Seq2Seq con atención.** Listen, Attend and Spell (Chan et al., Google, 2015) es la respuesta canónica: un encoder pyramidal LSTM comprime la secuencia de espectrogramas, y un decoder LSTM con atención al estilo Bahdanau emite caracteres uno a uno, mirando dónde necesita en el encoder en cada paso. Sin CTC, sin HMM, sin WFST, sin lenguaje externo — el modelo aprende ortografía implícitamente.
+
+DeepSpeech 2 (Amodei et al., 2015) llevó la receta CTC a calidad de producto con escala — modelos profundos, datos masivos, y entrenamiento distribuido — alcanzando paridad con humanos en inglés y mandarín en condiciones limpias.
+
+RNN-Transducer (Graves, propuesta original 2012; consolidación de producción ~2017) combinó lo mejor de ambos mundos: predicción frame por frame como CTC, pero con un modelo de lenguaje interno autoregresivo. Resultó ser el algoritmo de ASR streaming de producción en Google y Apple — emite hipótesis sin esperar el final de la oración.
+
+### Qué la destronó
+
+Todas estas arquitecturas requerían **datos etiquetados pareados** (audio + transcripción) — un recurso escaso fuera del inglés. Mientras tanto, NLP estaba transformándose con BERT y la idea de **pretraining no supervisado**. ¿Se podía hacer lo mismo con audio?
+
+## Era 4 — Self-supervised (2019-2021)
+
+### Problema heredado
+
+ASR de calidad requería miles de horas de audio transcrito por humanos — recurso disponible solo para ~10 idiomas. Para los 7,000 idiomas restantes, los modelos eran pobres o inexistentes. La pregunta abierta: ¿se puede pretrainar sobre audio puro (sin transcripciones) y luego fine-tunear con poca data etiquetada?
+
+### Idea clave
+
+**Pretraining contrastivo y predictivo sobre audio crudo.** wav2vec (Schneider et al., FAIR, 2019) entrenó un encoder convolucional a predecir representaciones futuras de la señal con una pérdida contrastiva, sin etiquetas. wav2vec 2.0 (Baevski et al., 2020) lo refinó al estilo BERT: cuantizar representaciones latentes en un codebook discreto, enmascarar segmentos del audio, y predecir las unidades cuantizadas correctas usando un Transformer.
+
+El resultado: con 53,000 horas de audio sin etiquetar para pretraining + 10 minutos de audio etiquetado para fine-tuning, wav2vec 2.0 alcanzaba WER comparable a modelos supervisados de la generación anterior entrenados con miles de horas. HuBERT (Hsu et al., 2021) mejoró la receta con clustering iterativo de targets, dominando luego en TTS, identificación de hablante y reconocimiento de emoción.
+
+### Qué la destronó
+
+wav2vec 2.0 era enormemente eficiente en datos pero seguía requiriendo fine-tuning por dominio/idioma. La frontera natural: ¿se puede pretrainar en escala suficiente para tener un modelo zero-shot multilingüe que funcione fuera de la caja?
+
+## Era 5 — Foundation models (2022-presente)
+
+### Problema heredado
+
+ASR seguía siendo un trabajo de fine-tuning por dominio. Cambiar de "transcribir podcast en inglés" a "transcribir Zoom call en español con ruido de fondo" requería ajuste. Y la generación de audio (TTS, música) vivía en un universo paralelo, con arquitecturas distintas.
+
+### Idea clave
+
+**Audio como una secuencia más, manejada por foundation models.** Whisper (Radford et al., OpenAI, 2022) entrenó un Transformer encoder-decoder estándar sobre 680,000 horas de audio multilingüe pareado con texto raspado de internet — un orden de magnitud más datos que cualquier modelo previo, y ruidosos por construcción. El resultado fue robustez sin fine-tuning a ~99 idiomas, ruido, acentos y dominios. Whisper se volvió estándar industrial inmediatamente.
+
+En paralelo, AudioLM (Google, 2022) mostró que la generación de audio (música, ambiente, voz) podía hacerse como modelado autoregresivo de **tokens cuantizados** — el mismo paradigma que GPT, aplicado a audio. VALL-E (Microsoft, 2023) llevó la idea a TTS zero-shot: cloná una voz desde 3 segundos de audio. MusicLM/MusicGen/Suno/Udio (2023-2024) generan música de calidad de producción condicionada en texto, con millones de usuarios.
+
+### Qué viene
+
+La convergencia con los frontier LLMs es el hito en marcha: GPT-4o y Gemini 2.5 ya procesan audio nativamente como entrada/salida, sin pipeline ASR→LLM→TTS. La latencia conversacional bajó a <300ms (Sesame, ChatGPT Voice). En generación, las apuestas activas son **música con control fino** (estems separables, edición por prompt), **audio espacial 3D** para AR/VR, y **detección de deepfakes de voz** como contramedida a la clonación. La pregunta abierta: si los frontier LLMs absorben audio nativamente, ¿queda "audio" como dominio aislado o pasa a ser una modalidad más en modelos generales?
