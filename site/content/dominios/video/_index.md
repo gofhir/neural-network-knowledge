@@ -40,7 +40,7 @@ Tres tensiones definen el campo: (1) cómo **modelar movimiento sin desperdiciar
   {{< /era >}}
   {{< era name="Era de 3D-CNN profundas" years="2017-2019" >}}
     {{< hito year="2017" name="I3D" status="minimal" >}}
-      Carreira & Zisserman (DeepMind): *Inflated 3D ConvNet* — toma una CNN-2D preentrenada en ImageNet (Inception) y "infla" sus filtros 2×2 a 2×2×2, transfiriendo la representación visual a video. Entrenado sobre el nuevo Kinetics-400. **Por qué importó:** el primer modelo que destronó claramente a iDT y two-stream en todos los benchmarks; backbone estándar 2017-2019.
+      Carreira & Zisserman (DeepMind): *Inflated 3D ConvNet* — toma una CNN-2D preentrenada en ImageNet (Inception-V1, kernels 3×3) y "infla" sus filtros 2D a 3D (un kernel 3×3 se vuelve 3×3×3 replicando los pesos en el eje temporal), transfiriendo la representación visual a video. Entrenado sobre el nuevo Kinetics-400. **Por qué importó:** el primer modelo que destronó claramente a iDT y two-stream en todos los benchmarks; backbone estándar 2017-2019.
     {{< /hito >}}
     {{< hito year="2018" name="R(2+1)D" status="minimal" >}}
       Tran et al. (FAIR): factoriza convolución 3D en una espacial 2D seguida de una temporal 1D. **Por qué importó:** mejor accuracy con menos parámetros que 3D pura; demostró que separar espacio y tiempo era pedagógicamente útil para el modelo.
@@ -77,7 +77,7 @@ Tres tensiones definen el campo: (1) cómo **modelar movimiento sin desperdiciar
       OpenAI (anunciado feb 2024, lanzamiento dic 2024): generación de video de hasta 60 segundos con coherencia temporal extendida, física aproximada y resolución alta. Diffusion sobre tokens de video latentes. **Por qué importó:** salto cualitativo en duración y coherencia; redefinió las expectativas de la frontera.
     {{< /hito >}}
     {{< hito year="2024" name="Veo / Veo 2" status="minimal" >}}
-      Google DeepMind (Veo 1 mayo 2024, Veo 2 dic 2024): generación de video en 4K con prompts complejos, control de cámara y estilos cinematográficos. **Por qué importó:** alternativa frontera a Sora con foco en control fino y resolución.
+      Google DeepMind (Veo 1 mayo 2024, Veo 2 dic 2024): generación de video con prompts complejos, control de cámara y estilos cinematográficos (Veo 1 hasta 1080p; Veo 2 hasta 4K). **Por qué importó:** alternativa frontera a Sora con foco en control fino y resolución.
     {{< /hito >}}
     {{< hito year="2024" name="Kling / Runway Gen-3" status="minimal" >}}
       Kuaishou (Kling, jun 2024) y Runway (Gen-3 Alpha, jun 2024): generación de video competitiva con frontier occidental. **Por qué importó:** Kling demostró que China alcanzó paridad rápida; Runway llevó la generación a producción para creadores y estudios.
