@@ -162,3 +162,57 @@ Dos líneas convergentes:
 ### Qué viene
 
 El campo está convergiendo hacia **modelos any-to-any** que aceptan y producen cualquier combinación de modalidades (texto, imagen, audio, video, acción). Las direcciones activas: agentes visuales que actúan sobre interfaces gráficas, generación de video con física correcta, integración con robótica vía Vision-Language-Action (RT-2, π0, OpenVLA — pendientes de la Ola 4 de Dominios), y modelos pequeños multimodales competentes (eficiencia por destilación). La pregunta abierta: si los frontier LLMs se vuelven multimodales nativos por defecto, ¿queda "multimodal" como disciplina aislada o se diluye en el modelado general de secuencias?
+
+## Estado del arte hoy
+
+{{< callout type="info" >}}
+
+**Frontier multimodal (2024-2025).** La visión y el lenguaje ya no compiten por arquitectura; conviven dentro de los frontier LLMs como capacidad nativa. La generación cross-modal alcanza calidad de producto.
+
+- **GPT-5 (Vision)** — OpenAI. Multimodal nativo desde el pretraining; razona sobre imagen, audio y texto en una sola sesión.
+- **Gemini 2.5 Pro Vision** — Google DeepMind. Razonamiento sobre imágenes y video largo, integración con búsqueda y herramientas.
+- **Claude Opus 4.7** — Anthropic. Visión integrada al razonamiento extendido; foco en imágenes técnicas y diagramas.
+- **LLaMA 4 Multimodal** — Meta. Open weights con visión nativa; competitivo con frontera cerrada en muchos benchmarks.
+- **Sora 2 / Veo 2** — OpenAI / Google DeepMind. Generación de video con coherencia temporal extendida (60s+) y control fino por prompt.
+- **Stable Diffusion 3 / Imagen 3** — Stability AI / Google. Generación texto-imagen producción.
+- **DINOv2** — Meta. Foundation model self-supervised para visión, base de muchas pipelines downstream multimodales.
+
+{{< /callout >}}
+
+## Casos de uso reales
+
+- **Búsqueda visual con texto**: Google Lens, Pinterest Lens, Amazon — search por imagen + descripción combinada (CLIP-style retrieval).
+- **Asistentes conversacionales con visión**: ChatGPT, Claude, Gemini — leer documentos, analizar gráficos, depurar capturas de pantalla, describir escenas.
+- **Generación creativa**: Midjourney, DALL·E, Adobe Firefly — concept art, marketing, diseño de producto, ilustración editorial.
+- **Generación de video**: Sora, Veo — previsualización, marketing, contenido corto en redes.
+- **Accesibilidad**: descripción automática de imágenes para personas con discapacidad visual; transcripción enriquecida con contexto visual.
+- **Análisis de documentos visión + texto**: facturas, historias clínicas, papers científicos con figuras, contratos con sellos y firmas — donde el OCR puro se queda corto.
+- **Robótica vision-language-action**: RT-2, π0, OpenVLA — el robot recibe instrucciones en lenguaje natural y ve su entorno (cubierto en profundidad en la Ola 4 de Dominios, dominio Robótica/RL).
+
+## Qué viene
+
+Las apuestas activas en multimodal hoy: **modelos any-to-any** (entrada y salida arbitraria entre texto, imagen, audio, video, acción), **generación de video con física correcta** (más allá de Sora — coherencia de identidad, conservación de masa, causalidad), **agentes visuales** que actúan sobre interfaces gráficas como un humano (clicks, scrolls, formularios), **modelos pequeños multimodales** competentes vía destilación, e **integración profunda con herramientas** (visión + búsqueda web + ejecución de código). La pregunta abierta de 2025: si los frontier LLMs se vuelven multimodales por defecto, ¿queda "multimodal" como disciplina aislada o se diluye en el modelado general de secuencias?
+
+## Recursos relacionados
+
+**Fundamentos:**
+- [Aprendizaje contrastivo (CLIP)](/fundamentos/aprendizaje-contrastivo) — el puente entre visión y lenguaje.
+- [Foundation models](/fundamentos/foundation-models) — el contexto general de los VLMs frontier.
+- [Mecanismo de atención](/fundamentos/mecanismo-atencion) — la base de show-attend-tell y todas las arquitecturas posteriores.
+- [Self-attention](/fundamentos/self-attention) y [Vision Transformer](/fundamentos/vision-transformer) — las piezas que CLIP combinó.
+
+**Papers:**
+- [Show and Tell (Vinyals 2015)](/papers/show-and-tell-vinyals-2015).
+- [Show, Attend and Tell (Xu 2015)](/papers/show-attend-tell-xu-2015).
+- [Relation Networks (Santoro 2017)](/papers/relation-networks-santoro-2017).
+- [Bottom-Up Attention (Anderson 2018)](/papers/bottom-up-attention-anderson-2018).
+- [CLIP (Radford 2021)](/papers/clip-radford-2021).
+- [Bahdanau attention (2015)](/papers/bahdanau-attention-2015) — antecedente de show-attend-tell.
+
+**Dominios relacionados:**
+- [Texto / NLP](/dominios/texto) — la mitad lingüística de los VLMs.
+- [Visión](/dominios/vision) — la mitad visual.
+
+---
+
+*Última actualización: 2026-05-05.*
