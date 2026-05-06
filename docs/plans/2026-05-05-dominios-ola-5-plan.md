@@ -1,3 +1,67 @@
+# Sección Dominios — Ola 5 (Robótica / RL) Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Reemplazar el stub `dominios/robotica/` por una página completa que narre la evolución desde Q-learning (1989) hasta los robot foundation models actuales (RT-2, π0, OpenVLA, Gemini Robotics, 2024-2025), pasando por DQN, AlphaGo, PPO y RLHF.
+
+**Architecture:** Una página Markdown construida en 3 commits siguiendo el patrón de Olas 3-4: Task 1 = front matter + intro + timeline; Task 2 = era subsections; Task 3 = SOTA + casos + recursos. Toda la infraestructura ya existe en `main` post-Ola 4.
+
+**Tech Stack:** Hugo + tema Hextra (vendored vía `go.mod`), Markdown con shortcodes Hugo, KaTeX inline, FlexSearch. baseURL: `/neural-network-knowledge/`.
+
+**Diseño de referencia:** [docs/plans/2026-05-05-dominios-ola-5-design.md](2026-05-05-dominios-ola-5-design.md).
+
+**Convenciones del codebase verificadas:**
+- Shortcodes ya disponibles: `{{< timeline >}}`, `{{< era >}}`, `{{< hito >}}`. CSS soporta light/dark + responsive.
+- Status taxonomy: `deep`, `covered`, `minimal`.
+- Front matter: `title`, `weight: 6`, `sidebar.open: true`. `type: docs` cascadea.
+- `{{< callout type="info" >}}` para SOTA box.
+- Sin Co-Authored-By en commits.
+- Español con tildes correctas.
+
+**Working directory:** `/Users/robertoaraneda/projects/personal/courses/ia-uc/`. **Branch:** `feat/dominios-ola-5`.
+
+**Decisión de status:** **2 hitos `covered`** (InstructGPT/RLHF → `/fundamentos/sft`, DPO → `/fundamentos/dpo`) — los fundamentos linkeados cubren ambos en profundidad (validado en Olas previas, no overstated). Resto **`minimal`**. Total: 0 deep + 2 covered + 16 minimal = 18 hitos.
+
+**Stub actual de `site/content/dominios/robotica/_index.md`** (heredado de Ola 1):
+```markdown
+---
+title: "Robótica / RL"
+weight: 6
+sidebar:
+  open: true
+---
+
+# Robótica / RL
+
+Decisiones secuenciales bajo recompensa: Q-learning, AlphaGo, RLHF y robot foundation models.
+
+> **Página en construcción.** Esta sección estará disponible en una próxima ola de la sección Dominios. Ver el plan en [docs/plans/2026-05-03-dominios-design.md](https://github.com/robertoaraneda/diplomado-ia-uc/blob/main/docs/plans/2026-05-03-dominios-design.md).
+```
+
+Task 1 lo sobrescribe completo.
+
+---
+
+## Task 1: Robótica / RL — front matter + problema central + línea de tiempo
+
+**Files:**
+- Modify: `site/content/dominios/robotica/_index.md` (overwrite stub completo)
+
+**Step 1: Verificar branch y fundamentos linkeados**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+git branch --show-current  # must be feat/dominios-ola-5
+ls site/content/fundamentos/{sft,dpo}.md 2>&1
+```
+
+If not on `feat/dominios-ola-5`, stop and report. Both fundamento files must exist (verified in prior Olas).
+
+**Step 2: Sobrescribir el stub con EXACTAMENTE este contenido**
+
+Verify all 18 `{{< hito ... >}}` opening tags have a matching `{{< /hito >}}` closing tag. There are also 5 `{{< era >}}` opening + 5 closing. Hugo will fail if any are mismatched.
+
+```markdown
 ---
 title: "Robótica / RL"
 weight: 6
@@ -84,6 +148,96 @@ Tres tensiones específicas vertebran el campo: (1) **exploración vs explotaci�
     {{< /hito >}}
   {{< /era >}}
 {{< /timeline >}}
+```
+
+**Step 3: Verify build**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc/site
+hugo --gc --minify
+```
+
+Expected: build clean (only the pre-existing `tabs` deprecation warning).
+
+**Step 4: Curl-based validation**
+
+```bash
+hugo server -D --port 1313 > /tmp/hugo-task1-ola5.log 2>&1 &
+sleep 3
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/robotica/
+
+curl -s -o /tmp/robotica.html -w "HTTP %{http_code}\n" "$URL"
+
+# H1
+grep "<h1[^>]*>Robótica" /tmp/robotica.html | head -1
+
+# Sections
+grep -c "El problema central" /tmp/robotica.html
+grep -c "Línea de tiempo" /tmp/robotica.html
+
+# Timeline
+grep -c 'class="timeline-container"' /tmp/robotica.html  # 1
+
+# 5 eras
+grep -c 'class="timeline-era"' /tmp/robotica.html  # 5
+
+# 18 hitos
+grep -c 'class="timeline-hito timeline-hito-' /tmp/robotica.html  # 18
+
+# Era headers
+grep "Era de RL clásico" /tmp/robotica.html | head -1
+grep "Era de Deep RL temprano" /tmp/robotica.html | head -1
+grep "Era AlphaGo" /tmp/robotica.html | head -1
+grep "Era PPO + RLHF" /tmp/robotica.html | head -1
+grep "Era de Robot Foundation Models" /tmp/robotica.html | head -1
+
+# Some hito names
+grep "Q-learning" /tmp/robotica.html | head -1
+grep "DQN" /tmp/robotica.html | head -1
+grep "AlphaGo" /tmp/robotica.html | head -1
+grep "PPO" /tmp/robotica.html | head -1
+grep "InstructGPT" /tmp/robotica.html | head -1
+grep "RT-2" /tmp/robotica.html | head -1
+grep "Physical Intelligence" /tmp/robotica.html | head -1
+
+# Status mix (0 deep, 2 covered, 16 minimal)
+grep -c 'class="timeline-hito timeline-hito-deep"' /tmp/robotica.html  # 0
+grep -c 'class="timeline-hito timeline-hito-covered"' /tmp/robotica.html  # 2
+grep -c 'class="timeline-hito timeline-hito-minimal"' /tmp/robotica.html  # 16
+
+# KaTeX renders
+grep -E 'Q\(s' /tmp/robotica.html | head -1
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+Expected:
+- HTTP 200.
+- 1 timeline-container, 5 timeline-era, 18 hitos (0 deep + 2 covered + 16 minimal).
+- All 5 era and key hito names present.
+- KaTeX `$Q(s, a)$` renders.
+
+**Step 5: Commit**
+
+```bash
+git add site/content/dominios/robotica/_index.md
+git commit -m "feat(dominios/robotica): problema central + linea de tiempo (5 eras)"
+```
+
+NO Co-Authored-By trailer.
+
+---
+
+## Task 2: Robótica / RL — eras explicadas (5 subsecciones)
+
+**Files:**
+- Modify: `site/content/dominios/robotica/_index.md` (apend al final, después del `{{< /timeline >}}`)
+
+**Step 1: Apender este contenido al final del archivo**
+
+```markdown
 
 ## Era 1 — RL clásico (1989-2010)
 
@@ -121,7 +275,7 @@ DQN y A3C funcionaban en Atari y MuJoCo, pero seguían siendo *frágiles*: hiper
 
 ### Problema heredado
 
-Go era el caso emblemático "imposible para IA en 10 años" según expertos en 2015. El espacio de estados de Go ($\sim 10^{170}$ posiciones legales) hace inviable tabular $Q$. Las CNNs podían evaluar posiciones, pero no producir un jugador competitivo solas.
+Go era el caso emblemático "imposible para IA en 10 años" según expertos en 2015. El espacio de estados de Go ($\sim 10^{170}$ posiciones legales) hace inviable tabular Q. Las CNNs podían evaluar posiciones, pero no producir un jugador competitivo solas.
 
 ### Idea clave
 
@@ -159,13 +313,84 @@ Robótica clásica diseñaba pipelines especializadas: visión → planning → 
 
 ### Idea clave
 
-**Vision-Language-Action (VLA) models.** SayCan (Ahn et al., Google, 2022) fue el puente: combina un LLM que propone planes en lenguaje con value functions aprendidas que evalúan factibilidad física, ejecutando solo planes plausibles *y* factibles. RT-1 (Brohan et al., 2022) entrenó un Transformer puro sobre 130k demostraciones reales — primer modelo robótico de propósito general a escala. RT-2 (2023) co-fine-tuneó un VLM (PaLM-E, PaLI-X) sobre datos de robot tratando la acción como tokens, transfiriendo conocimiento web → robot: el modelo razona sobre objetos nunca vistos en el dataset robótico usando lo aprendido en internet.
+**Vision-Language-Action (VLA) models.** SayCan (Ahn et al., Google, 2022) fue el puente: combina un LLM que propone planes en lenguaje con value functions aprendidas que evalúan factibilidad física, ejecutando solo planes plausibles *y* factibles. RT-1 (Brohan et al., 2022) entrenó un Transformer puro sobre 130k demostraciones reales — primer modelo robótico de propósito general. RT-2 (2023) co-fine-tuneó un VLM (PaLM-E, PaLI-X) sobre datos de robot tratando la acción como tokens, transfiriendo conocimiento web → robot: el modelo razona sobre objetos nunca vistos en el dataset robótico usando lo aprendido en internet.
 
-OpenVLA (Stanford, 2024) democratizó la receta con open weights y entrenamiento sobre Open X-Embodiment (970k trajectorias, 22 embodiments). π0 (Physical Intelligence, 2024) llevó la idea a control continuo de alta frecuencia (50Hz) usando flow matching sobre acciones — necesario para tareas reales como doblar ropa o ensamblar piezas. Una sola política controla brazos industriales, manipuladores móviles y humanoides.
+OpenVLA (Stanford, 2024) democratizó la receta con open weights y entrenamiento sobre Open X-Embodiment (970k trajectorias, 22 robots). π0 (Physical Intelligence, 2024) llevó la idea a control continuo de alta frecuencia (50Hz) usando flow matching sobre acciones — necesario para tareas reales como doblar ropa o ensamblar piezas. Una sola política controla brazos industriales, manipuladores móviles y humanoides.
 
 ### Qué viene
 
 Las apuestas activas en RL/robótica: **multi-embodiment** (un modelo controla cualquier robot), **generalización por lenguaje** (instrucciones naturales complejas con razonamiento), **sim-to-real masivo** (entrenar en simulación enorme, transferir a físico), **razonamiento jerárquico** (planeación de largo horizonte + control bajo nivel), **recompensas aprendidas** (modelos de recompensa de visión-lenguaje en lugar de funciones diseñadas), **RL de razonamiento** (post-DeepSeek-R1, los LLMs aprenden a razonar via RL puro sobre cadenas de pensamiento), y el **robotic data flywheel** (despliegue → recolección → entrenamiento → mejor modelo). La pregunta abierta de 2025: si un foundation model multi-embodiment alcanza nivel humano en manipulación general, ¿qué tan rápido se vuelve económicamente viable un humanoide en cada hogar?
+```
+
+**Step 2: Verify build**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc/site
+hugo --gc --minify
+```
+
+**Step 3: Curl-based validation**
+
+```bash
+hugo server -D --port 1313 > /tmp/hugo-task2-ola5.log 2>&1 &
+sleep 3
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/robotica/
+
+curl -s -o /tmp/robotica.html "$URL"
+
+# 5 era H2s
+grep -c '<h2[^>]*>Era ' /tmp/robotica.html  # 5
+
+# Subsections (each H3 generates 2 anchor refs)
+grep -c "Problema heredado" /tmp/robotica.html  # 10
+grep -c "Idea clave" /tmp/robotica.html  # 10
+grep -c "Qué la destronó" /tmp/robotica.html  # 8
+grep -c "Qué viene" /tmp/robotica.html  # 2
+
+# KaTeX inline math
+grep -E 'Q.s' /tmp/robotica.html | head -1
+grep -E 'pi_.theta' /tmp/robotica.html | head -1
+
+# Specific phrases
+grep "Watkins, 1989" /tmp/robotica.html | head -1
+grep "Mnih et al. (DeepMind, 2013/2015)" /tmp/robotica.html | head -1
+grep "Silver et al., DeepMind, 2016" /tmp/robotica.html | head -1
+grep "Schulman et al. (OpenAI, 2017)" /tmp/robotica.html | head -1
+grep "Rafailov et al., 2023" /tmp/robotica.html | head -1
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+**Step 4: Commit**
+
+```bash
+git add site/content/dominios/robotica/_index.md
+git commit -m "feat(dominios/robotica): eras explicadas (5 subsecciones narrativas)"
+```
+
+NO Co-Authored-By trailer.
+
+---
+
+## Task 3: Robótica / RL — SOTA + casos + qué viene + recursos
+
+**Files:**
+- Modify: `site/content/dominios/robotica/_index.md` (apend al final)
+
+**Step 1: Verificar fundamentos y papers para los recursos**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+ls site/content/fundamentos/{sft,dpo,kl-implicito,bradley-terry,foundation-models}.md 2>&1
+```
+
+If any missing, remove that bullet and report.
+
+**Step 2: Apender este contenido al final**
+
+```markdown
 
 ## Estado del arte hoy
 
@@ -216,3 +441,165 @@ Las apuestas activas: **multi-embodiment generalist** (un modelo controla cualqu
 ---
 
 *Última actualización: 2026-05-05.*
+```
+
+**Step 3: Verify build with curl**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc/site
+hugo --gc --minify
+
+hugo server -D --port 1313 > /tmp/hugo-task3-ola5.log 2>&1 &
+sleep 3
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/robotica/
+
+curl -s -o /tmp/robotica.html "$URL"
+
+# Sections
+grep -c "Estado del arte hoy" /tmp/robotica.html  # 3
+grep -c "Casos de uso reales" /tmp/robotica.html  # 3
+grep -c "Recursos relacionados" /tmp/robotica.html  # 3
+
+# Callout
+grep -c "callout" /tmp/robotica.html | head -1
+
+# SOTA bullets
+grep "Gemini Robotics" /tmp/robotica.html | head -1
+grep "Physical Intelligence" /tmp/robotica.html | head -1
+grep "OpenVLA" /tmp/robotica.html | head -1
+grep "DeepSeek-R1" /tmp/robotica.html | head -1
+
+# Resource links resolve
+grep -oE 'href="[^"]*fundamentos/sft"' /tmp/robotica.html | head -1
+grep -oE 'href="[^"]*fundamentos/dpo"' /tmp/robotica.html | head -1
+grep -oE 'href="[^"]*fundamentos/kl-implicito"' /tmp/robotica.html | head -1
+grep -oE 'href="[^"]*fundamentos/bradley-terry"' /tmp/robotica.html | head -1
+grep -oE 'href="[^"]*fundamentos/foundation-models"' /tmp/robotica.html | head -1
+grep -oE 'href="[^"]*dominios/texto"' /tmp/robotica.html | head -1
+grep -oE 'href="[^"]*dominios/multimodal"' /tmp/robotica.html | head -1
+grep -oE 'href="[^"]*dominios/vision"' /tmp/robotica.html | head -1
+
+# Last update
+grep "Última actualización: 2026-05-05" /tmp/robotica.html | head -1
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+**Step 4: Commit**
+
+```bash
+git add site/content/dominios/robotica/_index.md
+git commit -m "feat(dominios/robotica): SOTA, casos de uso, que viene y recursos"
+```
+
+NO Co-Authored-By trailer.
+
+---
+
+## Task 4: Verificación final, build de producción y push
+
+**Files:** ninguno nuevo.
+
+**Step 1: Confirmar branch**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+git branch --show-current  # must be feat/dominios-ola-5
+git log --oneline feat/dominios-ola-5 ^main
+```
+
+**Step 2: Build limpio de producción**
+
+```bash
+rm -rf site/public site/resources/_gen 2>/dev/null
+cd site && hugo --gc --minify
+```
+
+Expected: build sin errores ni warnings nuevos. ~298 pages.
+
+**Step 3: FlexSearch indexa la página nueva**
+
+```bash
+python3 -c "
+import json
+d = json.load(open('public/es.search-data.json'))
+keys = [k for k in d.keys() if 'robotica' in k.lower()]
+print('Robotica entries:', len(keys))
+for k in keys:
+    title = d[k].get('title', '?') if isinstance(d[k], dict) else '?'
+    print(' -', k, '|', title)
+"
+grep -c "Q-learning\|DQN\|AlphaGo\|RLHF\|RT-2\|OpenVLA" public/es.search-data.json
+```
+
+Expected: la página `/neural-network-knowledge/dominios/robotica/` aparece. Términos clave presentes.
+
+**Step 4: Verificar que las páginas previas y stub restante siguen funcionando**
+
+```bash
+ls public/dominios/{texto,vision,multimodal,audio,video,estructurados,robotica}/index.html
+```
+
+Expected: las 7 páginas existen.
+
+**Step 5: Push y abrir PR**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+git push -u origin feat/dominios-ola-5
+```
+
+```bash
+gh pr create --base main --head feat/dominios-ola-5 --title "feat(dominios): Ola 5 — Robótica / RL" --body "$(cat <<'EOF'
+## Summary
+
+Página completa para el dominio **Robótica / RL** de la sección Dominios. Patrón idéntico al de Audio/Video (Olas 3-4).
+
+- **Línea de tiempo de 5 eras**: RL clásico (1989-2010) → Deep RL temprano (2013-2016) → era AlphaGo (2016-2019) → PPO + RLHF (2017-2023) → Robot foundation models (2022-presente).
+- **18 hitos** distribuidos 3+3+4+4+4: 0 deep, 2 covered (InstructGPT/RLHF → /fundamentos/sft, DPO → /fundamentos/dpo), 16 minimal.
+- **Eras explicadas** (5 subsecciones con Problema heredado / Idea clave / Qué la destronó o Qué viene).
+- **Estado del arte 2024-2025** (Gemini Robotics, π0, OpenVLA, GR00T, humanoides en producción), casos de uso, qué viene, recursos enlazando a fundamentos de alineamiento (sft, dpo, kl-implicito, bradley-terry, foundation-models).
+
+Diseño: docs/plans/2026-05-05-dominios-ola-5-design.md. Plan: docs/plans/2026-05-05-dominios-ola-5-plan.md.
+
+Resta tras esta ola: Datos estructurados (Ola 6 final).
+
+## Test plan
+
+- [ ] cd site && hugo --gc --minify build limpio.
+- [ ] Inspección visual desktop + móvil + dark mode en /dominios/robotica/.
+- [ ] Búsqueda FlexSearch encuentra "Q-learning", "AlphaGo", "RLHF", "RT-2", "OpenVLA" y lleva a la página.
+- [ ] Click en hitos covered (InstructGPT, DPO) y links de Recursos llevan a Fundamentos existentes (no 404).
+- [ ] Stub estructurados sigue renderizando con su mensaje "Página en construcción".
+- [ ] Páginas completas previas (texto, vision, multimodal, audio, video) renderizan correctamente.
+- [ ] KaTeX renderiza expresiones como Q(s,a), π_θ correctamente.
+EOF
+)"
+```
+
+Reportar la URL de la PR creada.
+
+**No commit en este task** — solo verificación, push y PR.
+
+---
+
+## Definition of Done — Ola 5 (Robótica / RL)
+
+- [ ] `/dominios/robotica/` página completa: 5 eras + 18 hitos + 5 era subsections + SOTA + casos + qué viene + recursos.
+- [ ] Mínimo 800 palabras de prosa narrativa fuera de la timeline.
+- [ ] Todos los `link` en hitos y recursos resuelven a archivos existentes.
+- [ ] `hugo --gc --minify` build limpio.
+- [ ] FlexSearch indexa la página nueva.
+- [ ] Stub estructurados intacto.
+- [ ] Páginas completas (texto, vision, multimodal, audio, video) intactas.
+- [ ] Branch `feat/dominios-ola-5` pusheada y PR abierta contra `main`.
+- [ ] Commits sin Co-Authored-By trailer.
+
+## Riesgos durante implementación
+
+1. **Datos puntuales (años, autores)** — code reviewer debe validar especialmente DQN dual-year (2013 NIPS workshop / 2015 Nature), AlphaGo timing, RT-1/RT-2/OpenVLA fechas, π0 attribution.
+2. **`covered` para InstructGPT y DPO** — validado en Olas previas. OK.
+3. **KaTeX en Era 1-2** (`$Q(s, a)$`, `$\pi_\theta$`, `$P(s' \mid s, a)$`) — verificar render en curl checks.
+4. **El usuario puede mergear/cambiar ramas** — verificar `git branch --show-current` tras cada subagent.
