@@ -166,3 +166,53 @@ OpenVLA (Stanford, 2024) democratizó la receta con open weights y entrenamiento
 ### Qué viene
 
 Las apuestas activas en RL/robótica: **multi-embodiment** (un modelo controla cualquier robot), **generalización por lenguaje** (instrucciones naturales complejas con razonamiento), **sim-to-real masivo** (entrenar en simulación enorme, transferir a físico), **razonamiento jerárquico** (planeación de largo horizonte + control bajo nivel), **recompensas aprendidas** (modelos de recompensa de visión-lenguaje en lugar de funciones diseñadas), **RL de razonamiento** (post-DeepSeek-R1, los LLMs aprenden a razonar via RL puro sobre cadenas de pensamiento), y el **robotic data flywheel** (despliegue → recolección → entrenamiento → mejor modelo). La pregunta abierta de 2025: si un foundation model multi-embodiment alcanza nivel humano en manipulación general, ¿qué tan rápido se vuelve económicamente viable un humanoide en cada hogar?
+
+## Estado del arte hoy
+
+{{< callout type="info" >}}
+
+**Frontier robótica + alineamiento (2024-2025).** Dos líneas convergentes: (a) robot foundation models que controlan cualquier embodiment con instrucciones en lenguaje natural; (b) frontier LLMs alineados con RLHF/DPO/RLAIF como capacidad estándar.
+
+- **Gemini Robotics** — Google DeepMind. VLA integrado a Gemini 2.5; razonamiento + control unificados.
+- **π0 / Physical Intelligence** — robot foundation model multi-embodiment con destreza fina (doblar ropa, ensamblar). Flow matching sobre acciones.
+- **OpenVLA** — Stanford. Open weights 7B, base de muchas pipelines downstream y experimentación académica.
+- **NVIDIA GR00T** — humanoid foundation model con simulación en Isaac Sim a escala masiva.
+- **Tesla Optimus / Figure 02 / Apptronik Apollo** — humanoides en producción con foundation models.
+- **DeepSeek-R1 / o-series** — modelos de razonamiento entrenados con RL puro sobre cadenas de pensamiento.
+- **Claude Computer Use / GPT-4o agents** — agentes que actúan sobre interfaces gráficas (RL del mundo digital).
+
+{{< /callout >}}
+
+## Casos de uso reales
+
+- **Robots humanoides**: Tesla Optimus, Figure, Apptronik, 1X — manipulación general en almacenes, fábricas y hogares.
+- **Robótica industrial**: pick-and-place, control de calidad, ensamblado en líneas con RT-X y derivados.
+- **Conducción autónoma**: Tesla FSD, Waymo, Cruise — RL/IL para predicción y planning en tiempo real.
+- **Asistentes domésticos**: 1X Neo, Boston Dynamics — limpieza, asistencia personal.
+- **Asistentes conversacionales alineados**: ChatGPT, Claude, Gemini — RLHF/DPO en cada release de frontier LLM.
+- **Agentes digitales**: Claude Computer Use, ChatGPT Operator, Gemini Bard — automatizar tareas en interfaces gráficas.
+- **Juegos**: AlphaGo, AlphaStar, OpenAI Five (Dota 2), Cicero (Diplomacy) — superhumanos en juegos cerrados.
+- **Optimización de procesos**: data centers (Google, ~40% reducción de cooling), logística, trading algorítmico.
+- **Cirugía robótica**: Da Vinci con asistencia inteligente, sub-tareas autónomas (sutura, anudado).
+
+## Qué viene
+
+Las apuestas activas: **multi-embodiment generalist** (un modelo controla cualquier robot — brazos, móviles, humanoides, drones), **generalización por lenguaje** (instrucciones naturales complejas con razonamiento jerárquico), **sim-to-real a escala masiva** (entrenar en mundos simulados gigantes, transferir a físico sin gap), **recompensas aprendidas** (modelos de recompensa visión-lenguaje en lugar de funciones diseñadas a mano), **RL de razonamiento** (post-DeepSeek-R1, LLMs que aprenden a pensar paso a paso vía RL puro sin supervisión), y el **robotic data flywheel** (cada despliegue genera datos para el siguiente modelo). La pregunta abierta de 2025: si un foundation model multi-embodiment alcanza nivel humano en manipulación general, ¿en qué tipo de tarea cotidiana se vuelve un humanoide económicamente viable primero — cocina, limpieza, cuidado de adultos mayores, fábrica?
+
+## Recursos relacionados
+
+**Fundamentos (predecesores conceptuales):**
+- [SFT (Supervised Fine-Tuning)](/fundamentos/sft) — primer paso del pipeline RLHF/InstructGPT.
+- [DPO (Direct Preference Optimization)](/fundamentos/dpo) — alineamiento sin RL, equivalente teórico a RLHF.
+- [KL implícito](/fundamentos/kl-implicito) — el mecanismo formal detrás de DPO.
+- [Bradley-Terry](/fundamentos/bradley-terry) — modelo de preferencias usado en el reward model de RLHF.
+- [Foundation models](/fundamentos/foundation-models) — el contexto general de los robot foundation models y los frontier LLMs alineados.
+
+**Dominios relacionados:**
+- [Texto / NLP](/dominios/texto) — donde RLHF/DPO emergen como técnica de alineamiento de LLMs (la cara "lenguaje" del mismo problema).
+- [Multimodal](/dominios/multimodal) — los VLA (Vision-Language-Action) son una variante de los VLMs aplicada a control físico.
+- [Visión](/dominios/vision) — el encoder visual de RT-1, RT-2, OpenVLA, π0 sale de la era ViT.
+
+---
+
+*Última actualización: 2026-05-05.*
