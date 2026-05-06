@@ -174,3 +174,54 @@ Tres líneas paralelas:
 ### Qué viene
 
 Las apuestas activas: **TabPFN extendido** a datasets industriales (millones de filas, miles de features), **forecasting universal** (un modelo que generalice a cualquier dominio sin fine-tuning), **GNN + LLMs** (grafos como contexto enriquecido para razonamiento de modelos generales — GraphRAG, knowledge graphs corporativos), **AutoML cada vez más automatizado** (la era del data scientist generalista que selecciona modelos manualmente está terminando), y la pregunta abierta: **¿cuándo destronará el foundation model a XGBoost en producción industrial?** TabPFN v2 (2025) es el primer reto serio en una década, pero XGBoost mantiene su corona en muchos casos. La respuesta a esta pregunta marcará el cierre del debate más largo del campo.
+
+## Estado del arte hoy
+
+{{< callout type="info" >}}
+
+**Frontier datos estructurados (2024-2025).** Tres líneas paralelas: (a) foundation models tabulares (TabPFN v2) que finalmente retan a XGBoost en datasets pequeños/medianos; (b) foundation models de series (TimeGPT, Chronos, Lag-Llama) con zero-shot transfer; (c) GBM industrial (XGBoost, LightGBM, CatBoost) sigue siendo el default de producción.
+
+- **TabPFN v2** — Hollmann et al. Tabular foundation model que iguala o supera a XGBoost en datasets <1M filas. Primer reto serio a la corona de XGBoost en una década.
+- **TimeGPT** — Nixtla. Forecasting comercial con zero-shot transfer.
+- **Chronos** — Amazon. Open weights, base de muchas pipelines downstream.
+- **Lag-Llama** — ServiceNow / MILA. Foundation model univariate basado en LLaMA.
+- **GraphRAG** — Microsoft. Knowledge graphs como contexto para LLMs en enterprise search.
+- **GIN / Graph Transformers** — estado del arte en química y drug discovery.
+- **AutoGluon / H2O AutoML** — pipelines automáticos que combinan GBM, RF y DL.
+- **XGBoost / LightGBM / CatBoost** — defaults industriales en Kaggle, fintech, healthtech.
+
+{{< /callout >}}
+
+## Casos de uso reales
+
+- **Fraud detection en banca y fintech** — XGBoost domina (millones de transacciones, latencia baja, interpretabilidad regulatoria).
+- **Forecasting de demanda en retail y energía** — DeepAR, TimeGPT, ensembles con métodos clásicos (ARIMA, ETS).
+- **Drug discovery y química computacional** — GNN sobre moléculas; AlphaFold para proteínas (paradigma distinto, pero estructurado en grafo).
+- **Recomendación a escala web** — DLRM (Meta), Wide & Deep (Google) y variantes para feed/búsqueda/ads.
+- **Healthtech** — predicción de readmisión, riesgo cardiovascular, clasificación sobre EHR; XGBoost + features clínicas a mano siguen dominando.
+- **Knowledge graphs y enterprise search** — GraphRAG, Neo4j + LLMs para búsqueda semántica corporativa.
+- **Series financieras** — trading, riesgo, derivados — combinaciones de GBM, ARIMA, DL y métodos de volatilidad.
+- **Manufactura y mantenimiento predictivo** — series temporales de sensores con anomaly detection (Isolation Forest, autoencoders, foundation models).
+- **Marketing y churn prediction** — XGBoost + feature engineering domina en CRM y SaaS B2B.
+
+## Qué viene
+
+Las apuestas activas: **foundation models tabulares efectivos a escala industrial** (TabPFN v2 cambió el debate en datasets pequeños — falta probar millones de filas y miles de features), **forecasting universal** (un solo modelo para cualquier dominio sin fine-tuning), **GNN + LLMs** (grafos como contexto para razonamiento de modelos generales — GraphRAG es la primera ola), **AutoML cada vez más automatizado** (la era del data scientist generalista que selecciona modelos manualmente está terminando), y **el debate DL vs GBM** sigue vivo — TabPFN v2 cambió el balance, pero XGBoost mantiene su corona en muchos casos de producción. La pregunta abierta: ¿qué tarea dejará primero de ser "structured data engineering" para volverse "prompt the foundation model"?
+
+## Recursos relacionados
+
+**Material adyacente en el curso:**
+- [Foundation models](/fundamentos/foundation-models) — el contexto general que se aplica también a TabPFN, TimeGPT, Chronos.
+- [Self-attention](/fundamentos/self-attention) y [Transformer](/fundamentos/transformer) — la arquitectura sobre la que corren TabPFN, TFT, PatchTST y Graph Transformers.
+- [Embeddings distribuidos](/fundamentos/embeddings-distribuidos) — base conceptual para entity embeddings tabulares.
+
+**Dominios relacionados:**
+- [Texto / NLP](/dominios/texto) — donde nacieron los Transformers que luego se transfirieron a tabular y series.
+- [Visión](/dominios/vision) — ViT inspiró PatchTST en series.
+- [Robótica / RL](/dominios/robotica) — comparten el debate "DL vs métodos clásicos" en optimización industrial.
+
+**Cierre del proyecto Dominios:** este es el séptimo y último dominio. La sección [Dominios](/dominios) cubre ahora: Texto/NLP, Visión, Audio/Voz, Video, Multimodal, Robótica/RL y Datos estructurados.
+
+---
+
+*Última actualización: 2026-05-06.*
