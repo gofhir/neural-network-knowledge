@@ -90,3 +90,87 @@ Tres tensiones definen el campo: (1) **¿deep learning o gradient boosting en ta
     {{< /hito >}}
   {{< /era >}}
 {{< /timeline >}}
+
+## Era 1 — ML clásico tabular (1990s-2010)
+
+### Problema heredado
+
+Antes de los 2010s, datos tabulares estaban dominados por estadística clásica: regresión lineal y logística para predicción y inferencia, ANOVA para comparaciones, y árboles de decisión simples para clasificación interpretable. Funcionaban, pero no escalaban a las complejidades de datos modernos: interacciones no lineales entre cientos de variables, mezclas de tipos numéricos y categóricos, missing values masivos, y datasets de millones de filas.
+
+### Idea clave
+
+**Ensembles de árboles.** La idea revolucionaria de los 2000s fue combinar muchos árboles de decisión simples en un ensemble. Random Forest (Breiman, 2001) entrena cada árbol sobre un subsample bootstrap del dataset y un subconjunto aleatorio de features, luego promedia las predicciones. La aleatoriedad reduce varianza sin aumentar sesgo significativamente.
+
+Gradient Boosting Machine (Friedman, 2001) tomó un camino distinto: en lugar de árboles independientes, ajustar árboles secuencialmente a los **residuos** del ensemble previo. Cada nuevo árbol corrige los errores de los anteriores. La pérdida puede ser arbitraria (cuadrática, log-loss, exponencial), lo que permite optimizar para clasificación, regresión o ranking. Los teoremas de Friedman demostraron convergencia bajo condiciones razonables.
+
+### Qué la destronó
+
+GBM era teóricamente potente pero implementaciones tempranas (sklearn, gbm en R) eran lentas y no escalaban a datos modernos. Faltaba una implementación industrial: regularización explícita, paralelización, manejo nativo de missing values, GPU support. Esa pieza llegó con XGBoost en 2014.
+
+## Era 2 — Gradient Boosting moderno (2014-2017)
+
+### Problema heredado
+
+GBM funcionaba en teoría pero las implementaciones eran inadecuadas para datasets grandes y producción industrial. Y la comunidad de ML estaba mirando hacia deep learning — AlexNet 2012, los primeros papers de DL — sin pensar que GBM podía aún tener mucho que dar.
+
+### Idea clave
+
+**XGBoost: ingeniería al servicio del algoritmo.** Chen & Guestrin (paper KDD 2016, biblioteca pública desde 2014) tomaron GBM y lo industrializaron: regularización L1+L2 explícita en la pérdida, paralelización por feature en cada split, sparsity-aware splits para missing values, cache-aware data layout, y compresión de bloques. El resultado: 10× más rápido que GBM clásico y mejor accuracy. XGBoost se volvió la herramienta dominante en Kaggle 2015-2018, ganando la mayoría de competencias tabulares y muchas no-tabulares.
+
+LightGBM (Microsoft, 2017) añadió histogram-based splits (cuantizar features continuas a buckets para acelerar split-finding) y leaf-wise growth (expandir el nodo de mejor ganancia, no nivel-por-nivel) — más rápido aún en datasets >1M filas. CatBoost (Yandex, 2017) introdujo target encoding ordenado para variables categóricas con muchos niveles, evitando el target leakage del encoding ingenuo.
+
+### Qué la destronó
+
+GBM moderno no fue destronado en tabular — sigue ganando en muchos benchmarks en 2025. Pero la frontera del DL se movió a otros datos estructurados donde GBM no aplicaba directamente: **grafos** (cómo entrenar sobre estructura relacional) y **series temporales** (cómo capturar dependencias temporales largas).
+
+## Era 3 — DL para grafos y series (2016-2019)
+
+### Problema heredado
+
+Random Forest y GBM operan sobre filas independientes con features fijas. **Grafos** rompen esa suposición: los nodos están conectados, y la información sobre un nodo depende de sus vecinos. **Series temporales** la rompen de otra forma: las observaciones están ordenadas y las dependencias importantes pueden estar a 1, 10 o 100 timesteps de distancia. Para ambos casos, faltaban arquitecturas neuronales adecuadas.
+
+### Idea clave
+
+**Para grafos: propagación de mensajes.** GCN (Kipf & Welling, 2017) propuso una generalización de la convolución a grafos: cada nodo agrega información de sus vecinos vía la matriz de adyacencia normalizada. Capas apiladas extienden el campo receptivo a vecinos a distancia 2, 3, etc. GraphSAGE (Hamilton et al., 2017) escaló la idea a grafos enormes muestreando vecinos en lugar de procesar el grafo completo, y estableció el patrón inductive (entrenar sobre un grafo y aplicar a otros). GAT (Veličković et al., 2018) reemplazó los pesos uniformes de la matriz de adyacencia por pesos aprendidos vía atención: el modelo decide qué vecinos importan más para cada nodo.
+
+**Para series: modelos globales con DL.** DeepAR (Salinas et al., Amazon, 2017/2019) entrenó un LSTM autoregresivo sobre cientos o miles de series temporales relacionadas, generando forecasts probabilísticos. La clave era el entrenamiento global: una sola política aprendida funciona para todas las series, sin ajuste por serie. N-BEATS (Oreshkin et al., 2019) tomó un camino sin recurrencia: bloques de proyecciones polinomiales y trigonométricas que descomponen la serie en componentes interpretables. Ganó la M4 Competition, demostrando que DL puro podía superar a ARIMA y ETS clásicos.
+
+### Qué la destronó
+
+Las arquitecturas dedicadas (GCN/GAT/N-BEATS) eran efectivas pero ad hoc. La pregunta abierta de finales de 2010s era si la atención y los Transformers — ya dominantes en NLP y avanzando en visión — podían transferir su éxito a tabular y series.
+
+## Era 4 — Transformers a tabular y series (2019-2022)
+
+### Problema heredado
+
+Transformers habían transformado NLP (BERT 2018, GPT 2018-2019). Vision Transformer (2020) había demostrado que la receta también aplicaba a imágenes. La pregunta natural: ¿se puede usar self-attention sobre datos tabulares y series temporales?
+
+### Idea clave
+
+**Tokenizar y aplicar Transformer.** Para series, TFT (Temporal Fusion Transformer, Lim et al., 2019) introdujo atención multi-horizonte con compuertas que seleccionan features relevantes por timestep — interpretable y efectivo en forecasting con múltiples covariates conocidos a futuro. PatchTST (Nie et al., 2022) tomó la idea de ViT — dividir la imagen en parches — y la aplicó a series: dividir la secuencia temporal en parches y procesarlos con un Transformer encoder. Más simple y efectivo en forecasting de horizonte largo.
+
+Para tabular, TabTransformer (Huang et al., Amazon, 2020) aplicó self-attention a embeddings de variables categóricas, dejando las numéricas en una pipeline tradicional. FT-Transformer (Gorishniy et al., 2021) fue más limpio: cada feature (numérica o categórica) se trata como un token, y el modelo aplica un Transformer estándar. Resultados: comparables a XGBoost en algunos benchmarks, pero no claramente superiores.
+
+### Qué la destronó
+
+En tabular, los Transformers no destronaron a XGBoost — el debate "DL vs GBM" siguió abierto. En series, los Transformers se volvieron competitivos pero no dominantes. La frontera real apareció en 2023 con la idea importada de NLP: **foundation models pretrainados** sobre datasets sintéticos o masivos.
+
+## Era 5 — Foundation models y "XGBoost still rules" (2023-presente)
+
+### Problema heredado
+
+Cada nueva tarea tabular o de forecasting requería entrenar un modelo desde cero. Funcionaba bien con suficientes datos, pero datasets pequeños (típicos en healthtech, banca regulada, ciencia experimental) seguían favoreciendo a XGBoost por su robustez. Y los foundation models que habían transformado NLP, visión y audio aún no tenían equivalente en datos estructurados.
+
+### Idea clave
+
+Tres líneas paralelas:
+
+1. **TabPFN (Hollmann et al., 2023):** un Transformer preentrenado offline sobre **datasets tabulares sintéticos generados por priors Bayesianos**. En inferencia, recibe el dataset completo (filas + labels) en su contexto y predice nuevas filas in-context, sin entrenamiento por dataset. Igualó o superó a XGBoost en datasets pequeños (<10k filas, <100 features) — un caso paradigmático de "foundation model" aplicado a tabular. TabPFN v2 (2025) extendió la receta a millones de filas, cambiando el balance del debate.
+
+2. **TimeGPT, Chronos, Lag-Llama (2023-2024):** foundation models para forecasting entrenados sobre billones de datapoints heterogéneos. TimeGPT (Nixtla) fue el primer producto comercial. Chronos (Amazon) tokenizó valores numéricos y entrenó un T5 — open weights. Lag-Llama adaptó LLaMA a series univariate. Todos: zero-shot transfer, una llamada a inferencia para series no vistas.
+
+3. **El debate "GBM vs DL" sigue vivo en tabular.** Múltiples papers de 2022-2024 (Grinsztajn et al., McElfresh et al.) muestran que XGBoost/LightGBM/CatBoost siguen ganando o empatando con DL en la mayoría de benchmarks tabulares de tamaño realista. El dato discreto y heterogéneo de tabular castiga el sesgo inductivo de las redes — que asume continuidad y suavidad — y favorece la naturaleza axis-aligned de los árboles.
+
+### Qué viene
+
+Las apuestas activas: **TabPFN extendido** a datasets industriales (millones de filas, miles de features), **forecasting universal** (un modelo que generalice a cualquier dominio sin fine-tuning), **GNN + LLMs** (grafos como contexto enriquecido para razonamiento de modelos generales — GraphRAG, knowledge graphs corporativos), **AutoML cada vez más automatizado** (la era del data scientist generalista que selecciona modelos manualmente está terminando), y la pregunta abierta: **¿cuándo destronará el foundation model a XGBoost en producción industrial?** TabPFN v2 (2025) es el primer reto serio en una década, pero XGBoost mantiene su corona en muchos casos. La respuesta a esta pregunta marcará el cierre del debate más largo del campo.
