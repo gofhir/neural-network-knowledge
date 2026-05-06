@@ -1,3 +1,66 @@
+# Sección Dominios — Ola 6 (Datos estructurados) Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Reemplazar el stub `dominios/estructurados/` por una página completa que narre la evolución desde regresión lineal y Random Forest (1990s-2001) hasta foundation models tabulares y de series (TabPFN v2, TimeGPT, Chronos, 2023-2025), pasando por XGBoost, GCN/GAT y Transformers tabulares. **Cierra el proyecto Dominios** (7/7 dominios completos).
+
+**Architecture:** Una página Markdown construida en 3 commits siguiendo el patrón de Olas 3-5: Task 1 = front matter + intro + timeline; Task 2 = era subsections; Task 3 = SOTA + casos + recursos. Toda la infraestructura ya existe en `main` post-Ola 5.
+
+**Tech Stack:** Hugo + tema Hextra (vendored vía `go.mod`), Markdown con shortcodes Hugo, KaTeX inline, FlexSearch. baseURL: `/neural-network-knowledge/`.
+
+**Diseño de referencia:** [docs/plans/2026-05-05-dominios-ola-6-design.md](2026-05-05-dominios-ola-6-design.md).
+
+**Convenciones del codebase verificadas:**
+- Shortcodes ya disponibles: `{{< timeline >}}`, `{{< era >}}`, `{{< hito >}}`. CSS soporta light/dark + responsive.
+- Status taxonomy: `deep`, `covered`, `minimal`. Ola 6 usa todo `minimal` (sin material específico de tabular/series/grafos).
+- Front matter: `title`, `weight: 7`, `sidebar.open: true`. `type: docs` cascadea.
+- `{{< callout type="info" >}}` para SOTA box.
+- Sin Co-Authored-By en commits.
+- Español con tildes correctas.
+
+**Working directory:** `/Users/robertoaraneda/projects/personal/courses/ia-uc/`. **Branch:** `feat/dominios-ola-6`.
+
+**Decisión de status:** Todos los hitos `minimal`. Sin material específico en `fundamentos/` ni `papers/`. La lección de Olas 3-5 (los `covered` overstated requieren downgrade post-review) justifica ir directo con `minimal`. Total: 0 deep + 0 covered + 21 minimal = 21 hitos.
+
+**Stub actual de `site/content/dominios/estructurados/_index.md`** (heredado de Ola 1):
+```markdown
+---
+title: "Datos estructurados"
+weight: 7
+sidebar:
+  open: true
+---
+
+# Datos estructurados
+
+Tabular, series temporales y grafos: cuándo deep learning gana y cuándo XGBoost sigue mandando.
+
+> **Página en construcción.** Esta sección estará disponible en una próxima ola de la sección Dominios. Ver el plan en [docs/plans/2026-05-03-dominios-design.md](https://github.com/robertoaraneda/diplomado-ia-uc/blob/main/docs/plans/2026-05-03-dominios-design.md).
+```
+
+Task 1 lo sobrescribe completo.
+
+---
+
+## Task 1: Datos estructurados — front matter + problema central + línea de tiempo
+
+**Files:**
+- Modify: `site/content/dominios/estructurados/_index.md` (overwrite stub completo)
+
+**Step 1: Verify branch**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+git branch --show-current  # must be feat/dominios-ola-6
+```
+
+If not on `feat/dominios-ola-6`, stop and report.
+
+**Step 2: Sobrescribir el stub con EXACTAMENTE este contenido**
+
+Verify all 21 `{{< hito ... >}}` opening tags have a matching `{{< /hito >}}` closing tag. There are 5 era opens + 5 closes. Hugo will fail if any are mismatched.
+
+```markdown
 ---
 title: "Datos estructurados"
 weight: 7
@@ -90,6 +153,83 @@ Tres tensiones definen el campo: (1) **¿deep learning o gradient boosting en ta
     {{< /hito >}}
   {{< /era >}}
 {{< /timeline >}}
+```
+
+**Step 3: Verify build**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc/site
+hugo --gc --minify
+```
+
+Expected: build clean (only the pre-existing `tabs` deprecation warning).
+
+**Step 4: Curl-based validation**
+
+```bash
+hugo server -D --port 1313 > /tmp/hugo-task1-ola6.log 2>&1 &
+sleep 3
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/estructurados/
+
+curl -s -o /tmp/estructurados.html -w "HTTP %{http_code}\n" "$URL"
+
+grep "<h1[^>]*>Datos estructurados" /tmp/estructurados.html | head -1
+grep -c "El problema central" /tmp/estructurados.html
+grep -c "Línea de tiempo" /tmp/estructurados.html
+
+# Timeline
+grep -c 'class="timeline-container"' /tmp/estructurados.html  # 1
+grep -c 'class="timeline-era"' /tmp/estructurados.html  # 5
+grep -c 'class="timeline-hito timeline-hito-' /tmp/estructurados.html  # 21
+
+# Era headers
+grep "Era de ML clásico tabular" /tmp/estructurados.html | head -1
+grep "Era del Gradient Boosting moderno" /tmp/estructurados.html | head -1
+grep "Era de DL para grafos y series" /tmp/estructurados.html | head -1
+grep "Era de Transformers a tabular y series" /tmp/estructurados.html | head -1
+grep "Era de Foundation Models" /tmp/estructurados.html | head -1
+
+# Some hito names
+grep "Random Forest" /tmp/estructurados.html | head -1
+grep "XGBoost" /tmp/estructurados.html | head -1
+grep "GCN" /tmp/estructurados.html | head -1
+grep "DeepAR" /tmp/estructurados.html | head -1
+grep "TabPFN" /tmp/estructurados.html | head -1
+grep "Chronos" /tmp/estructurados.html | head -1
+
+# Status mix (0 deep, 0 covered, 21 minimal)
+grep -c 'class="timeline-hito timeline-hito-deep"' /tmp/estructurados.html  # 0
+grep -c 'class="timeline-hito timeline-hito-covered"' /tmp/estructurados.html  # 0
+grep -c 'class="timeline-hito timeline-hito-minimal"' /tmp/estructurados.html  # 21
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+Expected:
+- HTTP 200, 1 timeline-container, 5 timeline-era, 21 hitos (0/0/21).
+- All 5 era and key hito names present.
+
+**Step 5: Commit**
+
+```bash
+git add site/content/dominios/estructurados/_index.md
+git commit -m "feat(dominios/estructurados): problema central + linea de tiempo (5 eras)"
+```
+
+NO Co-Authored-By trailer.
+
+---
+
+## Task 2: Datos estructurados — eras explicadas (5 subsecciones)
+
+**Files:**
+- Modify: `site/content/dominios/estructurados/_index.md` (apend al final, después del `{{< /timeline >}}`)
+
+**Step 1: Apender este contenido al final del archivo**
+
+```markdown
 
 ## Era 1 — ML clásico tabular (1990s-2010)
 
@@ -174,6 +314,65 @@ Tres líneas paralelas:
 ### Qué viene
 
 Las apuestas activas: **TabPFN extendido** a datasets industriales (millones de filas, miles de features), **forecasting universal** (un modelo que generalice a cualquier dominio sin fine-tuning), **GNN + LLMs** (grafos como contexto enriquecido para razonamiento de modelos generales — GraphRAG, knowledge graphs corporativos), **AutoML cada vez más automatizado** (la era del data scientist generalista que selecciona modelos manualmente está terminando), y la pregunta abierta: **¿cuándo destronará el foundation model a XGBoost en producción industrial?** TabPFN v2 (2025) es el primer reto serio en una década, pero XGBoost mantiene su corona en muchos casos. La respuesta a esta pregunta marcará el cierre del debate más largo del campo.
+```
+
+**Step 2: Verify build**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc/site
+hugo --gc --minify
+```
+
+**Step 3: Curl-based validation**
+
+```bash
+hugo server -D --port 1313 > /tmp/hugo-task2-ola6.log 2>&1 &
+sleep 3
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/estructurados/
+
+curl -s -o /tmp/estructurados.html "$URL"
+
+# 5 era H2s
+grep -c '<h2[^>]*>Era ' /tmp/estructurados.html  # 5
+
+# Subsections
+grep -c "Problema heredado" /tmp/estructurados.html  # 10
+grep -c "Idea clave" /tmp/estructurados.html  # 10
+grep -c "Qué la destronó" /tmp/estructurados.html  # 8
+grep -c "Qué viene" /tmp/estructurados.html  # 2
+
+# Specific phrases
+grep "Breiman" /tmp/estructurados.html | head -1
+grep "Friedman" /tmp/estructurados.html | head -1
+grep "Chen & Guestrin" /tmp/estructurados.html | head -1
+grep "Kipf & Welling" /tmp/estructurados.html | head -1
+grep "Hollmann" /tmp/estructurados.html | head -1
+grep "GBM vs DL" /tmp/estructurados.html | head -1
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+**Step 4: Commit**
+
+```bash
+git add site/content/dominios/estructurados/_index.md
+git commit -m "feat(dominios/estructurados): eras explicadas (5 subsecciones narrativas)"
+```
+
+NO Co-Authored-By trailer.
+
+---
+
+## Task 3: Datos estructurados — SOTA + casos + qué viene + recursos
+
+**Files:**
+- Modify: `site/content/dominios/estructurados/_index.md` (apend al final)
+
+**Step 1: Apender este contenido al final**
+
+```markdown
 
 ## Estado del arte hoy
 
@@ -224,4 +423,178 @@ Las apuestas activas: **foundation models tabulares efectivos a escala industria
 
 ---
 
-*Última actualización: 2026-05-06.*
+*Última actualización: 2026-05-05.*
+```
+
+**Step 2: Verify build**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc/site
+hugo --gc --minify
+```
+
+**Step 3: Curl-based validation**
+
+```bash
+hugo server -D --port 1313 > /tmp/hugo-task3-ola6.log 2>&1 &
+sleep 3
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/estructurados/
+
+curl -s -o /tmp/estructurados.html "$URL"
+
+# Sections
+grep -c "Estado del arte hoy" /tmp/estructurados.html  # 3
+grep -c "Casos de uso reales" /tmp/estructurados.html  # 3
+grep -c "Recursos relacionados" /tmp/estructurados.html  # 3
+
+# Callout
+grep -c "callout" /tmp/estructurados.html | head -1
+
+# SOTA bullets
+grep "TabPFN v2" /tmp/estructurados.html | head -1
+grep "TimeGPT" /tmp/estructurados.html | head -1
+grep "Chronos" /tmp/estructurados.html | head -1
+grep "GraphRAG" /tmp/estructurados.html | head -1
+
+# Resource links resolve
+grep -oE 'href="[^"]*fundamentos/foundation-models"' /tmp/estructurados.html | head -1
+grep -oE 'href="[^"]*fundamentos/self-attention"' /tmp/estructurados.html | head -1
+grep -oE 'href="[^"]*fundamentos/transformer"' /tmp/estructurados.html | head -1
+grep -oE 'href="[^"]*fundamentos/embeddings-distribuidos"' /tmp/estructurados.html | head -1
+grep -oE 'href="[^"]*dominios/texto"' /tmp/estructurados.html | head -1
+grep -oE 'href="[^"]*dominios/vision"' /tmp/estructurados.html | head -1
+grep -oE 'href="[^"]*dominios/robotica"' /tmp/estructurados.html | head -1
+grep -oE 'href="[^"]*/dominios/?"' /tmp/estructurados.html | head -1
+
+# Last update
+grep "Última actualización: 2026-05-05" /tmp/estructurados.html | head -1
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+**Step 4: Commit**
+
+```bash
+git add site/content/dominios/estructurados/_index.md
+git commit -m "feat(dominios/estructurados): SOTA, casos de uso, que viene y recursos (cierre)"
+```
+
+NO Co-Authored-By trailer.
+
+---
+
+## Task 4: Verificación final, build de producción y push
+
+**Files:** ninguno nuevo.
+
+**Step 1: Confirmar branch**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+git branch --show-current  # must be feat/dominios-ola-6
+git log --oneline feat/dominios-ola-6 ^main
+```
+
+**Step 2: Build limpio de producción**
+
+```bash
+rm -rf site/public site/resources/_gen 2>/dev/null
+cd site && hugo --gc --minify
+```
+
+Expected: build sin errores ni warnings nuevos.
+
+**Step 3: FlexSearch indexa la página nueva**
+
+```bash
+python3 -c "
+import json
+d = json.load(open('public/es.search-data.json'))
+keys = [k for k in d.keys() if 'estructurados' in k.lower()]
+print('Estructurados entries:', len(keys))
+for k in keys:
+    title = d[k].get('title', '?') if isinstance(d[k], dict) else '?'
+    print(' -', k, '|', title)
+"
+grep -c "XGBoost\|TabPFN\|GCN\|TimeGPT\|Random Forest" public/es.search-data.json
+```
+
+Expected: la página `/neural-network-knowledge/dominios/estructurados/` aparece. Términos clave presentes.
+
+**Step 4: Verificar que TODAS las páginas previas siguen funcionando**
+
+```bash
+ls public/dominios/{texto,vision,multimodal,audio,video,robotica,estructurados}/index.html
+```
+
+Expected: las 7 páginas existen.
+
+**Step 5: Push y abrir PR**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+git push -u origin feat/dominios-ola-6
+```
+
+```bash
+gh pr create --base main --head feat/dominios-ola-6 --title "feat(dominios): Ola 6 — Datos estructurados (cierre del proyecto)" --body "$(cat <<'EOF'
+## Summary
+
+**Última ola del proyecto Dominios.** Página completa para el dominio **Datos estructurados** (tabular + series temporales + grafos). Patrón idéntico al de Audio/Video/Robótica.
+
+- **Línea de tiempo de 5 eras**: ML clásico tabular (1990s-2010) → Gradient Boosting moderno (2014-2017) → DL para grafos y series (2016-2019) → Transformers a tabular y series (2019-2022) → Foundation models y "XGBoost still rules" (2023-presente).
+- **21 hitos** distribuidos 3+3+5+4+6: 0 deep, 0 covered, 21 minimal. Sin material específico, todo descripción inline.
+- **Eras explicadas** (5 subsecciones con Problema heredado / Idea clave / Qué la destronó o Qué viene).
+- **Estado del arte 2024-2025** (TabPFN v2, TimeGPT, Chronos, Lag-Llama, GraphRAG, XGBoost industrial), casos de uso, qué viene, recursos.
+- **Cierra el proyecto Dominios:** 7/7 dominios completos.
+
+Diseño: docs/plans/2026-05-05-dominios-ola-6-design.md. Plan: docs/plans/2026-05-05-dominios-ola-6-plan.md.
+
+## Estado del proyecto Dominios tras este merge
+
+- ✅ Texto / NLP (Ola 1)
+- ✅ Visión (Ola 1)
+- ✅ Multimodal (Ola 2)
+- ✅ Audio / Voz (Ola 3)
+- ✅ Video (Ola 4)
+- ✅ Robótica / RL (Ola 5)
+- ✅ Datos estructurados (Ola 6 — esta)
+
+## Test plan
+
+- [ ] cd site && hugo --gc --minify build limpio.
+- [ ] Inspección visual desktop + móvil + dark mode en /dominios/estructurados/.
+- [ ] Búsqueda FlexSearch encuentra "XGBoost", "TabPFN", "TimeGPT", "GCN", "Random Forest".
+- [ ] Click en links de Recursos llevan a Fundamentos / Dominios existentes (no 404).
+- [ ] Las 7 páginas de Dominios renderizan correctamente.
+- [ ] Landing /dominios/ muestra grid de 7 cards activas.
+EOF
+)"
+```
+
+Reportar la URL de la PR creada.
+
+**No commit en este task** — solo verificación, push y PR.
+
+---
+
+## Definition of Done — Ola 6 (Datos estructurados, cierre del proyecto)
+
+- [ ] `/dominios/estructurados/` página completa: 5 eras + 21 hitos + 5 era subsections + SOTA + casos + qué viene + recursos.
+- [ ] Mínimo 1000 palabras de prosa narrativa fuera de la timeline (más larga que olas previas por la complejidad de unir tabular + series + grafos).
+- [ ] Todos los `link` en recursos resuelven a archivos existentes.
+- [ ] `hugo --gc --minify` build limpio.
+- [ ] FlexSearch indexa la página nueva.
+- [ ] Las 7 páginas de Dominios intactas y completas.
+- [ ] Branch `feat/dominios-ola-6` pusheada y PR abierta contra `main`.
+- [ ] Commits sin Co-Authored-By trailer.
+
+## Riesgos durante implementación
+
+1. **Datos puntuales (años, autores)** — code reviewer debe validar especialmente XGBoost (paper 2016 KDD vs library 2014), Random Forest (Breiman 2001), DeepAR (2017 arXiv vs 2019 IJF paper), TabPFN dates.
+2. **El último hito "Debate vivo: GBM vs DL"** es editorial, no un modelo — flag para reviewer pero plan lo aprobó intencionalmente.
+3. **21 hitos pueden parecer excesivos** — Era 3 (5 hitos) y Era 5 (6 hitos) justifican la densidad por la naturaleza diversa del dominio.
+4. **"XGBoost still rules" en el nombre de Era 5** es un guiño coloquial pero podría flagearse — aceptable porque captura el espíritu del debate.
+5. **El usuario puede mergear/cambiar ramas durante la sesión** — verificar `git branch --show-current` tras cada subagent.
