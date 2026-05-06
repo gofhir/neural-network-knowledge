@@ -1,3 +1,68 @@
+# Sección Dominios — Ola 4 (Video) Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Reemplazar el stub `dominios/video/` por una página completa que narre la evolución desde features handcrafted (HOG3D, Dense Trajectories, 2008-2013) hasta los modelos generativos de video frontera 2024-2025 (Sora, Veo, Kling, Runway Gen-3).
+
+**Architecture:** Una página Markdown construida en 3 commits siguiendo el patrón de Audio (Ola 3): Task 1 = front matter + intro + timeline; Task 2 = era subsections; Task 3 = SOTA + casos + recursos. Toda la infraestructura (shortcodes, CSS, menú) ya existe en `main` post-Ola 3.
+
+**Tech Stack:** Hugo + tema Hextra (vendored vía `go.mod`), Markdown con shortcodes Hugo, KaTeX inline, FlexSearch. baseURL: `/neural-network-knowledge/`.
+
+**Diseño de referencia:** [docs/plans/2026-05-05-dominios-ola-4-design.md](2026-05-05-dominios-ola-4-design.md).
+
+**Convenciones del codebase verificadas:**
+- Shortcodes ya disponibles: `{{< timeline >}}`, `{{< era >}}`, `{{< hito >}}`. CSS soporta light/dark + responsive.
+- Status taxonomy: `deep` (Fundamento dedicado), `covered` (mencionado en otro Fundamento/Paper), `minimal` (descripción inline).
+- Front matter: `title`, `weight: 4`, `sidebar.open: true`. `type: docs` cascadea.
+- `{{< callout type="info" >}}` para SOTA box.
+- Sin Co-Authored-By en commits.
+- Español con tildes correctas.
+
+**Working directory:** `/Users/robertoaraneda/projects/personal/courses/ia-uc/`. **Branch:** `feat/dominios-ola-4`.
+
+**Comando de build:** `cd site && hugo --gc --minify`.
+
+**Decisión de status:** **Todos los hitos son `minimal`**. Sin material específico de video en `fundamentos/` ni `papers/`; los enlaces a CNN/ViT/Transformer adyacentes serían "overstated covered" como ocurrió en la review de Audio (4 fixes post-review). Más honesto y rápido ir directo a `minimal`.
+
+**Stub actual de `site/content/dominios/video/_index.md`** (heredado de Ola 1):
+```markdown
+---
+title: "Video"
+weight: 4
+sidebar:
+  open: true
+---
+
+# Video
+
+El reto de combinar espacio y tiempo: two-stream, 3D-CNN, video transformers y generación temporal coherente.
+
+> **Página en construcción.** Esta sección estará disponible en una próxima ola de la sección Dominios. Ver el plan en [docs/plans/2026-05-03-dominios-design.md](https://github.com/robertoaraneda/diplomado-ia-uc/blob/main/docs/plans/2026-05-03-dominios-design.md).
+```
+
+Task 1 lo sobrescribe completo.
+
+---
+
+## Task 1: Video — front matter + problema central + línea de tiempo
+
+**Files:**
+- Modify: `site/content/dominios/video/_index.md` (overwrite stub completo)
+
+**Step 1: Verificar branch**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+git branch --show-current  # must be feat/dominios-ola-4
+```
+
+If not on `feat/dominios-ola-4`, stop and report.
+
+**Step 2: Sobrescribir el stub con EXACTAMENTE este contenido**
+
+Verify all 19 `{{< hito ... >}}` opening tags have a matching `{{< /hito >}}` closing tag — Hugo will fail if any tag is malformed.
+
+```markdown
 ---
 title: "Video"
 weight: 4
@@ -40,7 +105,7 @@ Tres tensiones definen el campo: (1) cómo **modelar movimiento sin desperdiciar
   {{< /era >}}
   {{< era name="Era de 3D-CNN profundas" years="2017-2019" >}}
     {{< hito year="2017" name="I3D" status="minimal" >}}
-      Carreira & Zisserman (DeepMind): *Inflated 3D ConvNet* — toma una CNN-2D preentrenada en ImageNet (Inception-V1, kernels 3×3) y "infla" sus filtros 2D a 3D (un kernel 3×3 se vuelve 3×3×3 replicando los pesos en el eje temporal), transfiriendo la representación visual a video. Entrenado sobre el nuevo Kinetics-400. **Por qué importó:** el primer modelo que destronó claramente a iDT y two-stream en todos los benchmarks; backbone estándar 2017-2019.
+      Carreira & Zisserman (DeepMind): *Inflated 3D ConvNet* — toma una CNN-2D preentrenada en ImageNet (Inception) y "infla" sus filtros 2×2 a 2×2×2, transfiriendo la representación visual a video. Entrenado sobre el nuevo Kinetics-400. **Por qué importó:** el primer modelo que destronó claramente a iDT y two-stream en todos los benchmarks; backbone estándar 2017-2019.
     {{< /hito >}}
     {{< hito year="2018" name="R(2+1)D" status="minimal" >}}
       Tran et al. (FAIR): factoriza convolución 3D en una espacial 2D seguida de una temporal 1D. **Por qué importó:** mejor accuracy con menos parámetros que 3D pura; demostró que separar espacio y tiempo era pedagógicamente útil para el modelo.
@@ -77,13 +142,99 @@ Tres tensiones definen el campo: (1) cómo **modelar movimiento sin desperdiciar
       OpenAI (anunciado feb 2024, lanzamiento dic 2024): generación de video de hasta 60 segundos con coherencia temporal extendida, física aproximada y resolución alta. Diffusion sobre tokens de video latentes. **Por qué importó:** salto cualitativo en duración y coherencia; redefinió las expectativas de la frontera.
     {{< /hito >}}
     {{< hito year="2024" name="Veo / Veo 2" status="minimal" >}}
-      Google DeepMind (Veo 1 mayo 2024, Veo 2 dic 2024): generación de video con prompts complejos, control de cámara y estilos cinematográficos (Veo 1 hasta 1080p; Veo 2 hasta 4K). **Por qué importó:** alternativa frontera a Sora con foco en control fino y resolución.
+      Google DeepMind (Veo 1 mayo 2024, Veo 2 dic 2024): generación de video en 4K con prompts complejos, control de cámara y estilos cinematográficos. **Por qué importó:** alternativa frontera a Sora con foco en control fino y resolución.
     {{< /hito >}}
     {{< hito year="2024" name="Kling / Runway Gen-3" status="minimal" >}}
       Kuaishou (Kling, jun 2024) y Runway (Gen-3 Alpha, jun 2024): generación de video competitiva con frontier occidental. **Por qué importó:** Kling demostró que China alcanzó paridad rápida; Runway llevó la generación a producción para creadores y estudios.
     {{< /hito >}}
   {{< /era >}}
 {{< /timeline >}}
+```
+
+**Step 3: Verify build**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc/site
+hugo --gc --minify
+```
+
+Expected: build clean (only the pre-existing `tabs` deprecation warning is acceptable).
+
+**Step 4: Curl-based validation**
+
+```bash
+hugo server -D --port 1313 > /tmp/hugo-task1-ola4.log 2>&1 &
+sleep 3
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/video/
+
+curl -s -o /tmp/video.html -w "HTTP %{http_code}\n" "$URL"
+
+# H1
+grep "<h1[^>]*>Video" /tmp/video.html | head -1
+
+# Sections
+grep -c "El problema central" /tmp/video.html
+grep -c "Línea de tiempo" /tmp/video.html
+
+# Timeline
+grep -c 'class="timeline-container"' /tmp/video.html  # 1
+
+# 5 eras
+grep -c 'class="timeline-era"' /tmp/video.html  # 5
+
+# 19 hitos (3+3+3+4+6)
+grep -c 'class="timeline-hito timeline-hito-' /tmp/video.html  # 19
+
+# Era headers
+grep "Era pre-deep / handcrafted" /tmp/video.html | head -1
+grep "Era two-stream y 3D-CNN tempranas" /tmp/video.html | head -1
+grep "Era de 3D-CNN profundas" /tmp/video.html | head -1
+grep "Era de Video Transformers" /tmp/video.html | head -1
+grep "Era de generación + foundation" /tmp/video.html | head -1
+
+# Some hito names
+grep "Dense Trajectories" /tmp/video.html | head -1
+grep "Two-Stream" /tmp/video.html | head -1
+grep "I3D" /tmp/video.html | head -1
+grep "TimeSformer" /tmp/video.html | head -1
+grep "Sora" /tmp/video.html | head -1
+
+# Status mix (no deep, no covered, all minimal)
+grep -c 'class="timeline-hito timeline-hito-deep"' /tmp/video.html  # 0
+grep -c 'class="timeline-hito timeline-hito-covered"' /tmp/video.html  # 0
+grep -c 'class="timeline-hito timeline-hito-minimal"' /tmp/video.html  # 19
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+Expected:
+- HTTP 200.
+- 1 timeline-container.
+- 5 timeline-era.
+- 19 hitos (0 deep + 0 covered + 19 minimal).
+- All 5 era and key hito names present.
+
+**Step 5: Commit**
+
+```bash
+git add site/content/dominios/video/_index.md
+git commit -m "feat(dominios/video): problema central + linea de tiempo (5 eras)"
+```
+
+NO Co-Authored-By trailer.
+
+---
+
+## Task 2: Video — eras explicadas (5 subsecciones)
+
+**Files:**
+- Modify: `site/content/dominios/video/_index.md` (apend al final, después del `{{< /timeline >}}`)
+
+**Step 1: Apender este contenido al final del archivo**
+
+```markdown
 
 ## Era 1 — Pre-deep / handcrafted (2003-2013)
 
@@ -113,7 +264,7 @@ Dos respuestas paralelas:
 
 1. **Two-Stream** (Simonyan & Zisserman, 2014): si la CNN-2D no aprende movimiento por sí sola, dáselo explícitamente. Una stream procesa RGB (apariencia), otra stream procesa **flujo óptico precomputado** (movimiento). Las predicciones se fusionan al final. Superó a iDT y se volvió el patrón estándar 2014-2018.
 
-2. **C3D** (Tran et al., 2015): convoluciones 3D aprendidas extremo a extremo. Un kernel $3 \times 3 \times 3$ procesa simultáneamente espacio y tiempo. Costoso en parámetros y datos, pero conceptualmente más limpio que two-stream — el modelo aprende el movimiento, no se le da gratis.
+2. **C3D** (Tran et al., 2015): convoluciones 3D aprendidas extremo a extremo. Un kernel 3×3×3 procesa simultáneamente espacio y tiempo. Costoso en parámetros y datos, pero conceptualmente más limpio que two-stream — el modelo aprende el movimiento, no se le da gratis.
 
 ### Qué la destronó
 
@@ -135,7 +286,7 @@ SlowFast (Feichtenhofer et al., FAIR, 2019) llevó la idea a su versión más bo
 
 ### Qué la destronó
 
-Las 3D-CNN tenían un sesgo inductivo de localidad espacial y temporal — un kernel $3 \times 3 \times 3$ solo ve un vecindario inmediato. Para acciones largas o relaciones espaciales globales, esto era un cuello de botella. La pregunta abierta de finales de 2010s era si la atención (ya dominante en NLP y avanzando en visión con ViT) podía superar a las 3D-CNN en video.
+Las 3D-CNN tenían un sesgo inductivo de localidad espacial y temporal — un kernel 3×3×3 solo ve un vecindario inmediato. Para acciones largas o relaciones espaciales globales, esto era un cuello de botella. La pregunta abierta de finales de 2010s era si la atención (ya dominante en NLP y avanzando en visión con ViT) podía superar a las 3D-CNN en video.
 
 ## Era 4 — Video Transformers (2021-2022)
 
@@ -163,11 +314,83 @@ La comprensión de video estaba madura; la generación apenas comenzaba. Modelos
 
 **Diffusion + escala + tokens latentes.** Make-A-Video (Meta, 2022) e Imagen Video (Google, 2022) combinaron modelos texto-a-imagen preentrenados con módulos temporales aprendidos sobre video sin etiquetas, generando clips de pocos segundos. Stable Video Diffusion (2023) democratizó la idea con open weights.
 
-El salto cualitativo llegó con **Sora** (OpenAI, 2024): generación de hasta 60 segundos con coherencia temporal extendida, física aproximada y resolución alta. Internamente, Sora opera sobre **tokens de video latentes** (parches espacio-temporales comprimidos), aplicando un Transformer de difusión que escala con cómputo de forma similar a los LLMs. Veo (Google DeepMind, 2024) ofreció una alternativa con foco en 4K (Veo 2) y control de cámara. Kling (Kuaishou, 2024) demostró que China alcanzó paridad rápidamente. Runway Gen-3 llevó la generación a producción para creadores y estudios.
+El salto cualitativo llegó con **Sora** (OpenAI, 2024): generación de hasta 60 segundos con coherencia temporal extendida, física aproximada y resolución alta. Internamente, Sora opera sobre **tokens de video latentes** (parches espacio-temporales comprimidos), aplicando un Transformer de difusión que escala con cómputo de forma similar a los LLMs. Veo (Google DeepMind, 2024) ofreció una alternativa con foco en 4K y control de cámara. Kling (Kuaishou, 2024) demostró que China alcanzó paridad rápidamente. Runway Gen-3 llevó la generación a producción para creadores y estudios.
 
 ### Qué viene
 
 Las apuestas activas: **coherencia física genuina** (más allá de Sora — conservación de masa, identidad estable, causalidad correcta), **video largo generativo** (5+ minutos coherentes con narrativa), **edición de video por prompt** (modificar contenido existente, no solo generar nuevo), **vision-language-action** para robótica (RT-2, π0 — pendientes en la Ola 5 de Dominios), y **modelos eficientes** para edge/móvil. La pregunta abierta de 2025: si frontier LLMs absorben video nativamente como entrada (GPT-4o, Gemini 2.5) y la generación converge en arquitecturas tipo Sora, ¿queda "video" como dominio aislado o se diluye en multimodal general?
+```
+
+**Step 2: Verify build**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc/site
+hugo --gc --minify
+```
+
+**Step 3: Curl-based validation**
+
+```bash
+hugo server -D --port 1313 > /tmp/hugo-task2-ola4.log 2>&1 &
+sleep 3
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/video/
+
+curl -s -o /tmp/video.html "$URL"
+
+# 5 era H2s
+grep -c '<h2[^>]*>Era ' /tmp/video.html  # 5
+
+# Subsections (each H3 generates 2 anchor refs)
+grep -c "Problema heredado" /tmp/video.html  # 10
+grep -c "Idea clave" /tmp/video.html  # 10
+grep -c "Qué la destronó" /tmp/video.html  # 8
+grep -c "Qué viene" /tmp/video.html  # 2
+
+# KaTeX inline math
+grep -E 'k \\\\times k|k\\times k' /tmp/video.html | head -1
+grep -E 'O\(T' /tmp/video.html | head -1
+
+# Specific phrases
+grep "Wang & Schmid, 2011" /tmp/video.html | head -1
+grep "Simonyan & Zisserman, 2014" /tmp/video.html | head -1
+grep "Carreira & Zisserman, DeepMind, 2017" /tmp/video.html | head -1
+grep "Bertasius et al., FAIR, 2021" /tmp/video.html | head -1
+grep "OpenAI, 2024" /tmp/video.html | head -1
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+**Step 4: Commit**
+
+```bash
+git add site/content/dominios/video/_index.md
+git commit -m "feat(dominios/video): eras explicadas (5 subsecciones narrativas)"
+```
+
+NO Co-Authored-By trailer.
+
+---
+
+## Task 3: Video — SOTA + casos de uso + qué viene + recursos
+
+**Files:**
+- Modify: `site/content/dominios/video/_index.md` (apend al final)
+
+**Step 1: Verificar fundamentos y papers para los recursos**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+ls site/content/fundamentos/{redes-convolucionales,vision-transformer,self-attention,transformer}.md 2>&1
+ls site/content/papers/{alexnet-krizhevsky-2012,resnet-he-2015,vit-dosovitskiy-2021,attention-is-all-you-need-vaswani-2017}.md 2>&1
+```
+
+Si alguno falta, eliminar el bullet y reportar.
+
+**Step 2: Apender este contenido al final**
+
+```markdown
 
 ## Estado del arte hoy
 
@@ -221,3 +444,161 @@ Las apuestas activas en video: **coherencia física genuina** (más allá de Sor
 ---
 
 *Última actualización: 2026-05-05.*
+```
+
+**Step 3: Verify build with curl**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc/site
+hugo --gc --minify
+
+hugo server -D --port 1313 > /tmp/hugo-task3-ola4.log 2>&1 &
+sleep 3
+
+URL=http://localhost:1313/neural-network-knowledge/dominios/video/
+
+curl -s -o /tmp/video.html "$URL"
+
+# Sections
+grep -c "Estado del arte hoy" /tmp/video.html  # 3
+grep -c "Casos de uso reales" /tmp/video.html  # 3
+grep -c "Recursos relacionados" /tmp/video.html  # 3
+
+# Callout
+grep -c "callout" /tmp/video.html | head -1
+
+# SOTA bullets
+grep "Sora 2" /tmp/video.html | head -1
+grep "Veo 2" /tmp/video.html | head -1
+grep "Kling v2" /tmp/video.html | head -1
+grep "Runway Gen-4" /tmp/video.html | head -1
+
+# Resource links resolve
+grep -oE 'href="[^"]*fundamentos/redes-convolucionales"' /tmp/video.html | head -1
+grep -oE 'href="[^"]*fundamentos/vision-transformer"' /tmp/video.html | head -1
+grep -oE 'href="[^"]*papers/vit-dosovitskiy-2021"' /tmp/video.html | head -1
+grep -oE 'href="[^"]*dominios/vision"' /tmp/video.html | head -1
+grep -oE 'href="[^"]*dominios/multimodal"' /tmp/video.html | head -1
+
+# Last update
+grep "Última actualización: 2026-05-05" /tmp/video.html | head -1
+
+pkill -f "hugo server" || true
+sleep 1
+```
+
+**Step 4: Commit**
+
+```bash
+git add site/content/dominios/video/_index.md
+git commit -m "feat(dominios/video): SOTA, casos de uso, que viene y recursos"
+```
+
+NO Co-Authored-By trailer.
+
+---
+
+## Task 4: Verificación final, build de producción y push
+
+**Files:** ninguno nuevo.
+
+**Step 1: Confirmar branch**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+git branch --show-current  # must be feat/dominios-ola-4
+git log --oneline feat/dominios-ola-4 ^main
+```
+
+**Step 2: Build limpio de producción**
+
+```bash
+rm -rf site/public site/resources/_gen 2>/dev/null
+cd site && hugo --gc --minify
+```
+
+Expected: build sin errores ni warnings nuevos. ~298 pages.
+
+**Step 3: FlexSearch indexa la página nueva**
+
+```bash
+python3 -c "
+import json
+d = json.load(open('public/es.search-data.json'))
+keys = [k for k in d.keys() if 'video' in k.lower()]
+print('Video entries:', len(keys))
+for k in keys:
+    title = d[k].get('title', '?') if isinstance(d[k], dict) else '?'
+    print(' -', k, '|', title)
+"
+grep -c "Sora\|Two-Stream\|I3D\|TimeSformer\|Veo" public/es.search-data.json
+```
+
+Expected: la página `/neural-network-knowledge/dominios/video/` aparece. Términos clave presentes.
+
+**Step 4: Verificar que las páginas previas y stubs siguen funcionando**
+
+```bash
+ls public/dominios/{texto,vision,multimodal,audio,video,robotica,estructurados}/index.html
+```
+
+Expected: todas existen.
+
+**Step 5: Push y abrir PR**
+
+```bash
+cd /Users/robertoaraneda/projects/personal/courses/ia-uc
+git push -u origin feat/dominios-ola-4
+```
+
+```bash
+gh pr create --base main --head feat/dominios-ola-4 --title "feat(dominios): Ola 4 — Video" --body "$(cat <<'EOF'
+## Summary
+
+Página completa para el dominio **Video** de la sección Dominios. Patrón idéntico al de Audio (Ola 3).
+
+- **Línea de tiempo de 5 eras**: pre-deep / handcrafted (2003-2013) → two-stream y 3D-CNN tempranas (2014-2015) → 3D-CNN profundas (2017-2019) → Video Transformers (2021-2022) → generación + foundation (2022-presente).
+- **19 hitos** distribuidos 3+3+3+4+6: 0 deep, 0 covered, 19 minimal. Sin material específico de video en el site, todos descripción inline (qué + por qué importó).
+- **Eras explicadas** (5 subsecciones con Problema heredado / Idea clave / Qué la destronó o Qué viene).
+- **Estado del arte 2024-2025** (Sora 2, Veo 2, Kling, Runway Gen-4), casos de uso, qué viene, recursos enlazando a fundamentos adyacentes (CNN, ViT, Transformer).
+
+Diseño: docs/plans/2026-05-05-dominios-ola-4-design.md. Plan: docs/plans/2026-05-05-dominios-ola-4-plan.md.
+
+Restan tras esta ola: Robótica/RL y Datos estructurados (Ola 5).
+
+## Test plan
+
+- [ ] cd site && hugo --gc --minify build limpio.
+- [ ] Inspección visual desktop + móvil + dark mode en /dominios/video/.
+- [ ] Búsqueda FlexSearch encuentra "Sora", "I3D", "TimeSformer", "Two-Stream" y lleva a la página.
+- [ ] Click en links de Recursos llevan a Fundamentos / Papers existentes (no 404).
+- [ ] Stubs (robotica, estructurados) siguen renderizando con su mensaje "Página en construcción".
+- [ ] Páginas completas previas (texto, vision, multimodal, audio) renderizan correctamente.
+EOF
+)"
+```
+
+Reportar la URL de la PR creada.
+
+**No commit en este task** — solo verificación, push y PR.
+
+---
+
+## Definition of Done — Ola 4 (Video)
+
+- [ ] `/dominios/video/` página completa: 5 eras + 19 hitos + 5 era subsections + SOTA + casos + qué viene + recursos.
+- [ ] Mínimo 800 palabras de prosa narrativa fuera de la timeline.
+- [ ] Todos los `link` en recursos resuelven a archivos existentes.
+- [ ] `hugo --gc --minify` build limpio.
+- [ ] FlexSearch indexa la página nueva.
+- [ ] Stubs (robotica, estructurados) intactos.
+- [ ] Páginas completas (texto, vision, multimodal, audio) intactas.
+- [ ] Branch `feat/dominios-ola-4` pusheada y PR abierta contra `main`.
+- [ ] Commits sin Co-Authored-By trailer.
+
+## Riesgos durante implementación
+
+1. **Datos puntuales (años, autores) sin verificar** — Code reviewer subagent debe validar especialmente fechas de Era 5 (Sora, Veo, Kling), que son recientes y públicas.
+2. **Solapamiento con Era 5 de Visión y Multimodal** (Sora, Stable Video Diffusion) — intencional, cada página los enmarca desde su ángulo.
+3. **El usuario puede mergear/cambiar ramas durante la sesión** — verificar `git branch --show-current` tras cada subagent.
+4. **KaTeX `$k \times k$` y `$O(T \cdot S^2)$`** en Era 4 — verificar en curl checks de Task 2 que renderizan; ajustar escapado si falla.
