@@ -168,3 +168,56 @@ El salto cualitativo llegó con **Sora** (OpenAI, 2024): generación de hasta 60
 ### Qué viene
 
 Las apuestas activas: **coherencia física genuina** (más allá de Sora — conservación de masa, identidad estable, causalidad correcta), **video largo generativo** (5+ minutos coherentes con narrativa), **edición de video por prompt** (modificar contenido existente, no solo generar nuevo), **vision-language-action** para robótica (RT-2, π0 — pendientes en la Ola 5 de Dominios), y **modelos eficientes** para edge/móvil. La pregunta abierta de 2025: si frontier LLMs absorben video nativamente como entrada (GPT-4o, Gemini 2.5) y la generación converge en arquitecturas tipo Sora, ¿queda "video" como dominio aislado o se diluye en multimodal general?
+
+## Estado del arte hoy
+
+{{< callout type="info" >}}
+
+**Frontier video (2024-2025).** La comprensión de video se integra a los frontier LLMs como capacidad nativa; la generación texto-a-video alcanza calidad de producción y duraciones útiles para creadores.
+
+- **Sora 2** — OpenAI. Generación de video con coherencia temporal extendida (60s+), física aproximada y resolución alta.
+- **Veo 2** — Google DeepMind. Video en 4K con prompts complejos y control de cámara cinematográfico.
+- **Kling v2** — Kuaishou. Líder en China; calidad competitiva con frontier occidental.
+- **Runway Gen-4 / Gen-3 Alpha** — producción para creadores; integración en pipelines de Hollywood.
+- **Stable Video Diffusion 3** — Stability AI. Open weights para video corto, base de mucha experimentación.
+- **Pika 2.0** — generación con control de movimiento, ediciones y transiciones.
+- **Comprensión nativa**: GPT-4o, Gemini 2.5 y Claude analizan video largo como una modalidad más, sin pipeline.
+
+{{< /callout >}}
+
+## Casos de uso reales
+
+- **Generación de video corto**: Sora, Runway, Pika, Kling — marketing, redes sociales, previsualización publicitaria.
+- **VFX y postproducción**: integración de generación en pipelines de Hollywood (Wonder Studio, Runway, Adobe Firefly Video).
+- **Acción y video clasificación**: Kinetics, Something-Something — tracking de actividad para deportes, vigilancia, seguridad.
+- **Conducción autónoma**: análisis de video en tiempo real para predicción de trayectorias y planning (Tesla FSD, Waymo).
+- **Análisis deportivo**: tracking de jugadores, generación automática de highlights, análisis táctico.
+- **Comprensión de video largo**: resumen automático de reuniones, podcasts, lectures, contenido educativo.
+- **Robótica e interacción**: video como entrada para Vision-Language-Action models (RT-2, π0).
+- **Detección de eventos críticos**: vigilancia en aeropuertos, hospitales, fábricas — flag automático de incidentes.
+
+## Qué viene
+
+Las apuestas activas en video: **coherencia física genuina** (más allá de Sora — conservación de masa, identidad estable a través del clip, causalidad correcta), **video largo generativo** (5+ minutos con narrativa coherente), **edición de video por prompt** (modificar contenido existente, no solo generar nuevo — el equivalente de Photoshop generativo para video), **vision-language-action** para robótica (RT-2, π0, OpenVLA — cubierto en profundidad en la Ola 5 de Dominios, dominio Robótica/RL), **modelos eficientes** para edge/móvil que generen en dispositivo, y **detección de deepfakes de video** como contramedida industrial. La pregunta abierta de 2025: si los frontier LLMs absorben video nativamente como entrada y la generación converge en arquitecturas tipo Sora, ¿queda "video" como dominio aislado o se diluye en modelado multimodal general?
+
+## Recursos relacionados
+
+**Fundamentos (predecesores conceptuales):**
+- [Redes convolucionales](/fundamentos/redes-convolucionales) — base de C3D, I3D, R(2+1)D, SlowFast (toda la era 2-3 de video).
+- [Vision Transformer](/fundamentos/vision-transformer) — ViT es el ancestro directo de TimeSformer, ViViT, Video Swin.
+- [Self-attention](/fundamentos/self-attention) y [Transformer](/fundamentos/transformer) — la arquitectura sobre la que corren los Video Transformers y los modelos generativos modernos.
+
+**Papers (predecesores adyacentes):**
+- [AlexNet (Krizhevsky 2012)](/papers/alexnet-krizhevsky-2012) — la CNN-2D que motivó toda la generación de modelos 2014+.
+- [ResNet (He 2015)](/papers/resnet-he-2015) — arquitectura sobre la que se inflaron muchos modelos 3D.
+- [ViT (Dosovitskiy 2021)](/papers/vit-dosovitskiy-2021) — la base directa de TimeSformer y ViViT.
+- [Attention is All You Need (Vaswani 2017)](/papers/attention-is-all-you-need-vaswani-2017) — la arquitectura Transformer que vertebra la era 4-5.
+
+**Dominios relacionados:**
+- [Visión](/dominios/vision) — donde nacieron las CNN y ViT, transferidos a video.
+- [Multimodal](/dominios/multimodal) — donde video se combina con texto (text-to-video) en frontier LLMs.
+- [Texto / NLP](/dominios/texto) — donde nació la atención y el Transformer, transferidos a video post-2021.
+
+---
+
+*Última actualización: 2026-05-05.*
