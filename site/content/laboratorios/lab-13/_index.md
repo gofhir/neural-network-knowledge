@@ -55,4 +55,4 @@ Para la teoria detras de cada arquitectura ver la [clase 13](/clases/clase-13/).
 
 ---
 
-> **Estado actual:** Fase 1 (scaffolding). Las paginas conceptuales estan completas; los outputs reales (curvas, attention heatmaps, ejemplos de traduccion) se integran en Fase 2 segun Roberto ejecuta cada notebook en Colab.
+> **Estado actual:** Lab completo. Las tres partes estan ejecutadas en Colab y sus outputs (curvas, attention heatmaps, comparativas) integrados en las paginas. Las dos actividades evaluadas estan respondidas en [resolucion](resolucion).

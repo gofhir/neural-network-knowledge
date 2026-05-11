@@ -36,4 +36,4 @@ La pista del enunciado apunta directamente al mecanismo de teacher forcing: dura
 
 ---
 
-> **Nota:** las respuestas razonadas estan en [resolucion](resolucion). Los outputs concretos del notebook (curvas de loss, accuracy, ejemplos de traduccion) que sustentan las respuestas se integran en Fase 2 cuando Roberto ejecute el notebook en Colab.
+> **Nota:** las respuestas razonadas estan en [resolucion](resolucion). Los outputs concretos del notebook (curvas de eval accuracy, comparativa Parte 1 vs Parte 3) ya estan integrados en [teacher-forcing](teacher-forcing).
