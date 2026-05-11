@@ -17,4 +17,5 @@ Exploracion en profundidad de los laboratorios del diplomado: librerias, concept
   {{< card link="lab-11" title="Lab 11 - Redes Recurrentes (RNNs)" subtitle="RNN vanilla, LSTM y BiLSTM para clasificar nacionalidades" icon="refresh" >}}
   {{< card link="lab-12" title="Lab 12 - Data Augmentation, Transfer Learning y Finetuning" subtitle="ResNet18 sobre flowers y BERT sobre Jigsaw toxic comments" icon="chip" >}}
   {{< card link="lab-13" title="Lab 13 - Seq2Seq y Mecanismos de Atencion" subtitle="Translation con encoder-decoder, Bahdanau attention y teacher forcing" icon="sparkles" >}}
+  {{< card link="lab-14" title="Lab 14 - Transformers e Interpretabilidad + CLIP" subtitle="BETO + bertviz (Parte 1) y CLIP zero-shot sobre Food101/Cars (Parte 2)" icon="eye" >}}
 {{< /cards >}}
