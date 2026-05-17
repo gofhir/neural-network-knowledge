@@ -100,3 +100,43 @@ def load_meddocan() -> List[Doc]:
     offsets sobre el texto reconstruido desde tokens.
     """
     return _load_bio_dataset("IIC/meddocan", "meddocan")
+
+
+def _load_bigbio_kb(dataset_name: str, config: str, source: str) -> List[Doc]:
+    """Loader genérico para datasets en formato BigBio KB.
+
+    Cada ejemplo tiene `passages` (texto en chunks) y `entities` con
+    `offsets` y `text` ya alineados a los passages concatenados.
+    """
+    from datasets import load_dataset
+
+    ds = load_dataset(dataset_name, config)
+
+    docs: List[Doc] = []
+    for split_name in ds:
+        for example in ds[split_name]:
+            entities: List[Entity] = []
+            for ent in example["entities"]:
+                for (start, end), text in zip(ent["offsets"], ent["text"]):
+                    entities.append(Entity(start=start, end=end,
+                                           label=ent["type"], text=text))
+            full_text = "\n".join(p["text"][0] for p in example["passages"])
+            docs.append(Doc(
+                id=example["document_id"],
+                text=full_text,
+                source=source,
+                annotations=entities,
+                metadata={"split": split_name},
+            ))
+    return docs
+
+
+def load_cantemist() -> List[Doc]:
+    """Carga Cantemist desde masaenger/cantemist (config BigBio KB)."""
+    return _load_bigbio_kb("masaenger/cantemist", "cantemist_bigbio_kb",
+                           "cantemist")
+
+
+def load_pharmaconer() -> List[Doc]:
+    """Carga PharmaCoNER desde IIC/pharmaco-ner (formato BIO)."""
+    return _load_bio_dataset("IIC/pharmaco-ner", "pharmaconer")

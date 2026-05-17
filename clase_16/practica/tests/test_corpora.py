@@ -45,3 +45,21 @@ def test_load_meddocan_entity_types():
     docs = load_meddocan()
     labels = {ann.label for d in docs for ann in d.annotations}
     assert "NOMBRE_SUJETO_ASISTENCIA" in labels or "NOMBRE" in labels
+
+
+def test_load_cantemist_returns_docs():
+    from _corpora import load_cantemist
+    docs = load_cantemist()
+    assert len(docs) >= 500
+    assert all(d.source == "cantemist" for d in docs)
+    labels = {ann.label for d in docs for ann in d.annotations}
+    assert "MORFOLOGIA_NEOPLASIA" in labels
+
+
+def test_load_pharmaconer_returns_docs():
+    from _corpora import load_pharmaconer
+    docs = load_pharmaconer()
+    assert len(docs) >= 500
+    assert all(d.source == "pharmaconer" for d in docs)
+    labels = {ann.label for d in docs for ann in d.annotations}
+    assert "NORMALIZABLES" in labels or "PROTEINAS" in labels
