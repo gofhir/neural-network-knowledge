@@ -1,4 +1,6 @@
 """Wrappers de tokenizadores NLTK con interfaz uniforme."""
+import pickle
+from pathlib import Path
 from typing import Dict, List, Protocol
 
 from nltk.tokenize import (
@@ -6,6 +8,7 @@ from nltk.tokenize import (
     sent_tokenize,
     word_tokenize,
 )
+from nltk.tokenize.punkt import PunktSentenceTokenizer
 
 
 class Tokenizer(Protocol):
@@ -53,6 +56,28 @@ class TweetTokenizer:
 
     def tokenize(self, text: str) -> List[str]:
         return self._tk.tokenize(text)
+
+
+class CustomPunktTokenizer:
+    """Tokenizer Punkt entrenado en un sub-corpus específico.
+
+    Carga parámetros (PunktParameters) pickled desde disco e inicializa
+    un PunktSentenceTokenizer con ellos.
+    """
+
+    def __init__(self, model_path: Path, name: str = "punkt_custom"):
+        self.name = name
+        self.model_path = Path(model_path)
+        with open(self.model_path, "rb") as f:
+            params = pickle.load(f)
+        self._tk = PunktSentenceTokenizer()
+        self._tk._params = params
+
+    def sent_tokenize(self, text: str) -> List[str]:
+        return self._tk.tokenize(text)
+
+    def tokenize(self, text: str) -> List[str]:
+        return word_tokenize(text)
 
 
 def list_tokenizers() -> Dict[str, Tokenizer]:
