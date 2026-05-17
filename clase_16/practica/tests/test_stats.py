@@ -60,3 +60,15 @@ def test_heaps_fit_on_synthetic():
     beta, K, r2 = heaps_fit(tokens)
     assert 0.3 < beta < 0.7
     assert r2 > 0.85
+
+
+def test_comparative_plot_creates_file(tmp_path):
+    from _stats import comparative_plot
+    curves = {
+        "corpus_a": ([1, 2, 3, 4], [1, 2, 3, 4]),
+        "corpus_b": ([1, 2, 3, 4], [1, 1, 2, 2]),
+    }
+    out = tmp_path / "test.png"
+    comparative_plot(curves, title="Test", xlabel="x", ylabel="y",
+                     log_x=True, log_y=True, output_path=out)
+    assert out.exists() and out.stat().st_size > 1000

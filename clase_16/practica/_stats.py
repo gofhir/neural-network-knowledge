@@ -1,7 +1,11 @@
 """Estadísticas de corpus: frecuencias, Zipf, Heaps, plots comparativos."""
 from collections import Counter
-from typing import List, Tuple
+from pathlib import Path
+from typing import Dict, List, Tuple
 
+import matplotlib
+matplotlib.use("Agg")  # non-interactive backend para scripts headless
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import linregress
 
@@ -67,3 +71,27 @@ def heaps_fit(tokens: List[str]) -> Tuple[float, float, float]:
     beta = float(slope)
     K = float(np.exp(intercept))
     return beta, K, float(r_value ** 2)
+
+
+def comparative_plot(curves: Dict[str, Tuple[List, List]],
+                     title: str, xlabel: str, ylabel: str,
+                     log_x: bool = False, log_y: bool = False,
+                     output_path: Path = None) -> Path:
+    """Plot comparativo de varias curvas con escala opcional log-log."""
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for name, (xs, ys) in curves.items():
+        ax.plot(xs, ys, label=name, alpha=0.85, linewidth=1.5)
+    if log_x:
+        ax.set_xscale("log")
+    if log_y:
+        ax.set_yscale("log")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    return output_path
