@@ -13,6 +13,8 @@ Reconocimiento de objetos como problema region-based: del clasificador holistico
 {{< cards >}}
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 47 diapositivas: R-CNN, FCN, YOLO, Faster R-CNN, FPN" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math detallado: smooth L1, parametrizacion offsets, IoU/AP/mAP, RoI Align, DETR" icon="beaker" >}}
+  {{< card link="/laboratorios/lab-15" title="Laboratorio 15" subtitle="Faster R-CNN: inferencia COCO + fine-tuning para mapaches" icon="cube-transparent" >}}
+  {{< card link="/fundamentos/deteccion-de-objetos" title="Fundamento: Deteccion de Objetos" subtitle="IoU, NMS, anchors, RPN, RoIAlign, FPN, family tree" icon="book-open" >}}
   {{< card link="/fundamentos/redes-convolucionales" title="Fundamento: CNNs" subtitle="Backbone arquitectonico: AlexNet, VGG, ResNet, Inception" icon="book-open" >}}
   {{< card link="/fundamentos/transfer-learning" title="Fundamento: Transfer Learning" subtitle="Pretraining ImageNet y fine-tuning para deteccion" icon="book-open" >}}
 {{< /cards >}}

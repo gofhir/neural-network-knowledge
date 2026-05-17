@@ -50,17 +50,32 @@ Tres tensiones recorren toda la historia: (1) cómo construir **invariancia a tr
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de detección y segmentación" years="2014-2018" >}}
+    {{< hito year="2014" name="COCO" status="covered" link="/papers/coco-lin-2014" >}}
+      Microsoft COCO: 328k imágenes, 80 categorías, 7.7 objetos/imagen, segmentación a nivel de instancia. **Por qué importó:** dataset estándar de detección moderno y la métrica mAP@[.5:.95] que penaliza imprecisión en la caja.
+    {{< /hito >}}
     {{< hito year="2014" name="R-CNN" status="minimal" >}}
       Region proposals + CNN para clasificar cada región. **Por qué importó:** primera arquitectura de detección extremo a extremo basada en CNNs.
     {{< /hito >}}
-    {{< hito year="2015" name="Faster R-CNN" status="minimal" >}}
-      Region Proposal Network integrado dentro de la CNN. **Por qué importó:** detección viable en tiempo casi real.
+    {{< hito year="2015" name="Faster R-CNN" status="covered" link="/papers/faster-rcnn-ren-2015" >}}
+      Region Proposal Network integrado dentro de la CNN, anchors $k=9$, NMS. **Por qué importó:** detección viable en tiempo casi real (5 fps con VGG-16), elimina el cuello de botella de Selective Search externo.
     {{< /hito >}}
     {{< hito year="2015" name="U-Net" status="minimal" >}}
       Encoder-decoder con skip connections para segmentación médica. **Por qué importó:** sigue siendo el caballo de batalla de segmentación biomédica.
     {{< /hito >}}
     {{< hito year="2016" name="YOLO" status="minimal" >}}
       Detección como única regresión sobre toda la imagen. **Por qué importó:** detección a 60+ FPS, abrió la puerta a robótica y video.
+    {{< /hito >}}
+    {{< hito year="2017" name="FPN" status="covered" link="/papers/fpn-lin-2017" >}}
+      Feature Pyramid Network: combina bottom-up con top-down + lateral connections para construir una pirámide multi-escala con semántica fuerte en todos los niveles. **Por qué importó:** se volvió componente estándar de Faster R-CNN, Mask R-CNN, RetinaNet y todos los detectores modernos. +12.9 puntos de AP en objetos pequeños.
+    {{< /hito >}}
+    {{< hito year="2017" name="Mask R-CNN" status="covered" link="/papers/mask-rcnn-he-2017" >}}
+      Extiende Faster R-CNN con rama de segmentación paralela y reemplaza RoI Pool por **RoIAlign** sin cuantización. **Por qué importó:** ganó ICCV 2017 Best Paper Award, unificó detección + segmentación de instancias + keypoints en un framework, y RoIAlign aportó +1.3 box AP "gratis" a Faster R-CNN.
+    {{< /hito >}}
+    {{< hito year="2017" name="RetinaNet" status="minimal" >}}
+      Detector single-stage con **focal loss** $(1-p_t)^\gamma \log p_t$ para el desbalance fondo:objeto. **Por qué importó:** demostró que single-shot puede competir con two-stage en precisión.
+    {{< /hito >}}
+    {{< hito year="2020" name="DETR" status="minimal" >}}
+      End-to-End Object Detection with Transformers: trata detección como set prediction con bipartite matching. **Por qué importó:** elimina anchors y NMS, primer detector verdaderamente end-to-end.
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era Transformer" years="2020-presente" >}}
@@ -136,15 +151,17 @@ Mientras las eras 2 y 3 perfeccionaban la **clasificación**, una rama paralela 
 
 ### Idea clave
 
-Esta era es paralela a las eras CNN y residual; se desarrolló sobre las mismas backbones (AlexNet, VGG, ResNet). Las ideas centrales son:
+Esta era es paralela a las eras CNN y residual; se desarrolló sobre las mismas backbones (AlexNet, VGG, ResNet). Tres familias de arquitecturas emergieron:
 
-- **R-CNN family** (R-CNN, Fast, Faster R-CNN, Mask R-CNN): generar propuestas de regiones y clasificar cada una.
-- **Single-stage** (YOLO, SSD, RetinaNet): tratar la detección como una única regresión densa sobre la imagen.
-- **Encoder-decoder con skip connections** (U-Net, FPN): para segmentación, donde cada píxel necesita una predicción.
+- **R-CNN family** (R-CNN 2014, Fast 2015, Faster R-CNN 2015, Mask R-CNN 2017): **two-stage** — generar propuestas de regiones y clasificar cada una. La pieza maestra fue [Faster R-CNN](/papers/faster-rcnn-ren-2015) con su **Region Proposal Network** (RPN) entrenable end-to-end, que eliminó el cuello de botella de Selective Search externo. Mask R-CNN agregó una rama de segmentación de instancias y reemplazó RoI Pool por **RoIAlign** (sin cuantización via interpolación bilineal).
+- **Single-stage** (YOLO 2016, SSD 2016, RetinaNet 2017): tratar la detección como una única regresión densa sobre la imagen. Mucho más rápidos (real-time) pero históricamente menos precisos. RetinaNet cerró la brecha con **focal loss**, que pondera el cross-entropy para no ahogarse en negativos fáciles.
+- **Encoder-decoder con skip connections** (U-Net 2015, [FPN 2017](/papers/fpn-lin-2017)): para segmentación, donde cada píxel necesita una predicción. FPN se volvió la pieza estándar para detección multi-escala: combina top-down (semántica) con bottom-up (resolución) via lateral connections, y se usa hoy en casi cualquier detector competitivo.
+
+Conceptos transversales que cristalizaron en esta era — [IoU](/fundamentos/deteccion-de-objetos), NMS (por clase), mAP@[.5:.95] (penaliza imprecisión en la caja), anchors con parametrización log, smooth L1 para regresión robusta, transfer learning desde ImageNet — son la base del campo aplicado moderno. El dataset estándar es [COCO](/papers/coco-lin-2014) (80 categorías, 7.7 objetos/imagen, segmentación a nivel de instancia).
 
 ### Qué la destronó
 
-Estas arquitecturas siguen vigentes, pero el ecosistema migró progresivamente a backbones Transformer. Y la llegada de SAM (2023) cambió la conversación: ya no se entrena un modelo de segmentación por dataset, sino que se prompt-tunea un foundation model.
+Estas arquitecturas siguen vigentes en producción (torchvision, Detectron2, mmdetection ofrecen Faster R-CNN y Mask R-CNN como baselines), pero el ecosistema migró progresivamente a backbones Transformer y a frameworks que eliminan heurísticas no diferenciables. **DETR** (2020) trató detección como **set prediction** con bipartite matching — sin anchors, sin NMS. La llegada de **SAM** (2023) cambió además la conversación en segmentación: ya no se entrena un modelo por dataset, sino que se prompt-tunea un foundation model.
 
 ## Era 5 — Vision Transformer y foundation models (2020-presente)
 
@@ -196,6 +213,7 @@ Las apuestas activas en visión hoy: **modelos generativos de video con coherenc
 
 **Fundamentos:**
 - [Redes convolucionales](/fundamentos/redes-convolucionales).
+- [Detección de objetos](/fundamentos/deteccion-de-objetos) — IoU, NMS, anchors, RPN, RoIAlign, FPN, family tree completa.
 - [Vision Transformer](/fundamentos/vision-transformer).
 - [Transfer learning](/fundamentos/transfer-learning).
 - [Data augmentation](/fundamentos/data-augmentation).
@@ -206,7 +224,11 @@ Las apuestas activas en visión hoy: **modelos generativos de video con coherenc
 - [AlexNet (Krizhevsky 2012)](/papers/alexnet-krizhevsky-2012).
 - [VGGNet (Simonyan 2014)](/papers/vggnet-simonyan-2014).
 - [GoogLeNet (Szegedy 2014)](/papers/googlenet-szegedy-2014).
+- [Microsoft COCO (Lin 2014)](/papers/coco-lin-2014) — dataset estándar de detección.
 - [ResNet (He 2015)](/papers/resnet-he-2015).
+- [Faster R-CNN (Ren 2015)](/papers/faster-rcnn-ren-2015) — RPN end-to-end.
+- [FPN (Lin 2017)](/papers/fpn-lin-2017) — pirámide multi-escala.
+- [Mask R-CNN (He 2017)](/papers/mask-rcnn-he-2017) — RoIAlign + segmentación de instancias.
 - [ViT (Dosovitskiy 2021)](/papers/vit-dosovitskiy-2021).
 - [Batch Normalization (Ioffe 2015)](/papers/batch-norm-ioffe-2015).
 - [Dropout (Srivastava 2014)](/papers/dropout-srivastava-2014).
@@ -214,9 +236,11 @@ Las apuestas activas en visión hoy: **modelos generativos de video con coherenc
 - [Transferable features (Yosinski 2014)](/papers/transferable-features-yosinski-2014).
 
 **Clases del diplomado:**
+- [Clase 15 — Reconocimiento de Objetos](/clases/clase-15) — R-CNN, Fast/Faster R-CNN, YOLO, FPN.
+- [Laboratorio 15 — Faster R-CNN práctico](/laboratorios/lab-15) — inferencia COCO + fine-tuning para mapaches con torchvision.
 - Clases sobre CNNs, ResNets y backbones modernas.
 - Clases sobre ViT y atención visual.
 
 ---
 
-*Última actualización: 2026-05-03.*
+*Última actualización: 2026-05-16.*
