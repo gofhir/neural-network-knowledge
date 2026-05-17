@@ -16,12 +16,36 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
 ## Línea de tiempo
 
 {{< timeline >}}
-  {{< era name="Era pre-neural" years="1948-2010" >}}
+  {{< era name="Era pre-neural" years="1948-2014" >}}
     {{< hito year="1948" name="n-gramas (Shannon)" status="minimal" >}}
       Modelos de lenguaje basados en frecuencias de secuencias cortas. **Por qué importó:** estableció el problema de predecir la siguiente palabra y la métrica de perplexity.
     {{< /hito >}}
+    {{< hito year="1954" name="Hipótesis distribucional (Harris)" status="minimal" >}}
+      *"The meaning of a word is given by the company it keeps."* Fundamento conceptual del Bag of Words y, mucho después, de word2vec y embeddings distribuidos. **Por qué importó:** estableció la idea de que la semántica emerge de la co-ocurrencia.
+    {{< /hito >}}
+    {{< hito year="1980" name="Porter Stemmer" status="covered" link="/papers/porter-stemmer-1980" >}}
+      Algoritmo simple en 5 pasos para reducir palabras inglesas a su raíz por eliminación iterativa de sufijos. **Por qué importó:** baseline obligatoria del NLP clásico durante 40+ años; sigue corriendo en producción dentro de Lucene, Elasticsearch, NLTK.
+    {{< /hito >}}
+    {{< hito year="1988" name="TF-IDF (Salton & Buckley)" status="minimal" >}}
+      Pondera Bag of Words castigando palabras frecuentes y amplificando las raras y discriminativas. **Por qué importó:** la representación textual estándar de Information Retrieval por décadas; sigue siendo baseline competitiva en clasificación.
+    {{< /hito >}}
+    {{< hito year="1995" name="WordNet" status="covered" link="/papers/wordnet-miller-1995" >}}
+      Lexicón inglés organizado por relaciones semánticas (synsets, hipónimos, meronimia) en lugar de orden alfabético. **Por qué importó:** el recurso léxico más influyente del NLP. Base de NLTK lemmatizer, scispaCy, BabelNet.
+    {{< /hito >}}
+    {{< hito year="2001" name="NLTK toolkit" status="covered" link="/papers/nltk-bird-loper-2006" >}}
+      Suite Python con interfaces uniformes, 15+ corpora preempaquetados, demos GUI. **Por qué importó:** empujó la adopción de Python como lengua franca del NLP, precediendo a scikit-learn (2007), gensim (2009), spaCy (2015) y Transformers (2018).
+    {{< /hito >}}
     {{< hito year="2003" name="Bengio NNLM" status="minimal" >}}
       Primera red neuronal que aprende simultáneamente embeddings densos y un modelo de lenguaje probabilístico end-to-end. **Por qué importó:** validó la idea de representaciones distribuidas aprendidas, base conceptual de toda la era siguiente.
+    {{< /hito >}}
+    {{< hito year="2006" name="Punkt sentence tokenizer" status="covered" link="/papers/punkt-kiss-strunk-2006" >}}
+      Algoritmo no supervisado para segmentar texto en oraciones, basado en detectar abreviaciones como collocations. **Por qué importó:** sentence tokenizer default de NLTK; sigue corriendo en miles de pipelines NLP pre-Transformer.
+    {{< /hito >}}
+    {{< hito year="2011" name="TweetTokenizer / Twitter POS" status="covered" link="/papers/twitter-pos-gimpel-2011" >}}
+      Tokenizer y POS tagger especializados para texto de redes sociales (emoticons, hashtags, mentions, URLs). **Por qué importó:** primer tagset estándar para Twitter; la herramienta de facto para tokenizar tweets en Python.
+    {{< /hito >}}
+    {{< hito year="2014" name="VADER (rule-based sentiment)" status="covered" link="/papers/vader-hutto-gilbert-2014" >}}
+      Modelo de sentiment analysis con lexicón de 7,500 entradas + 5 reglas heurísticas. F1=0.96 en tweets, superando humanos individuales. **Por qué importó:** demostró que rule-based pragmático puede competir con ML supervisado; sigue siendo baseline obligatoria de sentiment en redes sociales.
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de embeddings" years="2013-2017" >}}
@@ -63,6 +87,9 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
     {{< /hito >}}
     {{< hito year="2022" name="InstructGPT / SFT + RLHF" status="deep" link="/fundamentos/sft" >}}
       Alineamiento por feedback humano: convierte un modelo de lenguaje en un asistente útil y seguro.
+    {{< /hito >}}
+    {{< hito year="2022" name="NLLB-200 (No Language Left Behind)" status="covered" link="/papers/nllb-team-2022" >}}
+      Transformer Mixture-of-Experts de Meta para traducción entre 200 idiomas (40,602 direcciones). **Por qué importó:** primer modelo MT con cobertura masiva en idiomas low-resource (quechua, kinyarwanda, etc.); statement-of-the-art moral del MT moderno con open source completo.
     {{< /hito >}}
     {{< hito year="2023" name="DPO" status="deep" link="/fundamentos/dpo" >}}
       Direct Preference Optimization: alineamiento sin RL, equivalente teórico a RLHF pero más simple y estable.
