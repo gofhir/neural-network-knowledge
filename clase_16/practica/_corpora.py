@@ -140,3 +140,25 @@ def load_cantemist() -> List[Doc]:
 def load_pharmaconer() -> List[Doc]:
     """Carga PharmaCoNER desde IIC/pharmaco-ner (formato BIO)."""
     return _load_bio_dataset("IIC/pharmaco-ner", "pharmaconer")
+
+
+_LOADERS = {
+    "meddocan": load_meddocan,
+    "cantemist": load_cantemist,
+    "pharmaconer": load_pharmaconer,
+    "quijote": load_quijote,
+}
+
+
+def list_corpora() -> List[str]:
+    """Nombres de corpora disponibles."""
+    return list(_LOADERS.keys())
+
+
+def load_corpus(name: str) -> List[Doc]:
+    """Dispatcher: carga un corpus por nombre."""
+    if name not in _LOADERS:
+        raise ValueError(
+            f"unknown corpus: {name!r}. Available: {list(_LOADERS)}"
+        )
+    return _LOADERS[name]()

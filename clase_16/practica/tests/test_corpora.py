@@ -63,3 +63,22 @@ def test_load_pharmaconer_returns_docs():
     assert all(d.source == "pharmaconer" for d in docs)
     labels = {ann.label for d in docs for ann in d.annotations}
     assert "NORMALIZABLES" in labels or "PROTEINAS" in labels
+
+
+def test_list_corpora_returns_known_names():
+    from _corpora import list_corpora
+    names = list_corpora()
+    assert set(names) == {"meddocan", "cantemist", "pharmaconer", "quijote"}
+
+
+def test_load_corpus_dispatches():
+    from _corpora import load_corpus
+    docs = load_corpus("quijote")
+    assert len(docs) == 1 and docs[0].source == "quijote"
+
+
+def test_load_corpus_unknown_raises():
+    import pytest
+    from _corpora import load_corpus
+    with pytest.raises(ValueError, match="unknown corpus"):
+        load_corpus("nonexistent")
