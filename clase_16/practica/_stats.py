@@ -35,3 +35,35 @@ def zipf_fit(tokens: List[str]) -> Tuple[float, float, float]:
     alpha = -slope
     K = float(np.exp(intercept))
     return float(alpha), K, float(r_value ** 2)
+
+
+def vocab_growth_curve(tokens: List[str], stride: int = 100) -> Tuple[List[int], List[int]]:
+    """Curva V(N): vocabulario único acumulado al leer tokens secuencialmente.
+
+    stride: cada cuántos tokens se registra un punto (más eficiente para
+    corpora grandes). Siempre se registra también el último token.
+    """
+    seen: set = set()
+    xs: List[int] = []
+    ys: List[int] = []
+    n = len(tokens)
+    for i, tok in enumerate(tokens, start=1):
+        seen.add(tok)
+        if i % stride == 0 or i == n:
+            xs.append(i)
+            ys.append(len(seen))
+    return xs, ys
+
+
+def heaps_fit(tokens: List[str]) -> Tuple[float, float, float]:
+    """Ajusta V(N) = K · N^beta en log-log con OLS.
+
+    Returns: (beta, K, r_squared).
+    """
+    xs, ys = vocab_growth_curve(tokens, stride=max(1, len(tokens) // 200))
+    log_n = np.log(xs)
+    log_v = np.log(ys)
+    slope, intercept, r_value, _, _ = linregress(log_n, log_v)
+    beta = float(slope)
+    K = float(np.exp(intercept))
+    return beta, K, float(r_value ** 2)
