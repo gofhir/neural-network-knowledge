@@ -4,6 +4,9 @@ __pycache__/
 .pytest_cache/
 data/corpora/*.parquet
 data/corpora/*.txt
-out/
-checkpoints/
+!data/corpora/quijote.txt
+out/*
+!out/.gitkeep
+checkpoints/*
+!checkpoints/.gitkeep
 .hypothesis/
