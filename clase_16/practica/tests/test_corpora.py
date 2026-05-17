@@ -82,3 +82,20 @@ def test_load_corpus_unknown_raises():
     from _corpora import load_corpus
     with pytest.raises(ValueError, match="unknown corpus"):
         load_corpus("nonexistent")
+
+
+def test_corpus_persist_and_load(tmp_path):
+    from _corpora import Doc, Entity, save_corpus, load_corpus_from_cache
+    docs = [
+        Doc(id="d1", text="texto uno", source="test",
+            annotations=[Entity(0, 5, "PER", "texto")], metadata={}),
+        Doc(id="d2", text="texto dos", source="test",
+            annotations=[], metadata={"split": "train"}),
+    ]
+    save_corpus(docs, tmp_path / "test.parquet")
+    loaded = load_corpus_from_cache(tmp_path / "test.parquet")
+    assert len(loaded) == 2
+    assert loaded[0].id == "d1"
+    assert len(loaded[0].annotations) == 1
+    assert loaded[0].annotations[0].label == "PER"
+    assert loaded[1].metadata == {"split": "train"}

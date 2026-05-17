@@ -1,4 +1,5 @@
 """Loaders y modelos para los 4 corpora de la práctica clase 16."""
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List
@@ -162,3 +163,46 @@ def load_corpus(name: str) -> List[Doc]:
             f"unknown corpus: {name!r}. Available: {list(_LOADERS)}"
         )
     return _LOADERS[name]()
+
+
+def save_corpus(docs: List[Doc], path: Path) -> None:
+    """Persiste lista de Doc como Parquet."""
+    import pandas as pd
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for d in docs:
+        rows.append({
+            "id": d.id,
+            "text": d.text,
+            "source": d.source,
+            "annotations_json": json.dumps([
+                {"start": e.start, "end": e.end,
+                 "label": e.label, "text": e.text}
+                for e in d.annotations
+            ]),
+            "metadata_json": json.dumps(d.metadata, default=str),
+        })
+    pd.DataFrame(rows).to_parquet(path)
+
+
+def load_corpus_from_cache(path: Path) -> List[Doc]:
+    """Lee corpus persistido desde Parquet."""
+    import pandas as pd
+
+    df = pd.read_parquet(path)
+    docs: List[Doc] = []
+    for _, row in df.iterrows():
+        annotations = [
+            Entity(a["start"], a["end"], a["label"], a["text"])
+            for a in json.loads(row["annotations_json"])
+        ]
+        docs.append(Doc(
+            id=row["id"],
+            text=row["text"],
+            source=row["source"],
+            annotations=annotations,
+            metadata=json.loads(row["metadata_json"]),
+        ))
+    return docs
