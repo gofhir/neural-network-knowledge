@@ -35,8 +35,8 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
     {{< hito year="2001" name="NLTK toolkit" status="covered" link="/papers/nltk-bird-loper-2006" >}}
       Suite Python con interfaces uniformes, 15+ corpora preempaquetados, demos GUI. **Por qué importó:** empujó la adopción de Python como lengua franca del NLP, precediendo a scikit-learn (2007), gensim (2009), spaCy (2015) y Transformers (2018).
     {{< /hito >}}
-    {{< hito year="2003" name="Bengio NNLM" status="minimal" >}}
-      Primera red neuronal que aprende simultáneamente embeddings densos y un modelo de lenguaje probabilístico end-to-end. **Por qué importó:** validó la idea de representaciones distribuidas aprendidas, base conceptual de toda la era siguiente.
+    {{< hito year="2003" name="Bengio NPLM" status="deep" link="/papers/nplm-bengio-2003" >}}
+      Primera red neuronal que aprende simultáneamente embeddings densos y un modelo de lenguaje probabilístico end-to-end. Resuelve la maldición de dimensionalidad de los n-gramas via generalización semántica. **Por qué importó:** validó la idea de representaciones distribuidas aprendidas, base conceptual de Word2Vec, BERT, GPT y toda la era foundation. Ver también [fundamento Modelos de lenguaje](/fundamentos/modelos-de-lenguaje).
     {{< /hito >}}
     {{< hito year="2006" name="Punkt sentence tokenizer" status="covered" link="/papers/punkt-kiss-strunk-2006" >}}
       Algoritmo no supervisado para segmentar texto en oraciones, basado en detectar abreviaciones como collocations. **Por qué importó:** sentence tokenizer default de NLTK; sigue corriendo en miles de pipelines NLP pre-Transformer.
@@ -48,15 +48,27 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
       Modelo de sentiment analysis con lexicón de 7,500 entradas + 5 reglas heurísticas. F1=0.96 en tweets, superando humanos individuales. **Por qué importó:** demostró que rule-based pragmático puede competir con ML supervisado; sigue siendo baseline obligatoria de sentiment en redes sociales.
     {{< /hito >}}
   {{< /era >}}
-  {{< era name="Era de embeddings" years="2013-2017" >}}
-    {{< hito year="2013" name="word2vec" status="covered" link="/fundamentos/embeddings-distribuidos" >}}
-      Skip-gram y CBOW: embeddings entrenables a escala que capturan analogías ("rey - hombre + mujer ≈ reina").
+  {{< era name="Era de embeddings" years="2010-2017" >}}
+    {{< hito year="2010" name="RNN-LM (Mikolov)" status="deep" link="/papers/rnn-lm-mikolov-2010" >}}
+      Recurrent NN-based Language Model: SRN simple que codifica contexto en estado recurrente. Reduce perplejidad ~50% sobre Kneser-Ney 5-gram en Wall Street Journal con 5x menos datos. **Por qué importó:** rompe el mito "más datos > mejor modelo", antecesor directo de Word2Vec.
     {{< /hito >}}
-    {{< hito year="2014" name="GloVe" status="minimal" >}}
-      Embeddings basados en factorización de la matriz de coocurrencias global. **Por qué importó:** alternativa a word2vec con mejor uso de estadísticas globales del corpus.
+    {{< hito year="2013" name="Word2Vec - CBoW + Skip-gram" status="deep" link="/fundamentos/word2vec" >}}
+      Mikolov et al. proponen dos arquitecturas drásticamente simplificadas sin hidden layer. Skip-gram con negative sampling se vuelve estándar; analogías `king - man + woman ≈ queen` capturan la imaginación de la comunidad. **Por qué importó:** democratizó word embeddings — entrenar en miles de millones de palabras en horas, no semanas. Ver [paper Efficient Estimation](/papers/word2vec-efficient-mikolov-2013) y [Distributed Representations](/papers/word2vec-distributed-mikolov-2013).
+    {{< /hito >}}
+    {{< hito year="2014" name="GloVe (Stanford NLP)" status="deep" link="/fundamentos/glove" >}}
+      Global Vectors: factorización ponderada de log-co-ocurrencia global. **Por qué importó:** unifica las tradiciones count-based (LSA, PPMI) y predict-based (W2V) — embeddings preentrenados `glove.6B`, `glove.840B.300d` fueron estándar 2014-2018. Ver [paper](/papers/glove-pennington-2014).
+    {{< /hito >}}
+    {{< hito year="2014" name="SGNS as Implicit MF (Levy & Goldberg)" status="covered" link="/papers/sgns-implicit-mf-levy-goldberg-2014" >}}
+      Demuestra formalmente que Skip-gram con Negative Sampling factoriza la matriz **PMI shifted**. **Por qué importó:** conecta 50 años de distributional semantics con la era neural — Word2Vec es count-based en disfraz neuronal.
+    {{< /hito >}}
+    {{< hito year="2015" name="Skip-Thought Vectors" status="deep" link="/fundamentos/skip-thought" >}}
+      Primer modelo no-supervisado de sentence embeddings transferibles. Generaliza Skip-gram al nivel de oración usando encoder-decoder GRU sobre BookCorpus. **Por qué importó:** ancestro directo de InferSent (2017), USE (2018), Sentence-BERT (2019) y todo el ecosistema moderno de retrieval semántico. Ver [paper](/papers/skip-thought-kiros-2015).
     {{< /hito >}}
     {{< hito year="2016" name="FastText" status="minimal" >}}
       Embeddings que descomponen palabras en n-gramas de caracteres. **Por qué importó:** maneja palabras fuera de vocabulario y morfología rica.
+    {{< /hito >}}
+    {{< hito year="2019" name="Analogies Explained (Allen & Hospedales)" status="covered" link="/papers/analogies-explained-allen-hospedales-2019" >}}
+      Primera prueba matemática rigurosa de por qué `king - man + woman ≈ queen` funciona. Define paráfrasis probabilística + word transformations y deriva los términos de error explícitos. **Por qué importó:** cierre teórico del capítulo Word2Vec/GloVe; valida la hipótesis distribucional de Firth desde primeros principios.
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era recurrente y seq2seq" years="1997-2016" >}}
@@ -228,7 +240,11 @@ Las apuestas activas hoy — sin un ganador claro — incluyen: **razonamiento e
 ## Recursos relacionados
 
 **Fundamentos:**
-- [Embeddings distribuidos](/fundamentos/embeddings-distribuidos) — word2vec, GloVe, embeddings contextuales.
+- [Modelos de lenguaje](/fundamentos/modelos-de-lenguaje) — LM probabilístico, regla de la cadena, n-gramas, perplejidad.
+- [Embeddings distribuidos](/fundamentos/embeddings-distribuidos) — one-hot vs denso, hipótesis distribucional.
+- [Word2Vec](/fundamentos/word2vec) — CBoW, Skip-gram, negative sampling, subsampling.
+- [GloVe](/fundamentos/glove) — factorización de log-co-ocurrencia global.
+- [Skip-Thought y Sentence Embeddings](/fundamentos/skip-thought) — desde Skip-Thought hasta SBERT.
 - [Redes recurrentes](/fundamentos/redes-recurrentes) y [LSTM/GRU](/fundamentos/lstm-gru).
 - [Seq2Seq](/fundamentos/seq2seq) y [mecanismo de atención](/fundamentos/mecanismo-atencion).
 - [Self-attention](/fundamentos/self-attention) y [Transformer](/fundamentos/transformer).
@@ -239,6 +255,15 @@ Las apuestas activas hoy — sin un ganador claro — incluyen: **razonamiento e
 - [Foundation models](/fundamentos/foundation-models).
 
 **Papers:**
+
+- [NPLM (Bengio 2003)](/papers/nplm-bengio-2003).
+- [RNN-LM (Mikolov 2010)](/papers/rnn-lm-mikolov-2010).
+- [Word2Vec Efficient (Mikolov 2013)](/papers/word2vec-efficient-mikolov-2013).
+- [Word2Vec Distributed (Mikolov 2013)](/papers/word2vec-distributed-mikolov-2013).
+- [GloVe (Pennington 2014)](/papers/glove-pennington-2014).
+- [SGNS as Implicit MF (Levy & Goldberg 2014)](/papers/sgns-implicit-mf-levy-goldberg-2014).
+- [Skip-Thought (Kiros 2015)](/papers/skip-thought-kiros-2015).
+- [Analogies Explained (Allen & Hospedales 2019)](/papers/analogies-explained-allen-hospedales-2019).
 - [Attention is All You Need (Vaswani 2017)](/papers/attention-is-all-you-need-vaswani-2017).
 - [BERT (Devlin 2018)](/papers/bert-devlin-2018).
 - [Seq2Seq (Sutskever 2014)](/papers/seq2seq-sutskever-2014).
@@ -247,8 +272,9 @@ Las apuestas activas hoy — sin un ganador claro — incluyen: **razonamiento e
 - [GRU (Cho 2014)](/papers/gru-cho-2014).
 
 **Clases del diplomado:**
-- Clase 13 — RNNs, seq2seq y atención.
-- Clase 14 — Transformer, GPT, BERT, alineamiento.
+
+- [Clase 16 — Introducción a NLP](/clases/clase-16) (BoW, tokenización, Zipf).
+- [Clase 18 — Modelos de lenguaje, Word2Vec, GloVe y SkipThought](/clases/clase-18).
 
 ---
 
