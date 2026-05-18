@@ -13,6 +13,7 @@ Reconocimiento de poses humanas en imágenes y video. La clase extiende la [Clas
 {{< cards >}}
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 59 diapositivas de la clase" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math de heatmaps Gaussianos, Laplace loss, UV mapping y triplet ranking" icon="beaker" >}}
+  {{< card link="/laboratorios/lab-17" title="Laboratorio 17" subtitle="A/B test PifPaf vs OpenPose + clasificación de acciones end-to-end" icon="academic-cap" >}}
   {{< card link="/clases/clase-15" title="Clase anterior" subtitle="Clase 15 — Detección de Objetos (Faster R-CNN)" icon="arrow-left" >}}
 {{< /cards >}}
 
@@ -29,8 +30,10 @@ Reconocimiento de poses humanas en imágenes y video. La clase extiende la [Clas
 ## Papers de esta clase
 
 {{< cards >}}
+  {{< card link="/papers/openpose-cao-2017" title="OpenPose (2017)" subtitle="Cao et al. — primer bottom-up multi-persona en tiempo real, PAFs vectoriales" icon="document-text" >}}
   {{< card link="/papers/densepose-guler-2018" title="DensePose (2018)" subtitle="Güler et al. — correspondencia densa imagen-SMPL, COCO-DensePose" icon="document-text" >}}
   {{< card link="/papers/pifpaf-kreiss-2019" title="PifPaf (2019)" subtitle="Kreiss et al. — bottom-up multi-persona, composite fields" icon="document-text" >}}
+  {{< card link="/papers/blazepose-bazarevsky-2020" title="BlazePose (2020)" subtitle="Bazarevsky et al. — detector-tracker mobile single-person, MediaPipe Pose" icon="document-text" >}}
   {{< card link="/papers/vitpose-xu-2022" title="ViTPose (2022)" subtitle="Xu et al. — Vision Transformer plain como backbone, SOTA COCO 80.9 AP" icon="document-text" >}}
   {{< card link="/papers/facenet-schroff-2015" title="FaceNet (2015)" subtitle="Schroff et al. — embedding 128-D + triplet loss para face recognition" icon="document-text" >}}
   {{< card link="/papers/smpl-loper-2015" title="SMPL (2015)" subtitle="Loper et al. — modelo paramétrico de cuerpo humano, sustrato 3D" icon="document-text" >}}

@@ -209,3 +209,6 @@ Esta página complementa la [Clase 17 — Pose Recognition](/clases/clase-17). E
 - [Triplet loss](/fundamentos/triplet-loss) — base de la sección de facial recognition.
 - [Mask R-CNN (He 2017)](/papers/mask-rcnn-he-2017) — backbone arquitectural de DensePose.
 - [Faster R-CNN (Ren 2015)](/papers/faster-rcnn-ren-2015) — recap en la Clase 17 slides 12-17.
+- [OpenPose (Cao 2017)](/papers/openpose-cao-2017) — primer bottom-up multi-persona real-time vía PAFs.
+- [BlazePose (Bazarevsky 2020)](/papers/blazepose-bazarevsky-2020) — detector-tracker mobile single-person, MediaPipe Pose.
+- [Laboratorio 17](/laboratorios/lab-17) — A/B test PifPaf vs OpenPose + clasificador MLP downstream para acciones de Stanford 40.

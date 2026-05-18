@@ -88,8 +88,8 @@ Tres tensiones recorren toda la historia: (1) cómo construir **invariancia a tr
     {{< hito year="2015" name="FaceNet" status="covered" link="/papers/facenet-schroff-2015" >}}
       Schroff et al. (Google): embedding 128-D + triplet loss con online semi-hard mining. **Por qué importó:** 99.63% en LFW (30% menos error que SOTA previo), estableció *metric learning* como paradigma y es ancestro de SimCLR, MoCo, ArcFace.
     {{< /hito >}}
-    {{< hito year="2017" name="OpenPose / Part Affinity Fields" status="minimal" >}}
-      Cao et al. (CMU): primer método bottom-up multi-person de gran escala vía PAFs discretos. **Por qué importó:** democratizó pose real-time, base de muchas aplicaciones de fitness/dance/AR.
+    {{< hito year="2017" name="OpenPose / Part Affinity Fields" status="covered" link="/papers/openpose-cao-2017" >}}
+      Cao et al. (CMU): primer método bottom-up multi-person en tiempo real vía PAFs vectoriales (no escalares). Ganó la inaugural COCO 2016 Keypoints Challenge. **Por qué importó:** democratizó pose real-time, base de muchas aplicaciones de fitness/dance/AR. Reducir matching NP-hard a bipartite tractable abrió la era multi-persona consumer-grade.
     {{< /hito >}}
     {{< hito year="2018" name="DensePose" status="covered" link="/papers/densepose-guler-2018" >}}
       Güler et al. (Facebook AI): mapea cada píxel humano a la superficie 3D del cuerpo (SMPL) vía $(c, U, V)$. Introduce COCO-DensePose con ~5M correspondencias manuales. **Por qué importó:** rompió la limitación de 17 keypoints discretos, abrió virtual try-on y dense human reasoning.
@@ -99,6 +99,9 @@ Tres tensiones recorren toda la historia: (1) cómo construir **invariancia a tr
     {{< /hito >}}
     {{< hito year="2019" name="PifPaf" status="covered" link="/papers/pifpaf-kreiss-2019" >}}
       Kreiss, Bertoni, Alahi (EPFL): bottom-up con Part Intensity Field + Part Association Field + Laplace loss para incertidumbre aprendida. **Por qué importó:** SOTA en baja resolución (self-driving), +18% AP sobre OpenPose a 321 px, base de openpifpaf en producción.
+    {{< /hito >}}
+    {{< hito year="2020" name="BlazePose / MediaPipe Pose" status="covered" link="/papers/blazepose-bazarevsky-2020" >}}
+      Bazarevsky et al. (Google): detector-tracker pattern + face-as-pose-proxy + heatmap-supervised regression con stop-gradient. 33 keypoints corriendo >30 fps en Pixel 2. **Por qué importó:** democratizó pose on-device. Base de MediaPipe Pose, hoy ubicuo en fitness/AR/sign language. Patrón "detector ligero + tracker keypoint" se generalizó a hand tracking y animal pose.
     {{< /hito >}}
     {{< hito year="2022" name="ViTPose" status="covered" link="/papers/vitpose-xu-2022" >}}
       Xu et al.: ViT plain como backbone + decoder lightweight, 80.9 AP en COCO test-dev (ViTPose-G de 1B params). **Por qué importó:** demostró que pose no requiere arquitecturas multi-resolución (HRNet); el ViT pretrained con MAE carga toda la representación. Nuevo SOTA con simplicidad.
@@ -279,8 +282,10 @@ Las apuestas activas en visión hoy: **modelos generativos de video con coherenc
 - [Mask R-CNN (He 2017)](/papers/mask-rcnn-he-2017) — RoIAlign + segmentación de instancias.
 - [SMPL (Loper 2015)](/papers/smpl-loper-2015) — modelo paramétrico del cuerpo humano.
 - [FaceNet (Schroff 2015)](/papers/facenet-schroff-2015) — embeddings 128-D + triplet loss.
+- [OpenPose (Cao 2017)](/papers/openpose-cao-2017) — primer bottom-up multi-persona real-time vía PAFs.
 - [DensePose (Güler 2018)](/papers/densepose-guler-2018) — correspondencia densa imagen-SMPL.
 - [PifPaf (Kreiss 2019)](/papers/pifpaf-kreiss-2019) — pose bottom-up con composite fields.
+- [BlazePose (Bazarevsky 2020)](/papers/blazepose-bazarevsky-2020) — detector-tracker mobile single-person, MediaPipe Pose.
 - [ViTPose (Xu 2022)](/papers/vitpose-xu-2022) — SOTA pose con ViT plain.
 - [ViT (Dosovitskiy 2021)](/papers/vit-dosovitskiy-2021).
 - [Batch Normalization (Ioffe 2015)](/papers/batch-norm-ioffe-2015).
@@ -292,9 +297,10 @@ Las apuestas activas en visión hoy: **modelos generativos de video con coherenc
 - [Clase 15 — Reconocimiento de Objetos](/clases/clase-15) — R-CNN, Fast/Faster R-CNN, YOLO, FPN.
 - [Laboratorio 15 — Faster R-CNN práctico](/laboratorios/lab-15) — inferencia COCO + fine-tuning para mapaches con torchvision.
 - [Clase 17 — Pose Recognition](/clases/clase-17) — keypoints, DensePose, PifPaf, ViTPose, FaceNet, ética.
+- [Laboratorio 17 — Pose Recognition práctico](/laboratorios/lab-17) — A/B test PifPaf vs OpenPose + clasificación de acciones con MLP downstream.
 - Clases sobre CNNs, ResNets y backbones modernas.
 - Clases sobre ViT y atención visual.
 
 ---
 
-*Última actualización: 2026-05-17.*
+*Última actualización: 2026-05-18.*
