@@ -20,4 +20,5 @@ A diferencia de **Fundamentos** (organizado por concepto teórico) y **Clases** 
   {{< card link="multimodal" title="Multimodal" subtitle="De CLIP a VLMs: los puentes entre modalidades" icon="academic-cap" >}}
   {{< card link="robotica" title="Robótica / RL" subtitle="De Q-learning a robot foundation models" icon="chip" >}}
   {{< card link="estructurados" title="Datos estructurados" subtitle="Tabular, series temporales y grafos" icon="table" >}}
+  {{< card link="ingenieria-ml" title="Ingeniería de ML" subtitle="De parameter server a MLOps: la disciplina de operar modelos" icon="cube-transparent" >}}
 {{< /cards >}}
