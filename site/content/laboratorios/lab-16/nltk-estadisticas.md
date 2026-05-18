@@ -68,6 +68,10 @@ text4.dispersion_plot(["citizens", "democracy", "freedom", "duties", "America"])
 
 Para `text4` (200 años de discursos inaugurales presidenciales USA), produce un gráfico donde cada palabra recibe una línea horizontal con marcas verticales por cada ocurrencia:
 
+![Dispersion plot de palabras democráticas en discursos inaugurales USA](/laboratorios/lab-16/nltk-dispersion-plot.png)
+
+Output real del notebook ejecutado. Forma esquemática equivalente en ASCII:
+
 ```
                 Lexical Dispersion Plot
   America   ||||||  || ||| |  |  || ||||| || |||| ||||||||||||||
@@ -100,6 +104,10 @@ fdist1.plot(50)      # gráfico de las top-50 palabras
 ```
 
 `FreqDist` es **subclase de `collections.Counter`** con métodos extra (`N()`, `B()`, `freq()`, `hapaxes()`, `most_common()`, `plot()`).
+
+![Top-50 palabras más frecuentes en Moby Dick (frequency distribution)](/laboratorios/lab-16/nltk-fdist-plot.png)
+
+Output real del notebook. El eje Y es **cuenta absoluta**, el X es **rank** (palabra 1 = la más frecuente). La caída típica de Zipf es visible: la primera palabra duplica a la segunda, triplica a la tercera, etc.
 
 ### La Ley de Zipf
 
@@ -158,26 +166,9 @@ import matplotlib.pyplot as plt
 plt.plot(x, y)
 ```
 
-Gráfico esperado:
+![Curva de crecimiento del vocabulario en Moby Dick (Ley de Heaps)](/laboratorios/lab-16/nltk-vocabulary-growth.png)
 
-```
-17000 ┤                                                ___________
-       ┤                                    ___________
-14000 ┤                            _________
-       ┤                  __________
-11000 ┤            _______
-       ┤        ____
- 8000 ┤     ____
-       ┤  ___
- 5000 ┤_/
-       ┤
-    0 ┤
-       └─────────────────────────────────────────────────
-        0       50k     100k    150k    200k    260k
-                          Tokens leídos →
-```
-
-Forma **cóncava, creciente, nunca se aplana**. El primer tramo crece rápido (cada página agrega palabras nuevas). Hacia el final crece muy lento (la mayoría de palabras ya las viste).
+Output real del notebook. Forma **cóncava, creciente, nunca se aplana**. El primer tramo crece rápido (cada página agrega palabras nuevas). Hacia el final crece muy lento (la mayoría de palabras ya las viste), pero **no llega a plateau** — siempre aparecen hápax nuevos.
 
 ### Por qué Heaps importa
 

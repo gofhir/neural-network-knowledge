@@ -8,6 +8,7 @@ sidebar:
 **Profesor:** Carlos Aspillaga
 **Fecha:** Mayo 2026
 **Notebook origen:** `clase_16/material/Laboratorio/Practico_16.ipynb`
+**Notebook resuelto:** `clase_16/material/Laboratorio/Practico_16_rae.ipynb` (113 celdas con outputs)
 
 ## Encuadre
 
@@ -71,6 +72,13 @@ Ejecutado end-to-end en Colab free tier (CPU + GPU T4 cuando disponible). **106 
 {{< cards >}}
   {{< card link="bow-clasificacion" title="Bag of Words + N-grams + Naive Bayes" subtitle="Pipeline completo: SMS spam classification con sklearn" icon="academic-cap" >}}
   {{< card link="actividades-finales" title="Actividades 5-10 (BoW conceptual)" subtitle="Orden, n-grams, configuraciones, recomendación de técnicas avanzadas" icon="academic-cap" >}}
+{{< /cards >}}
+
+## Notebook (Colab + descarga)
+
+{{< cards >}}
+  {{< card link="/notebooks/lab16.ipynb" title="Notebook ejecutado" subtitle="Practico_16_rae.ipynb con 113 celdas y 56 outputs (.ipynb descargable, 324 KB)" icon="document" >}}
+  {{< card link="/notebooks-html/lab16.html" title="Render HTML" subtitle="Notebook ejecutado en HTML con outputs embebidos (688 KB)" icon="document-text" >}}
 {{< /cards >}}
 
 ## Papers fundacionales
