@@ -78,6 +78,32 @@ Tres tensiones recorren toda la historia: (1) cómo construir **invariancia a tr
       End-to-End Object Detection with Transformers: trata detección como set prediction con bipartite matching. **Por qué importó:** elimina anchors y NMS, primer detector verdaderamente end-to-end.
     {{< /hito >}}
   {{< /era >}}
+  {{< era name="Era de pose humana" years="2014-2022" >}}
+    {{< hito year="2014" name="DeepPose" status="minimal" >}}
+      Toshev & Szegedy: primera regresión directa $(x, y)$ de keypoints con CNN. **Por qué importó:** estableció pose estimation como tarea de regresión sobre CNN; superado rápidamente por heatmaps Gaussianos.
+    {{< /hito >}}
+    {{< hito year="2015" name="SMPL" status="covered" link="/papers/smpl-loper-2015" >}}
+      Loper et al.: modelo paramétrico realista del cuerpo humano (10 shape + 72 pose params → malla de 6890 vértices) con Linear Blend Skinning compatible con engines de animación estándar. **Por qué importó:** se volvió el modelo paramétrico de cuerpo humano más usado del decenio — sustrato de DensePose, HMR, VIBE, AMASS y casi todo body recovery moderno.
+    {{< /hito >}}
+    {{< hito year="2015" name="FaceNet" status="covered" link="/papers/facenet-schroff-2015" >}}
+      Schroff et al. (Google): embedding 128-D + triplet loss con online semi-hard mining. **Por qué importó:** 99.63% en LFW (30% menos error que SOTA previo), estableció *metric learning* como paradigma y es ancestro de SimCLR, MoCo, ArcFace.
+    {{< /hito >}}
+    {{< hito year="2017" name="OpenPose / Part Affinity Fields" status="minimal" >}}
+      Cao et al. (CMU): primer método bottom-up multi-person de gran escala vía PAFs discretos. **Por qué importó:** democratizó pose real-time, base de muchas aplicaciones de fitness/dance/AR.
+    {{< /hito >}}
+    {{< hito year="2018" name="DensePose" status="covered" link="/papers/densepose-guler-2018" >}}
+      Güler et al. (Facebook AI): mapea cada píxel humano a la superficie 3D del cuerpo (SMPL) vía $(c, U, V)$. Introduce COCO-DensePose con ~5M correspondencias manuales. **Por qué importó:** rompió la limitación de 17 keypoints discretos, abrió virtual try-on y dense human reasoning.
+    {{< /hito >}}
+    {{< hito year="2019" name="HRNet" status="minimal" >}}
+      Sun et al.: arquitectura multi-resolución manteniendo features de alta resolución a lo largo de toda la red. **Por qué importó:** dominó pose estimation 2D durante 2019-2021 con AP ~76 en COCO, baseline canónico de la era pre-transformer.
+    {{< /hito >}}
+    {{< hito year="2019" name="PifPaf" status="covered" link="/papers/pifpaf-kreiss-2019" >}}
+      Kreiss, Bertoni, Alahi (EPFL): bottom-up con Part Intensity Field + Part Association Field + Laplace loss para incertidumbre aprendida. **Por qué importó:** SOTA en baja resolución (self-driving), +18% AP sobre OpenPose a 321 px, base de openpifpaf en producción.
+    {{< /hito >}}
+    {{< hito year="2022" name="ViTPose" status="covered" link="/papers/vitpose-xu-2022" >}}
+      Xu et al.: ViT plain como backbone + decoder lightweight, 80.9 AP en COCO test-dev (ViTPose-G de 1B params). **Por qué importó:** demostró que pose no requiere arquitecturas multi-resolución (HRNet); el ViT pretrained con MAE carga toda la representación. Nuevo SOTA con simplicidad.
+    {{< /hito >}}
+  {{< /era >}}
   {{< era name="Era Transformer" years="2020-presente" >}}
     {{< hito year="2020" name="Vision Transformer (ViT)" status="deep" link="/fundamentos/vision-transformer" >}}
       Aplica un Transformer puro sobre parches de la imagen. Con suficiente data y escala, supera a CNNs sin sesgos inductivos visuales explícitos.
@@ -163,6 +189,28 @@ Conceptos transversales que cristalizaron en esta era — [IoU](/fundamentos/det
 
 Estas arquitecturas siguen vigentes en producción (torchvision, Detectron2, mmdetection ofrecen Faster R-CNN y Mask R-CNN como baselines), pero el ecosistema migró progresivamente a backbones Transformer y a frameworks que eliminan heurísticas no diferenciables. **DETR** (2020) trató detección como **set prediction** con bipartite matching — sin anchors, sin NMS. La llegada de **SAM** (2023) cambió además la conversación en segmentación: ya no se entrena un modelo por dataset, sino que se prompt-tunea un foundation model.
 
+## Era de pose humana (2014-2022)
+
+### Problema heredado
+
+Las eras 2-4 perfeccionaron clasificación, detección y segmentación. Pero el cuerpo humano es un objeto **estructurado** — no basta con localizarlo en un bbox; muchas aplicaciones (deportes, salud, robótica, VR/AR, vigilancia) necesitan saber **dónde están sus articulaciones** o **cómo se deforma su superficie**.
+
+### Idea clave
+
+Dos paradigmas dominantes coexisten:
+
+- **Keypoints** + heatmaps Gaussianos: representar el cuerpo como ~17 puntos discretos (COCO), entrenar una CNN a predecir un heatmap por keypoint. Top-down (Mask R-CNN keypoints, HRNet, [ViTPose](/papers/vitpose-xu-2022)) detecta personas primero y estima pose dentro de cada bbox. Bottom-up (OpenPose, [PifPaf](/papers/pifpaf-kreiss-2019)) detecta partes en toda la imagen y luego asocia.
+
+- **Dense correspondence**: mapear cada píxel humano a la superficie 3D del cuerpo, parametrizada por el modelo [SMPL](/papers/smpl-loper-2015) (Loper 2015). [DensePose](/papers/densepose-guler-2018) (Güler 2018) introdujo COCO-DensePose con ~5M correspondencias manuales y abrió virtual try-on, body-aware rendering, y la transferencia de texturas entre personas.
+
+En paralelo, **face recognition** se reinventó con [FaceNet](/papers/facenet-schroff-2015) (Schroff 2015) — embeddings 128-D entrenados con **triplet loss** y online semi-hard mining. Es ancestro conceptual de SimCLR, MoCo y ArcFace.
+
+[ViTPose](/papers/vitpose-xu-2022) (2022) cerró el arco demostrando que un ViT plain como backbone + decoder lightweight alcanza SOTA (80.9 AP en COCO test-dev) — los conceptos de la era CNN siguen válidos, solo cambia el backbone.
+
+### Qué viene
+
+La frontera es **3D body recovery** (HMR, VIBE, 4DHumans) que fittea SMPL completo desde una imagen 2D, **animal pose** (Continuous Surface Embeddings), y **vision-language pose** (modelos que aceptan instrucciones textuales para inferir poses category-agnostic). Toda esta era está plagada de implicaciones éticas — vigilancia masiva, aplicaciones militares, sesgos demográficos — que el ingeniero responsable debe contemplar y a menudo rechazar.
+
 ## Era 5 — Vision Transformer y foundation models (2020-presente)
 
 ### Problema heredado
@@ -229,6 +277,11 @@ Las apuestas activas en visión hoy: **modelos generativos de video con coherenc
 - [Faster R-CNN (Ren 2015)](/papers/faster-rcnn-ren-2015) — RPN end-to-end.
 - [FPN (Lin 2017)](/papers/fpn-lin-2017) — pirámide multi-escala.
 - [Mask R-CNN (He 2017)](/papers/mask-rcnn-he-2017) — RoIAlign + segmentación de instancias.
+- [SMPL (Loper 2015)](/papers/smpl-loper-2015) — modelo paramétrico del cuerpo humano.
+- [FaceNet (Schroff 2015)](/papers/facenet-schroff-2015) — embeddings 128-D + triplet loss.
+- [DensePose (Güler 2018)](/papers/densepose-guler-2018) — correspondencia densa imagen-SMPL.
+- [PifPaf (Kreiss 2019)](/papers/pifpaf-kreiss-2019) — pose bottom-up con composite fields.
+- [ViTPose (Xu 2022)](/papers/vitpose-xu-2022) — SOTA pose con ViT plain.
 - [ViT (Dosovitskiy 2021)](/papers/vit-dosovitskiy-2021).
 - [Batch Normalization (Ioffe 2015)](/papers/batch-norm-ioffe-2015).
 - [Dropout (Srivastava 2014)](/papers/dropout-srivastava-2014).
@@ -238,9 +291,10 @@ Las apuestas activas en visión hoy: **modelos generativos de video con coherenc
 **Clases del diplomado:**
 - [Clase 15 — Reconocimiento de Objetos](/clases/clase-15) — R-CNN, Fast/Faster R-CNN, YOLO, FPN.
 - [Laboratorio 15 — Faster R-CNN práctico](/laboratorios/lab-15) — inferencia COCO + fine-tuning para mapaches con torchvision.
+- [Clase 17 — Pose Recognition](/clases/clase-17) — keypoints, DensePose, PifPaf, ViTPose, FaceNet, ética.
 - Clases sobre CNNs, ResNets y backbones modernas.
 - Clases sobre ViT y atención visual.
 
 ---
 
-*Última actualización: 2026-05-16.*
+*Última actualización: 2026-05-17.*
