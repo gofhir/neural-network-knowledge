@@ -74,8 +74,8 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
     {{< hito year="2017" name="Transformer" status="deep" link="/fundamentos/transformer" >}}
       *Attention is all you need*: self-attention pura, sin recurrencias. Paralelismo masivo en training.
     {{< /hito >}}
-    {{< hito year="2018" name="ELMo" status="deep" link="/papers/elmo-peters-2018" >}}
-      Deep Contextualized Word Representations (Peters et al., NAACL 2018 Best Paper). Char-CNN + 2 BiLSTM con forward y backward LMs entrenados conjuntamente, combinación lineal task-specific. **Por qué importó:** introdujo *embeddings contextuales* — el vector de cada palabra depende de su oración. Mejoró SOTA en SQuAD, SNLI, SRL, Coref, NER, SST-5.
+    {{< hito year="2018" name="ELMo" status="deep" link="/fundamentos/embeddings-contextualizados" >}}
+      Deep Contextualized Word Representations (Peters et al., NAACL 2018 Best Paper). Char-CNN + 2 BiLSTM con forward y backward LMs entrenados conjuntamente, combinación lineal task-specific. **Por qué importó:** introdujo *embeddings contextuales* — el vector de cada palabra depende de su oración. Mejoró SOTA en SQuAD, SNLI, SRL, Coref, NER, SST-5. Ver también [paper](/papers/elmo-peters-2018).
     {{< /hito >}}
     {{< hito year="2018" name="GPT-1" status="covered" link="/papers/gpt-1-radford-2018" >}}
       Decoder-only Transformer entrenado con generative pre-training en BookCorpus, fine-tuneado por tarea con input transformations (Radford et al. 2018). **Por qué importó:** estableció el patrón *pretrain + fine-tune* en arquitectura decoder y descubrió zero-shot behaviors emergentes.
@@ -89,16 +89,16 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
     {{< hito year="2019" name="RoBERTa" status="minimal" >}}
       BERT-large entrenado con más datos, más cómputo, sin NSP, mejor búsqueda de hyperparams (Liu et al. 2019). **Por qué importó:** mostró que la arquitectura BERT estaba sub-entrenada, anticipando scaling laws.
     {{< /hito >}}
-    {{< hito year="2019" name="BETO" status="minimal" >}}
-      BERT-base entrenado en español por el grupo de Jorge Pérez en DCC UChile (Cañete et al. 2020). **Por qué importó:** referencia de NLP en español; corre en producción dentro de pipelines clínicos y de gobierno en Chile.
+    {{< hito year="2019" name="BETO" status="covered" link="/fundamentos/bert" >}}
+      BERT-base entrenado en español por el grupo de Jorge Pérez en DCC UChile (Cañete et al. 2020). **Por qué importó:** referencia de NLP en español; corre en producción dentro de pipelines clínicos y de gobierno en Chile. Acceso vía `dccuchile/bert-base-spanish-wwm-cased` en Hugging Face.
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de los LLMs" years="2020-presente" >}}
     {{< hito year="2020" name="GPT-3" status="deep" link="/papers/gpt-3-brown-2020" >}}
       175B parámetros, few-shot in-context learning (Brown et al., NeurIPS 2020 Best Paper). 300B tokens entrenados sobre Common Crawl filtered + WebText2 + Books + Wikipedia. **Por qué importó:** la escala desbloqueó capacidades cualitativamente nuevas (razonamiento, programación, aritmética) sin fine-tuning; pavimentó la era de prompt engineering.
     {{< /hito >}}
-    {{< hito year="2021" name="BERTIN" status="minimal" >}}
-      Proyecto comunitario que entrenó BERT en español sobre mC4-es con distintas estrategias de muestreo (gaussian, stepwise, random). **Por qué importó:** demostró que la comunidad open-source puede producir modelos competitivos sin compute industrial.
+    {{< hito year="2021" name="BERTIN" status="covered" link="/fundamentos/bert" >}}
+      Proyecto comunitario (BERTIN Project + Flax + Google TPU Research Cloud) que entrenó BERT en español sobre mC4-es con distintas estrategias de muestreo (gaussian, stepwise, random). **Por qué importó:** demostró que la comunidad open-source puede producir modelos competitivos sin compute industrial. Modelos en `bertin-project/*` en Hugging Face.
     {{< /hito >}}
     {{< hito year="2022" name="InstructGPT / SFT + RLHF" status="deep" link="/papers/instructgpt-ouyang-2022" >}}
       Alineamiento por feedback humano formalizado en pipeline 3-pasos (SFT → Reward Model → PPO). Ouyang et al. 2022 mostró que InstructGPT 1.3B vence a GPT-3 175B en preferencia humana. **Por qué importó:** la receta técnica detrás de ChatGPT (noviembre 2022) y de toda la familia chat-tuned (Claude, LLaMA-chat, Mistral-Instruct).
