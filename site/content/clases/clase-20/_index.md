@@ -31,7 +31,7 @@ La clase se complementa con la [Clase 14 (Transformers)](/clases/clase-14) — q
   {{< card link="/fundamentos/gpt-family" title="Familia GPT (Decoder-only)" subtitle="GPT-1 a GPT-4: arquitectura, scaling laws, capacidades emergentes" icon="book-open" >}}
   {{< card link="/fundamentos/in-context-learning" title="In-Context Learning" subtitle="Zero-shot, one-shot y few-shot prompting sin gradientes" icon="book-open" >}}
   {{< card link="/fundamentos/rlhf" title="RLHF (Alignment)" subtitle="SFT + Reward Model + PPO: el pipeline detras de ChatGPT" icon="book-open" >}}
-  {{< card link="/fundamentos/wordpiece" title="WordPiece y subword" subtitle="Tokenizacion de BERT, diferencias con BPE de GPT" icon="book-open" >}}
+  {{< card link="/fundamentos/bpe" title="BPE / WordPiece (subword)" subtitle="Tokenizacion de BERT y GPT: algoritmos y trade-offs" icon="book-open" >}}
   {{< card link="/fundamentos/sft" title="Supervised Fine-Tuning" subtitle="El primer paso del alignment LLM" icon="book-open" >}}
   {{< card link="/fundamentos/dpo" title="DPO" subtitle="Alternativa a RLHF sin reward model explicito" icon="book-open" >}}
   {{< card link="/fundamentos/foundation-models" title="Foundation Models" subtitle="Emergencia y homogeneizacion en la era post-2020" icon="book-open" >}}
