@@ -1,0 +1,100 @@
+{
+  "meddocan": [
+    {
+      "text": "El Sr. Pérez presenta HTA. Dx: DM2.",
+      "sentences": [
+        "El Sr. Pérez presenta HTA.",
+        "Dx: DM2."
+      ]
+    },
+    {
+      "text": "Datos del paciente. Nombre: Juan. Apellidos: García.",
+      "sentences": [
+        "Datos del paciente.",
+        "Nombre: Juan.",
+        "Apellidos: García."
+      ]
+    },
+    {
+      "text": "La Sra. Rodríguez consulta por dolor abdominal. Se solicita ecografía.",
+      "sentences": [
+        "La Sra. Rodríguez consulta por dolor abdominal.",
+        "Se solicita ecografía."
+      ]
+    },
+    {
+      "text": "El Dr. González realizó la cirugía. Sin complicaciones.",
+      "sentences": [
+        "El Dr. González realizó la cirugía.",
+        "Sin complicaciones."
+      ]
+    },
+    {
+      "text": "Paciente de 65 años con antecedente de HTA. Refiere disnea.",
+      "sentences": [
+        "Paciente de 65 años con antecedente de HTA.",
+        "Refiere disnea."
+      ]
+    }
+  ],
+  "cantemist": [
+    {
+      "text": "Mujer de 67 años con hipotiroidismo. Consulta por disnea progresiva.",
+      "sentences": [
+        "Mujer de 67 años con hipotiroidismo.",
+        "Consulta por disnea progresiva."
+      ]
+    },
+    {
+      "text": "Tras 6 ciclos de quimioterapia, el paciente presenta remisión parcial. Continúa seguimiento.",
+      "sentences": [
+        "Tras 6 ciclos de quimioterapia, el paciente presenta remisión parcial.",
+        "Continúa seguimiento."
+      ]
+    },
+    {
+      "text": "Diagnóstico: carcinoma microcítico de pulmón. Estadio IV.",
+      "sentences": [
+        "Diagnóstico: carcinoma microcítico de pulmón.",
+        "Estadio IV."
+      ]
+    },
+    {
+      "text": "Se indica radioterapia adyuvante. Dosis total 60 Gy.",
+      "sentences": [
+        "Se indica radioterapia adyuvante.",
+        "Dosis total 60 Gy."
+      ]
+    }
+  ],
+  "pharmaconer": [
+    {
+      "text": "Tratamiento con losartán 50 mg/d. Control en 4 semanas.",
+      "sentences": [
+        "Tratamiento con losartán 50 mg/d.",
+        "Control en 4 semanas."
+      ]
+    },
+    {
+      "text": "Se inicia atorvastatina 20 mg al día. Suspender ibuprofeno.",
+      "sentences": [
+        "Se inicia atorvastatina 20 mg al día.",
+        "Suspender ibuprofeno."
+      ]
+    },
+    {
+      "text": "Reacción adversa a amoxicilina. Cambio a azitromicina.",
+      "sentences": [
+        "Reacción adversa a amoxicilina.",
+        "Cambio a azitromicina."
+      ]
+    },
+    {
+      "text": "Dosis máxima de paracetamol 4 g/día. No exceder.",
+      "sentences": [
+        "Dosis máxima de paracetamol 4 g/día.",
+        "No exceder."
+      ]
+    }
+  ]
+}
