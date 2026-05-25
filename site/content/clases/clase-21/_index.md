@@ -18,6 +18,7 @@ ABCNet (Liu et al. CVPR 2020) sintetiza el material: combina un detector anchor-
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 40 diapositivas: STR vs OCR, stages, datasets, evaluation, ABCNet" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math detallada: curvas Bezier, BezierAlign, CTC vs attention, IoU/GIoU, FCOS centerness, Levenshtein" icon="beaker" >}}
   {{< card link="/clases/clase-20" title="Clase anterior: ELMo, BERT, GPT, ChatGPT" subtitle="Embeddings contextualizados y LLMs" icon="arrow-left" >}}
+  {{< card link="/clases/clase-22" title="Clase siguiente: Summarization" subtitle="BERTSum, T5, decoding, ROUGE, prompt engineering" icon="arrow-right" >}}
   {{< card link="/clases/clase-17" title="Base: Pose Recognition" subtitle="Dense prediction y heads regression sobre features" icon="academic-cap" >}}
   {{< card link="/clases/clase-14" title="Base: Transformers" subtitle="Self-attention y attention decoder" icon="academic-cap" >}}
 {{< /cards >}}

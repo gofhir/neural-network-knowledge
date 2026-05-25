@@ -105,6 +105,32 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
       BERT-base entrenado en español por el grupo de Jorge Pérez en DCC UChile (Cañete et al. 2020). **Por qué importó:** referencia de NLP en español; corre en producción dentro de pipelines clínicos y de gobierno en Chile. Acceso vía `dccuchile/bert-base-spanish-wwm-cased` en Hugging Face.
     {{< /hito >}}
   {{< /era >}}
+  {{< era name="Era de Summarization" years="2004-2020" >}}
+    {{< hito year="2004" name="ROUGE (Lin)" status="covered" link="/papers/rouge-lin-2004" >}}
+      Chin-Yew Lin (ISI): familia de métricas (ROUGE-N, ROUGE-L, ROUGE-W, ROUGE-S, ROUGE-SU) basadas en overlap léxico contra reference summaries. Recall-oriented (a diferencia de BLEU). **Por qué importó:** se vuelve la métrica de facto del campo summarization durante 20+ años. Aún reportada en todos los papers y usada como reward signal en el oracle de BERTSum.
+    {{< /hito >}}
+    {{< hito year="2017" name="Pointer-Generator (See)" status="covered" link="/papers/pointer-generator-see-2017" >}}
+      See, Liu, Manning (Stanford): copy mechanism + coverage loss sobre seq2seq. **Por qué importó:** primer modelo neuronal abstractive competitivo en CNN/DailyMail. Mezcla generación con copia palabra-por-palabra del input.
+    {{< /hito >}}
+    {{< hito year="2018" name="XSum dataset (Narayan)" status="covered" link="/papers/xsum-narayan-2018" >}}
+      Narayan, Cohen, Lapata (Edinburgh): 226k BBC articles con one-sentence professional summaries (83.5% novelty de bigramas). **Por qué importó:** destrona CNN/DailyMail como benchmark abstractive real. Motiva la agenda de faithfulness y los pretraining objectives task-aligned.
+    {{< /hito >}}
+    {{< hito year="2019" name="BERTSum (Yang Liu)" status="covered" link="/papers/bertsum-liu-2019" >}}
+      Yang Liu (Edinburgh): BERT modificado con multi-[CLS] + interval segment embeddings + binary classifier + oracle ROUGE-2 target. **Por qué importó:** extractive summarization moderno; el patrón "BERT + custom head + oracle ground truth" se generaliza. Default referente del Extractive Model en cursos NLP.
+    {{< /hito >}}
+    {{< hito year="2020" name="T5 (Raffel et al.)" status="deep" link="/papers/t5-raffel-2020" >}}
+      Raffel, Shazeer, Roberts, ... (Google): Text-to-Text Transfer Transformer + span-corruption pretraining + C4 corpus + multi-task supervised fine-tuning. T5-Small (60M) a 11B params. CNN/DM ROUGE-1=43.52 con T5-11B. **Por qué importó:** unifica TODOS los NLP problems en text-to-text framework. Inspira FLAN-T5, mT5, ByT5, T0. Backbone preferido para tareas estructuradas.
+    {{< /hito >}}
+    {{< hito year="2020" name="BART (Lewis et al.)" status="covered" link="/papers/bart-lewis-2020" >}}
+      Lewis, Liu, Goyal, ... (Facebook AI): denoising autoencoder seq2seq con text infilling. Encoder bidireccional + decoder autoregresivo. CNN/DM R-1=44.16, XSum R-1=45.14. **Por qué importó:** `facebook/bart-large-cnn` es el **default de HuggingFace summarization pipeline**.
+    {{< /hito >}}
+    {{< hito year="2020" name="PEGASUS (Zhang et al.)" status="covered" link="/papers/pegasus-zhang-2020" >}}
+      Zhang, Zhao, Saleh, Liu (Google): Gap Sentence Generation — pretraining alineado con summarization (enmascara oraciones completas). SOTA en 12 benchmarks; XSum R-1=47.21. **Por qué importó:** primer modelo con pretraining objective task-aligned; low-resource shine (1000 ejemplos ≈ Transformer-base con full dataset).
+    {{< /hito >}}
+    {{< hito year="2020" name="Nucleus Sampling (Holtzman)" status="covered" link="/papers/nucleus-sampling-holtzman-2020" >}}
+      Holtzman, Buys, Du, Forbes, Choi (UW + AI2): identifica neural text degeneration; propone Top-p sampling con nucleus de tamaño dinámico. **Por qué importó:** default decoding en GPT-3/4, Claude, HuggingFace `generate()`. Resuelve el likelihood paradox y habilita open-ended generation moderna.
+    {{< /hito >}}
+  {{< /era >}}
   {{< era name="Era de los LLMs" years="2020-presente" >}}
     {{< hito year="2020" name="GPT-3" status="deep" link="/papers/gpt-3-brown-2020" >}}
       175B parámetros, few-shot in-context learning (Brown et al., NeurIPS 2020 Best Paper). 300B tokens entrenados sobre Common Crawl filtered + WebText2 + Books + Wikipedia. **Por qué importó:** la escala desbloqueó capacidades cualitativamente nuevas (razonamiento, programación, aritmética) sin fine-tuning; pavimentó la era de prompt engineering.
@@ -191,6 +217,36 @@ GPT-1 y GPT-2 exploraron la versión decoder-only del mismo principio, entrenada
 ### Qué la destronó
 
 BERT y los modelos encoder-only sobreviven en producción para clasificación, búsqueda y embedding. Pero la dirección que terminó dominando fue la **decoder-only autoregresiva escalada**: el camino GPT.
+
+## Era de Summarization (2004-2020)
+
+### Problema heredado
+
+La era 4 (atención pura + pretraining) produjo encoder bidireccional (BERT), decoder causal (GPT) y arquitectura unificada Transformer. Pero la tarea de **summarization** — comprimir un documento en un resumen fiel — quedó como aplicación específica que requería su propia evolución: cómo evaluar (sin gold standard único), qué arquitectura usar (extractive vs abstractive), cómo decodear texto generado (sin colapsar en repetición), qué datasets reflejan realmente abstractive (no LEAD-3 disfrazado).
+
+### Idea clave
+
+El campo converge sobre cuatro pilares:
+
+1. **ROUGE** (Lin 2004): la métrica recall-oriented de facto. ROUGE-1, ROUGE-2, ROUGE-L se vuelven el estándar reportado durante 20 años. Ver el [paper](/papers/rouge-lin-2004) y el [fundamento](/fundamentos/rouge-metric).
+
+2. **Pipeline extractive con BERTSum** (Liu 2019): BERT modificado con multi-[CLS] + interval segment embeddings + binary classifier sobre embeddings de oración, entrenado con oracle ROUGE-2 + trigram blocking en inference. Ver el [paper](/papers/bertsum-liu-2019).
+
+3. **Pipeline abstractive encoder-decoder** (Raffel 2020 [T5](/papers/t5-raffel-2020), Lewis 2020 [BART](/papers/bart-lewis-2020), Zhang 2020 [PEGASUS](/papers/pegasus-zhang-2020)): pretrained models que toman documento → generan summary. T5 unifica con text-to-text framework; BART con denoising autoencoder; PEGASUS con Gap Sentence Generation alineado a summarization. Ver el [fundamento T5 y encoder-decoder](/fundamentos/t5-encoder-decoder).
+
+4. **Decoding strategies** (Holtzman 2020): el [paper Nucleus Sampling](/papers/nucleus-sampling-holtzman-2020) identifica neural text degeneration en beam search y propone Top-p sampling. Default en GPT, Claude, HuggingFace. Ver el [fundamento](/fundamentos/decoding-strategies).
+
+El [dataset XSum](/papers/xsum-narayan-2018) (Narayan 2018) reseteó el benchmark del campo — LEAD-3 baseline en XSum da R-1=16 (vs CNN/DM 40), forzando a los modelos a hacer abstractive real.
+
+### Qué viene
+
+Post-2020, la era LLM absorbe summarization como capacidad nativa:
+
+- **Instruction-tuned LLMs** (InstructGPT, ChatGPT, Claude, Gemini) hacen summarization vía **prompt engineering** sin fine-tuning.
+- **FLAN-T5** (Chung 2022): instruction-tuning sobre T5, comparable a GPT-3.5 en muchas tareas.
+- **PEGASUS-X** (2022): long-document summarization.
+- **Faithfulness research**: FactCC, QAGS, MFMA, G-Eval para detectar hallucinations.
+- **Long-context** (Claude 200k, Gemini 2M): leer documentos enteros sin chunking.
 
 ## Era 5 — LLMs y alineamiento (2020-presente)
 
@@ -284,4 +340,4 @@ Las apuestas activas hoy — sin un ganador claro — incluyen: **razonamiento e
 
 ---
 
-*Última actualización: 2026-05-24.*
+*Última actualización: 2026-05-25.*
