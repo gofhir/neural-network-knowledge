@@ -6,23 +6,32 @@ math: true
 
 ## 1. Mapa del Modulo
 
-Esta es la **primera clase de un bloque de cinco** dedicado a Procesamiento de Lenguaje Natural (NLP). El recorrido del modulo:
+Esta clase abre el bloque de **Procesamiento de Lenguaje Natural (NLP)** del diplomado. El profesor planteo originalmente cinco clases temáticas correlativas (NLP intro → W2V/GloVe → ELMo/BERT/GPT → summarization → QA). En el site del curso ese contenido aparece reorganizado: la Clase 17 quedo asignada a Pose Recognition (cierre del bloque de vision) y la Clase 19 a MLOps (cierre del bloque de ingenieria), de modo que el hilo NLP avanzado se concentra en Clase 18 y Clase 20.
 
-1. **Clase 16 (esta)**: Introduccion -- contexto, aplicaciones, tecnicas clasicas, herramientas.
-2. **Clase 17**: Modelos de lenguaje, Word2Vec y GloVe.
-3. **Clase 18**: Modelos contextuales -- ELMo, GPT, BERT.
-4. **Clase 19**: Generacion de resumenes (summarization).
-5. **Clase 20**: Question Answering (QA).
+Recorrido segun el site (orden cronologico real):
+
+1. **Clase 16 (esta)**: Introduccion a NLP -- contexto, aplicaciones, tecnicas clasicas (BoW, n-gramas, TF-IDF), herramientas (NLTK, spaCy).
+2. **[Clase 18](/clases/clase-18)**: Modelos de lenguaje, Word2Vec, GloVe y Skip-Thought.
+3. **[Clase 20](/clases/clase-20)**: Modelos contextuales -- ELMo, BERT, GPT, ChatGPT (cierre del diplomado).
+
+Y los hilos cruzados que se intercalan:
+
+- **[Clase 17](/clases/clase-17)** -- Pose Recognition (vision, no NLP).
+- **[Clase 19](/clases/clase-19)** -- Entrenamiento, Deployment y MLOps.
 
 ```mermaid
 graph LR
-    C16[Clase 16<br/>Intro NLP] --> C17[Clase 17<br/>W2V / GloVe]
-    C17 --> C18[Clase 18<br/>BERT / GPT]
-    C18 --> C19[Clase 19<br/>Summarization]
-    C19 --> C20[Clase 20<br/>QA]
+    C16[Clase 16<br/>Intro NLP] --> C17[Clase 17<br/>Pose Recognition<br/><i>vision</i>]
+    C17 --> C18[Clase 18<br/>W2V / GloVe / SkipThought]
+    C18 --> C19[Clase 19<br/>MLOps]
+    C19 --> C20[Clase 20<br/>ELMo / BERT / GPT / ChatGPT]
 
     style C16 fill:#fbbf24,color:#000
+    style C18 fill:#dbeafe,color:#000
+    style C20 fill:#dbeafe,color:#000
 ```
+
+Las tres clases marcadas (16, 18, 20) forman el hilo NLP. Las clases 17 y 19 son del bloque de vision y de ingenieria respectivamente.
 
 La clase de hoy se estructura en cuatro bloques: **(1)** contexto y por que el lenguaje es dificil, **(2)** aplicaciones canonicas, **(3)** tecnicas clasicas y **(4)** herramientas concretas.
 
@@ -290,7 +299,7 @@ interpretation, interpreted, interprets, interpreting, interpretable
 
 Tres stemmers clasicos para ingles:
 
-- **Porter stemmer (1980)**: el mas usado. Reglas heuristicas en cinco fases.
+- **[Porter stemmer (1980)](/papers/porter-stemmer-1980)**: el mas usado. Reglas heuristicas en cinco fases.
 - **Lancaster (Paice/Husk)**: mas agresivo, raices mas cortas.
 - **Snowball (Lovins extendido)**: soporta multiples idiomas, mas conservador que Porter.
 
@@ -306,7 +315,7 @@ better                    →   good
 geese                     →   goose
 ```
 
-Implementacion clasica: **WordNet Lemmatizer** (NLTK). Ventajas sobre stemming:
+Implementacion clasica: **WordNet Lemmatizer** ([WordNet](/papers/wordnet-miller-1995), expuesto via [NLTK](/papers/nltk-bird-loper-2006)). Ventajas sobre stemming:
 
 - Produce **palabras validas** del diccionario.
 - Considera la **categoria gramatical** (POS).
@@ -395,16 +404,16 @@ Para esta clase y las siguientes el caballo de batalla es **spaCy** ([spacy.io/m
 
 ---
 
-## 9. Que Viene en Clase 17
+## 9. Que Viene Despues: el salto a representaciones distribuidas
 
 BoW tiene un **defecto fatal**: trata cada palabra como un identificador discreto sin estructura semantica. Las palabras *coche* y *automovil* son tan distintas como *coche* y *banano* en BoW.
 
-La proxima clase introduce **representaciones distribuidas**: cada palabra se mapea a un vector denso en $\mathbb{R}^d$ donde la **distancia geometrica** captura **similitud semantica**.
+La siguiente clase del hilo NLP (**[Clase 18](/clases/clase-18)** en el site) introduce **representaciones distribuidas**: cada palabra se mapea a un vector denso en $\mathbb{R}^d$ donde la **distancia geometrica** captura **similitud semantica**.
 
-- **Word2Vec** (Mikolov 2013): skip-gram, CBOW, negative sampling.
-- **GloVe** (Pennington 2014): factorizacion de matriz de co-ocurrencias.
+- **[Word2Vec](/papers/word2vec-efficient-mikolov-2013)** (Mikolov 2013): skip-gram, CBOW, negative sampling.
+- **[GloVe](/papers/glove-pennington-2014)** (Pennington 2014): factorizacion de matriz de co-ocurrencias.
 
-Estas representaciones rompen el techo de BoW y son la puerta de entrada a los modelos contextuales (BERT, GPT) que veremos despues.
+Estas representaciones rompen el techo de BoW y son la puerta de entrada a los modelos contextuales (BERT, GPT) que veremos en la **[Clase 20](/clases/clase-20)**.
 
 ---
 
@@ -413,7 +422,13 @@ Estas representaciones rompen el techo de BoW y son la puerta de entrada a los m
 - Zipf 1949 -- *Human Behaviour and the Principle of Least Effort*
 - Heaps 1978 -- *Information Retrieval: Computational and Theoretical Aspects*
 - Salton & Buckley 1988 -- *Term-weighting approaches in automatic text retrieval*
-- Porter 1980 -- *An algorithm for suffix stripping*
+- [Porter 1980](/papers/porter-stemmer-1980) -- *An algorithm for suffix stripping*
+- [Bird & Loper 2006](/papers/nltk-bird-loper-2006) -- *NLTK: The Natural Language Toolkit*
+- [Kiss & Strunk 2006](/papers/punkt-kiss-strunk-2006) -- *Unsupervised Multilingual Sentence Boundary Detection*
+- [Miller 1995](/papers/wordnet-miller-1995) -- *WordNet: An On-line Lexical Database*
+- [Gimpel et al. 2011](/papers/twitter-pos-gimpel-2011) -- *Part-of-Speech Tagging for Twitter*
+- [Hutto & Gilbert 2014](/papers/vader-hutto-gilbert-2014) -- *VADER: Parsimonious Rule-based Model*
+- [NLLB Team 2022](/papers/nllb-team-2022) -- *No Language Left Behind*
 - Russell & Norvig -- *Artificial Intelligence: A Modern Approach*
 
 Continuar con la [Profundizacion](profundizacion) para la matematica detras de Zipf, Heaps, TF-IDF y los limites de BoW.

@@ -1,132 +1,471 @@
 ---
-title: "Porter Stemmer"
-weight: 50
+title: "Porter Stemmer - An Algorithm for Suffix Stripping"
+weight: 161
 math: true
 ---
 
 {{< paper-card
-    title="An algorithm for suffix stripping"
-    authors="Porter"
+    title="An Algorithm for Suffix Stripping"
+    authors="M.F. Porter"
     year="1980"
-    venue="Program: Electronic Library and Information Systems 14(3)"
+    venue="Program: Electronic Library and Information Systems"
     pdf="/papers/porter-stemmer-1980.pdf" >}}
-Describe un algoritmo simple y rápido para reducir palabras inglesas a su raíz (stem) por eliminación iterativa de sufijos. ~400 líneas en BCPL, procesaba 10,000 palabras en 8.1 segundos en un IBM 370/165. Igualó o superó al sistema de Cambridge (~10x más complejo) en la Cranfield 200 collection. **Sigue corriendo en producción en 2026** dentro de Apache Lucene, Elasticsearch, NLTK, y prácticamente todo motor de búsqueda IR que no usa Transformers.
+Define un **algoritmo de stemming para inglés** basado en 5 pasos secuenciales de reglas `(condition) S1 → S2` y una métrica de longitud silábica `m`. Su tesis es pragmática: no busca corrección lingüística sino **mejorar el recall en Information Retrieval** con un algoritmo simple, rápido y suficientemente bueno. 45 años después sigue corriendo en Apache Lucene, Elasticsearch, Solr y NLTK sin cambios sustantivos.
 {{< /paper-card >}}
 
 ---
 
 ## Contexto
 
-A fines de los 70, los stemmers existentes (Lovins 1968 con ~260 reglas, Andrews 1971, Dawson 1974) eran enormes, difíciles de mantener y sensibles al orden de aplicación. Porter buscó algo **simple, rápido y suficientemente bueno** para mejorar recall en IR — sin pretender corrección lingüística.
+A finales de los 70, el procesamiento de información (Information Retrieval, IR) ya tenía 20 años como disciplina académica, pero los **stemmers** estaban en estado primitivo. Los antecedentes que Porter cita en su paper:
 
-La tesis filosófica del paper: *"It would not be at all obvious under what circumstances a suffix should be removed, even if we could exactly determine the suffixes of the words by automatic means."* Es decir, no buscaba un stemmer lingüísticamente correcto — buscaba uno que **mejorara recall en IR**, sabiendo que cualquier criterio de "corrección" es discutible.
+| Sistema | Año | Características |
+|---|---|---|
+| **Lovins** (J.B. Lovins) | 1968 | Primer stemmer formalizado para inglés. ~260 reglas, recodificación posterior. Maximalista (intenta cubrir cada caso). |
+| **Andrews** (K. Andrews, Cambridge) | 1971 | Conflation algorithm rápido, base de varios sistemas IR posteriores. |
+| **Dawson** | 1974 | Suffix removal + word conflation. Más simple que Lovins pero comparable. |
+| **Salton SMART** | 1971+ | Sistema integrado IR con stemming embebido. |
+
+**El problema con los stemmers de los 70**: eran enormes (Lovins tenía cientos de reglas en cascada), difíciles de mantener, sensibles al orden de aplicación, e incluso así fallaban en muchos casos. Una típica falla de Lovins: convertir `RELATE` y `RELATIVITY` al mismo stem aunque semánticamente son distantes ("relate" tiene relación con relacionar, "relativity" con la teoría de Einstein).
+
+Porter quería un algoritmo **simple, rápido y suficientemente bueno**. Su tesis filosófica clave (citada literalmente del paper):
+
+> *"It would not be at all obvious under what circumstances a suffix should be removed, even if we could exactly determine the suffixes of the words by automatic means."*
+
+Es decir: **no buscaba un stemmer lingüísticamente correcto**, buscaba uno que **mejorara recall en IR**, sabiendo que cualquier criterio de "corrección" lingüística es discutible.
+
+### El test que motivó el diseño
+
+Porter compara su algoritmo contra el sistema previo de Cambridge (Andrews 1971 ampliado a 1975) sobre la **Cranfield 200 collection** (200 documentos científicos, 42 queries, evaluación estándar de IR de la época). Resultados (tabla del paper, página 314):
+
+| Recall | Sistema anterior — Precision | Sistema Porter — Precision |
+|---|---|---|
+| 0 | 57.24 | 58.60 |
+| 10 | 56.85 | 58.13 |
+| 20 | 52.85 | 53.92 |
+| 30 | 42.61 | 43.51 |
+| 40 | 42.20 | 39.39 |
+| 50 | 39.06 | 38.85 |
+| 60 | 32.86 | 33.18 |
+| 70 | 31.64 | 31.19 |
+| 80 | 27.15 | 27.52 |
+| 90 | 24.59 | 25.85 |
+| 100 | 24.59 | 25.85 |
+
+**Conclusión empírica de Porter**: su algoritmo simple **iguala o supera** al sistema más elaborado en todos los recall levels. **La simplicidad no fue un sacrificio de calidad**.
 
 ---
 
 ## Ideas principales
 
-### 1. La métrica m (measure)
+Porter aportó **tres cosas en un único algoritmo**:
 
-Toda palabra puede escribirse como:
+1. **Una métrica simple para "longitud silábica"** del stem: el parámetro **`m`** (measure), que cuenta secuencias `VC` (vocal-consonante) en la palabra. Esto permite tomar decisiones de stripping basadas en la "robustez" del stem que queda.
 
-$$[C](VC)^m[V]$$
+2. **Un sistema de 5 pasos secuenciales** que aplica reglas de la forma `(condition) S1 → S2`. Cada paso elimina sufijos de un tipo específico (plurales, derivacionales, terminales). El orden importa: cada paso depende del estado dejado por el anterior.
 
-donde C es secuencia de consonantes, V de vocales, y `m` es el número de repeticiones del patrón VC. Ejemplos:
+3. **Una implementación pragmática**: ~400 líneas de BCPL, procesaba 10,000 palabras en **8.1 segundos** sobre un IBM 370/165 en Cambridge (1980). Esto es ~1,200 palabras por segundo en hardware de la época. Hoy en Python procesa cientos de miles por segundo.
 
-| Palabra | m |
-|---|---|
-| TR, TREE, BY | 0 |
-| TROUBLE, OATS, IVY | 1 |
-| TROUBLES, PRIVATE, OATEN | 2 |
+El paper también deja claro que **NO** debería usarse para todos los casos:
 
-`m` es **una medida cruda de longitud silábica del stem**. El algoritmo elimina un sufijo solo si el stem que queda tiene suficiente `m`. Esto evita over-stripping.
+- Recomienda aplicarlo a **listas de vocabulario derivadas de texto continuo**, no a texto continuo entero.
+- Reconoce errores deliberados (`SAND` vs `SANDER` se conflate aunque sea incorrecto; `PROBE` vs `PROBATE` se conflate aunque tengan significados distintos).
 
-### 2. Las reglas tipo (condición) S1 → S2
+Es deliberadamente **un algoritmo "good enough"** para IR, no una herramienta lingüística rigurosa.
+
+### Definiciones fundamentales
+
+**Consonante (c)**: cualquier letra que **no sea** A, E, I, O, U; **ni Y precedida por consonante**. Notar la sutileza: la `Y` puede ser vocal o consonante según contexto.
+
+- `TOY` → consonantes: T, Y (Y al final tras vocal O = consonante).
+- `SYZYGY` → consonantes: S, Z, G (la última Y).
+- `SKY` → consonantes: S, K (la Y al final tras K es vocal).
+
+**Vocal (v)**: lo que no es consonante.
+
+**Forma general de cualquier palabra**:
+
+$$[C]\, (VC)^m\, [V]$$
+
+donde `[C]` y `[V]` son secuencias opcionales de consonantes/vocales al inicio/final, y `(VC)^m` significa "m repeticiones de VC". El **measure `m`** es lo que importa.
+
+Ejemplos del paper (página 314):
+
+| Palabra | Análisis | m |
+|---|---|---|
+| TR, EE, TREE, Y, BY | no hay VC repetidas | 0 |
+| TROUBLE, OATS, TREES, IVY | 1 secuencia VC | 1 |
+| TROUBLES, PRIVATE, OATEN, ORRERY | 2 secuencias VC | 2 |
+
+**Por qué m importa:** Porter no quiere strippar sufijos si el stem que queda es muy corto. La regla típica del algoritmo dice "elimina este sufijo solo si `m > 1`", lo cual asegura que el stem tenga al menos 2 secuencias VC.
+
+### Estructura de una regla
+
+```
+(condition) S1 → S2
+```
+
+**Significado**: si la palabra termina con `S1`, **y** el stem antes de `S1` cumple `condition`, reemplazar `S1` por `S2`.
+
+**Ejemplo del paper (página 314)**:
 
 ```
 (m > 1) EMENT →
 ```
 
-Significa: si la palabra termina en `EMENT` y el stem antes tiene `m > 1`, eliminar `EMENT`. Por ejemplo `REPLACEMENT → REPLAC` (porque `REPLAC` tiene m=2), pero `PAVEMENT → PAVE` (NO se aplica porque `PAV` tiene m=1).
+Significado: si la palabra termina en `EMENT` y el stem restante tiene m > 1, eliminar `EMENT` (S2 está vacío). Por ejemplo:
 
-Las condiciones pueden incluir tests sobre el stem (`*S` termina en S, `*v*` contiene vocal, `*d` termina en doble consonante, `*o` termina en cvc no-WXY) y combinarse con `and`, `or`, `not`.
+```
+REPLACEMENT → REPLAC  (porque REPLAC tiene m=2)
+PAVEMENT → PAVE  (NO se aplica porque PAV tiene m=1)
+```
 
-### 3. Los 5 pasos secuenciales
+**Condiciones disponibles** (página 314):
 
-| Paso | Maneja |
-|---|---|
-| 1a | Plurales (`-SSES`, `-IES`, `-SS`, `-S`) |
-| 1b | Gerundios y participios (`-EED`, `-ED`, `-ING`) con post-procesamiento (`AT→ATE`, `BL→BLE`, doble consonante final) |
-| 1c | Y → I después de vocal |
-| 2 | Sufijos derivacionales largos (`-ATIONAL→ATE`, `-IZATION→IZE`, `-FULNESS→FUL`, etc.) |
-| 3 | Más derivacionales (`-ICATE→IC`, `-ATIVE→`, `-ALIZE→AL`, etc.) |
-| 4 | Sufijos derivacionales cortos con `m > 1` (`-AL`, `-ANCE`, `-MENT`, `-ENT`, `-IZE`, etc.) |
-| 5a | Eliminar E final si `m > 1`, o si `m=1 and not *o` |
-| 5b | Eliminar consonante doble final si termina en L |
+- `*S` — el stem termina con S (similar para otras letras).
+- `*v*` — el stem contiene una vocal.
+- `*d` — el stem termina con doble consonante (e.g., `-TT`, `-SS`).
+- `*o` — el stem termina con `cvc`, donde la segunda c **no** es W, X o Y.
 
-En cada paso solo se aplica la regla con el sufijo más largo que matchee.
+**Operadores lógicos** en condiciones: `and`, `or`, `not`. Ejemplo:
 
-### 4. Composición de pasos
+```
+(m > 1 and (*S or *T))
+```
 
-`GENERALIZATIONS` (14 letras) se reduce a `GENER` (5 letras) en 4 pasos:
+Significa "m mayor a 1 Y stem termina en S o T".
+
+### Los 5 pasos del algoritmo
+
+#### Paso 1a — Plurales
+
+```
+SSES → SS    caresses → caress
+IES  → I     ponies   → poni
+                 ties → ti
+SS   → SS    caress   → caress (sin cambio)
+S    →       cats     → cat
+```
+
+**Solo se aplica una regla por paso** — la **regla con el S1 más largo que matchee** la palabra. Por eso `CARESSES` matchea `SSES` (más largo que `SS` o `S`), no las otras.
+
+#### Paso 1b — Gerundios y participios
+
+```
+(m>0)  EED → EE     feed → feed (NO, porque "feed" tiene m=0)
+                    agreed → agree
+(*v*)  ED  →        plastered → plaster
+                    bled → bled (NO, porque "bl" no contiene vocal)
+(*v*)  ING →        motoring → motor
+                    sing → sing (NO, "s" no contiene vocal)
+```
+
+**Si las reglas con ED o ING se aplican** (segunda y tercera), se ejecuta un **post-procesamiento** para restaurar palabras:
+
+```
+AT → ATE    conflat(ed) → conflate
+BL → BLE    troubl(ing)  → trouble
+IZ → IZE    siz(ed)      → size
+(doble consonante final que no sea L,S,Z) → eliminar duplicado
+    hopp(ing)  → hop
+    tann(ed)   → tan
+    fall(ing)  → fall (excepción: LL queda)
+(m=1 y *o) → agregar E
+    fail(ing) → fail (sin cambio, *o no aplica)
+    fil(ing)  → file
+```
+
+**Esto es lo que hace que Porter funcione mejor que un stripping ingenuo**: trata las reglas como un sistema con post-condiciones, no como aplicaciones aisladas.
+
+#### Paso 1c — Y → I
+
+```
+(*v*) Y → I    happy → happi
+               sky   → sky (NO, no hay vocal antes de Y)
+```
+
+#### Paso 2 — Derivaciones largas
+
+Reglas como (extracto):
+
+```
+(m>0) ATIONAL → ATE    relational → relate
+(m>0) TIONAL  → TION   conditional → condition
+(m>0) ENCI    → ENCE   valenci    → valence
+(m>0) IZER    → IZE    digitizer  → digitize
+(m>0) ABLI    → ABLE   conformabli → conformable
+(m>0) ALLI    → AL     radicalli  → radical
+(m>0) IZATION → IZE    vietnamization → vietnamize
+(m>0) ATION   → ATE    predication → predicate
+(m>0) FULNESS → FUL    hopefulness → hopeful
+(m>0) BILITI  → BLE    sensibiliti → sensible
+... (~20 reglas en total)
+```
+
+Porter observa (página 315): *"the S1-strings in step 2 are presented here in the alphabetical order of their penultimate letter"* — esto permite **lookup eficiente** con un program switch sobre la penúltima letra.
+
+#### Paso 3
+
+Más reglas derivacionales:
+
+```
+(m>0) ICATE → IC     triplicate → triplic
+(m>0) ATIVE →        formative  → form
+(m>0) ALIZE → AL     formalize  → formal
+(m>0) ICITI → IC     electriciti → electric
+(m>0) FUL   →        hopeful    → hope
+(m>0) NESS  →        goodness   → good
+```
+
+#### Paso 4
+
+Sufijos derivacionales más cortos:
+
+```
+(m>1) AL    →        revival     → reviv
+(m>1) ANCE  →        allowance   → allow
+(m>1) ENCE  →        inference   → infer
+(m>1) ABLE  →        adjustable  → adjust
+(m>1) IBLE  →        defensible  → defens
+(m>1) ANT   →        irritant    → irrit
+(m>1) MENT  →        replacement → replac
+(m>1) ENT   →        adjustment  → adjust
+(m>1) OU    →        homologou   → homolog
+(m>1) ISM   →        communism   → commun
+(m>1) ATE   →        activate    → activ
+(m>1) ITI   →        angulariti  → angular
+(m>1) OUS   →        homologous  → homolog
+(m>1) IVE   →        effective   → effect
+(m>1) IZE   →        bowdlerize  → bowdler
+```
+
+**Nota crítica**: en paso 4 se usa `m > 1` (no `m > 0`). Más restrictivo. Por eso `REVIVAL → REVIV` (m=2 antes del AL) pero `OVAL` no pasaría (m=1).
+
+#### Paso 5
+
+##### 5a — Eliminar E final
+
+```
+(m>1)              E →    probate → probat
+                          rate    → rate (NO, m=1)
+(m=1 and not *o)   E →    cease   → ceas
+```
+
+##### 5b — Eliminar consonante doble final si termina en L
+
+```
+(m>1 and *d and *L) → consonante simple
+    controll → control
+    roll     → roll (NO, m=1)
+```
+
+### Características emergentes del algoritmo
+
+**Composición de pasos**: cada palabra puede pasar por múltiples pasos. Ejemplo del paper (página 316):
 
 ```
 GENERALIZATIONS
-  → Paso 1 (S):           GENERALIZATION
-  → Paso 2 (IZATION→IZE):  GENERALIZE
-  → Paso 3 (ALIZE→AL):     GENERAL
-  → Paso 4 (AL):           GENER
+  → Paso 1 (S): GENERALIZATION
+  → Paso 2 (IZATION → IZE): GENERALIZE
+  → Paso 3 (ALIZE → AL): GENERAL
+  → Paso 4 (AL): GENER
 ```
 
----
-
-## Resultados experimentales
-
-Tarea: **Cranfield 200 collection** (200 documentos científicos, 42 queries, evaluación IR estándar de la época).
-
-| Recall | Sistema Cambridge anterior — Precision | Sistema Porter — Precision |
-|---|---|---|
-| 0 | 57.24 | 58.60 |
-| 20 | 52.85 | 53.92 |
-| 40 | 42.20 | 39.39 |
-| 60 | 32.86 | 33.18 |
-| 80 | 27.15 | 27.52 |
-| 100 | 24.59 | 25.85 |
-
-**Iguala o supera** al sistema previo en todos los recall levels. La simplicidad **no fue un sacrificio de calidad**.
-
-Reducción del vocabulario: sobre 10,000 palabras, Porter las reduce a **6,370 stems únicos** (-36%). Eso es la **Ley de Heaps** en acción — comprimiendo morfología.
+`GENERALIZATIONS` (14 letras) se reduce a `GENER` (5 letras) en 4 pasos.
 
 ---
 
-## Limitaciones reconocibles
+## Resultados
 
-Porter es honesto sobre los errores:
+**Reducción del vocabulario** sobre un test de 10,000 palabras:
 
-- **Conflations deliberadas pero discutibles**: `RELATE` y `RELATIVITY` se conflate juntas aunque semánticamente son distantes.
-- **Spelling changes**: `DECEIVE`/`DECEPTION`, `RESUME`/`RESUMPTION`, `INDEX`/`INDICES` no se conflate.
-- **Inconsistencias por design**: `PRELATE` (m=1) preserva `-ATE`, pero `ARCHPRELATE` (m=2) lo elimina. Sin reconocer prefijos.
+| Paso | Palabras modificadas |
+|---|---|
+| 1 | 3,597 |
+| 2 | 766 |
+| 3 | 327 |
+| 4 | 2,424 |
+| 5 | 1,373 |
+| No reducidas | 3,650 |
+| **Vocabulario final** | **6,370 stems únicos** |
 
-Solo inglés. No maneja verbos irregulares (`WENT/GO`, `MICE/MOUSE`). Stems no siempre son palabras reales (`relat`, `intellig`, `entri`) — feos para usuario final, fine para BoW.
+**Reducción del 36%** en el tamaño del vocabulario. Heaps en acción.
+
+**Performance computacional**:
+
+- BCPL en IBM 370/165 (1980): 10,000 palabras en **8.1 segundos** (~1,200 palabras/s).
+- NLTK Python (2026): cientos de miles de palabras/s en CPU moderna.
+- ~400 líneas de código, sin dependencias externas, sin lookup tables externos.
+
+**Calidad en IR (Cranfield 200)**: precision igual o superior al sistema previo de Cambridge en 8 de 11 niveles de recall (ver tabla en sección Contexto).
+
+---
+
+## Limitaciones
+
+Porter es honesto en el paper sobre los errores del algoritmo.
+
+### Errores deliberados
+
+```
+RELATE y RELATIVITY → mismo stem (RELATIV/RELAT)
+PROBE y PROBATE → distinto (PROB / PROBAT)
+```
+
+¿Por qué? Porque el algoritmo simplifica:
+
+- `RELATIVITY` pasa por `IVITY → IVE` y luego `IVE →` (eliminación) por paso 4. Termina en `RELAT`.
+- `RELATE` pasa por paso 5a (`E →`, eliminación) si m>1. RELATE = R-E-L-A-T-E, ¿es m>1? R-E (VC) L-A-T (no termina en VC), entonces m=1. No se elimina la E. Termina en `RELATE` o `RELAT`.
+
+**Resultado pragmático**: Porter las conflate juntas (`RELAT`), aunque semánticamente sean disjuntas. **Esto es por diseño**: Porter explícitamente dice que para IR es preferible **over-conflation a under-conflation** cuando los errores son raros y los aciertos son la mayoría.
+
+### Casos donde el spelling complica
+
+```
+DECEIVE / DECEPTION → distintos stems (DECEIV / DECEPT)
+RESUME / RESUMPTION → distintos (RESUM / RESUMPT)
+INDEX / INDICES → distintos (INDEX / INDIC)
+```
+
+El paper reconoce: *"In view of the error rate that must in any case be expected, it did not seem worthwhile to try and cope with these cases"* (página 314). Habría requerido reglas especiales para variaciones ortográficas raras.
+
+### Reglas inconsistentes
+
+```
+list A (NO se aplica -ATE):  RELATE, PROBATE, CONFLATE, PIRATE, PRELATE
+list B (SÍ se aplica -ATE):  DERIVATE, ACTIVATE, DEMONSTRATE, NECESSITATE, RENOVATE
+```
+
+Diferencia: m=1 vs m>1. PRELATE tiene m=1 (PR-E-L-A-T-E = solo una secuencia VC tras la primera C), DEMONSTRATE tiene m=4.
+
+**Consecuencia**: `PRELATE` y `ARCHPRELATE` reciben tratamiento distinto. `ARCHPRELATE` tiene m>1 (porque el prefijo agrega VCs), entonces sí se aplica `-ATE →` (eliminación) y queda `ARCHPREL`. Mientras `PRELATE` queda intacta.
+
+Esto es **una inconsistencia diseñada para no agregar más complejidad** (no intentar reconocer prefijos).
+
+### Limitaciones generales conocidas hoy
+
+1. **Solo inglés.** Reglas hardcoded para morfología inglesa. No funciona en otros idiomas sin reescribir todo (que es lo que motivó **Snowball** 2001).
+2. **Sobre-stripping de palabras técnicas.** `LASER → LASER` está bien, pero `MULTIPLE → MULTIPL`, `SINGULARITY → SINGULAR` pueden colapsar términos científicos a stems poco útiles.
+3. **No maneja excepciones irregulares.** `WENT/GO`, `MICE/MOUSE` no se relacionan.
+4. **El stem no es palabra real**, lo cual hace los outputs feos para usuario final.
 
 ---
 
 ## Por qué importa hoy
 
-- **~15,000 citas en Google Scholar** a mayo de 2026. Entre los 20 papers más citados de NLP de todos los tiempos.
-- **Apache Lucene** (motor detrás de Elasticsearch, Solr) usa Porter como stemmer default. Eso significa que **miles de motores de búsqueda corren Porter en producción cada día**, 45 años después de publicado.
-- **NLTK** y **scikit-learn** incluyen Porter (`nltk.stem.porter.PorterStemmer`).
-- Para producción seria en inglés deberías usar **Snowball/Porter2 (2001)** — el mismo Porter mejorado, también en NLTK como `SnowballStemmer('english')`.
-- Es **la baseline obligada** en cualquier benchmark IR. Si tu sistema basado en BERT no supera a BoW + Porter, algo está mal.
+Porter Stemmer es, junto a TF-IDF y Naive Bayes, **el algoritmo más usado en la historia del NLP clásico**. Algunas métricas:
 
-En la era de Transformers, **subword tokenization** (BPE, WordPiece, SentencePiece) hace el trabajo de Porter de manera más sofisticada. Pero para pipelines clásicos sin GPU, Porter sigue siendo competitivo por razones de latencia, costo y determinismo.
+- **Citas**: a mayo de 2026, **~15,000 citas en Google Scholar** para el paper original. Está entre los 20 papers más citados de NLP de todos los tiempos.
+- **Implementaciones**: hay implementaciones oficiales en **decenas de lenguajes**: Python (NLTK, Snowball wrapper), Java (Apache Lucene, OpenNLP), C, Ruby, Go, R, Perl, Tcl, JavaScript, etc.
+- **En producción HOY (2026)**: Apache Lucene (motor de search detrás de Elasticsearch, Solr y otros) usa Porter como uno de los stemmers default. Eso significa que **literalmente miles de motores de búsqueda corren Porter en producción cada día**, 45 años después.
+- **Snowball (2001)**: Porter mismo desarrolló Snowball como sucesor — un lenguaje de dominio específico para escribir stemmers en cualquier idioma. La implementación de Porter en Snowball ("Porter2" o "English Snowball") es estrictamente mejor y debería usarse en lugar del Porter original. NLTK incluye ambos por compatibilidad.
+
+### Sucesores notables
+
+- **Snowball / Porter2** (Porter 2001): mismo algoritmo refinado + DSL para multilingüe.
+- **Lancaster / Paice** (Paice 1990): más agresivo, peor para uso general. NLTK lo incluye, pero rara vez se usa.
+- **Krovetz** (Krovetz 1993): híbrido stem+lemma, usa diccionario. Más preciso pero más lento.
+- **Lemmatización** (WordNet, spaCy): reemplazo moderno para tareas que necesitan output legible.
+
+### Por qué sigue siendo relevante
+
+En 2026, con BERT, GPT-4, Llama y otros, uno se preguntaría: ¿por qué seguir hablando de Porter? Las razones:
+
+1. **Costo computacional**. Porter procesa cientos de miles de palabras por segundo en CPU. BERT/Transformers requieren GPU y son 100-10000x más lentos.
+2. **Determinismo y trazabilidad.** Porter siempre da el mismo output. Los Transformers tienen randomness sutil (dropout, sampling).
+3. **No requiere data adicional.** Porter funciona sin internet, sin descargas, sin modelos pre-entrenados.
+4. **Para IR de gran escala**, donde indexas miles de millones de documentos, el ahorro computacional de Porter es enorme. Lucene/Solr/Elasticsearch lo usan por esto.
+5. **Pedagógicamente, es un ejemplo perfecto** de cómo un algoritmo simple, bien diseñado, sobrevive 45 años. Lo opuesto al hype de modelos billion-parameter.
+
+---
+
+## Conexión con el Laboratorio 16
+
+| Celda del lab | Concepto del paper |
+|---|---|
+| 31 | `from nltk.stem import PorterStemmer` — la implementación NLTK del algoritmo de este paper. **Sin cambios sustantivos respecto a 1980**. |
+| 31 | `porter = PorterStemmer()` — instancia el stemmer. **No requiere parámetros** porque las reglas están hardcoded en el código (~400 líneas en NLTK, espejo del BCPL original). |
+| 31 | `porter.stem(s)` — aplica los 5 pasos a una palabra. |
+| 31 | Output de Porter en la frase del lab: `artifici intellig is intellig demonstr by machin . lead ai textbook defin the field as the studi of intellig agent : ani devic that perceiv it environ and take action that maxim it chanc of success achiev it goal .` |
+
+Mapeos destacados:
+
+- `artificial → artifici` (paso 4: AL eliminado, queda `ARTIFICI` con m=2)
+- `intelligence → intellig` (paso 4: ENCE eliminado)
+- `demonstrated → demonstr` (paso 1b: ED eliminado tras *v* presente)
+- `machines → machin` (paso 1a: S eliminado)
+- `study → studi` (paso 1c: Y → I tras *v*)
+
+**Verifica directamente:**
+
+```python
+from nltk.stem import PorterStemmer
+porter = PorterStemmer()
+for w in ['artificial', 'intelligence', 'demonstrated', 'machines',
+          'leading', 'textbooks', 'studying', 'intelligent', 'agents',
+          'perceives', 'environment', 'maximize', 'successfully', 'achieving']:
+    print(f"{w:15} → {porter.stem(w)}")
+```
+
+**Para inspeccionar el algoritmo en NLTK** (interesante didácticamente):
+
+```python
+import inspect
+from nltk.stem.porter import PorterStemmer
+print(inspect.getsource(PorterStemmer._step1a))  # paso 1a, plurales
+print(inspect.getsource(PorterStemmer._step2))   # paso 2, derivacionales
+```
+
+Vas a ver el código Python que mapea **1:1** a las reglas del paper. **El algoritmo de 1980 es código de 2026**.
+
+---
+
+## Lecturas relacionadas
+
+**Stemmers contemporáneos a Porter:**
+
+- Lovins (1968), *Development of a Stemming Algorithm*, Mechanical Translation & Computational Linguistics 11(1) — el predecesor maximalista.
+- Andrews (1971), *Development of a Fast Conflation Algorithm for English*, Cambridge — el sistema contra el que Porter compara.
+- Dawson (1974), *Suffix Removal and Word Conflation*, ALLC Bulletin.
+
+**Sucesores directos:**
+
+- Paice (1990), *Another Stemmer*, SIGIR Forum — el Lancaster Stemmer, más agresivo, también disponible en NLTK como `LancasterStemmer`.
+- Porter (2001), *Snowball: A Language for Stemming Algorithms* — el DSL que Porter desarrolló para portar el algoritmo a múltiples idiomas. Recomendado sobre PorterStemmer original.
+- Krovetz (1993), *Viewing morphology as an inference process* — stemmer que combina con diccionario para evitar stems sin palabra.
+
+**Para lemmatization (la alternativa "lingüísticamente correcta"):**
+
+- Miller (1995), *Introduction to WordNet* — el lemmatizer de NLTK usa WordNet.
+
+**Contexto IR donde Porter floreció:**
+
+- Salton & McGill (1983), *Introduction to Modern Information Retrieval*, McGraw-Hill — el libro de texto que codificó Porter como estándar en IR.
+- Cleverdon, Mills & Keen (1966), *Factors Determining the Performance of Indexing Systems*, College of Aeronautics, Cranfield — la metodología que produjo Cranfield-200, sobre el cual Porter validó su algoritmo.
+
+**Para comparar con la era moderna:**
+
+- Devlin et al. (2018), *BERT* — los Transformers que reemplazan stemming en muchos casos. Subword tokenization (WordPiece) maneja morfología internamente, haciendo Porter obsoleto en pipelines basados en BERT. Pero NO en pipelines clásicos de IR.
+
+Este paper es un ejemplo de cómo **simplicidad pragmática + validación empírica honesta** pueden producir algoritmos que sobreviven generaciones de hardware y paradigmas. Es lectura obligada para entender por qué el NLP clásico funcionó tan bien antes de los Transformers, y por qué sigue siendo relevante en contextos de costo/latencia/explicabilidad.
 
 ---
 
 ## Notas y enlaces
 
-- El paper es **inusualmente corto** (4 páginas en 2 columnas) y autocontenido — podés leerlo en una tarde y reimplementar el algoritmo.
-- Sucesor directo: **Snowball** (Porter 2001) — DSL para escribir stemmers en múltiples idiomas. Incluye `SnowballStemmer('spanish')` para tu trabajo en NLP clínico español.
-- Alternativa más agresiva: **Lancaster stemmer** (Paice 1990) — sobre-strippa (`aviation→av`). Casi nadie lo usa.
+- **Clase asociada**: [Clase 16 - NLP clásico, NLTK, BoW, embeddings](/clases/clase-16).
+- **Laboratorio asociado**: [Lab 16 - Pipeline NLP con NLTK/spaCy/NLLB/VADER](/laboratorios/lab-16).
+- **Fundamento relacionado**: [Tokenización clásica](/fundamentos/tokenizacion-clasica).
+- **Cita BibTeX**:
 
-Ver fundamentos: [Tokenización clásica](/fundamentos/tokenizacion-clasica) · [Bag of Words](/fundamentos/bag-of-words).
+```bibtex
+@article{porter1980algorithm,
+  title={An algorithm for suffix stripping},
+  author={Porter, Martin F},
+  journal={Program: Electronic Library and Information Systems},
+  volume={14},
+  number={3},
+  pages={130--137},
+  year={1980}
+}
+```

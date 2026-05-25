@@ -8,7 +8,7 @@ math: true
 > Cubre la derivacion de las leyes de Zipf y Heaps desde principios de minimo esfuerzo,
 > la formalizacion del TF-IDF como medida de informacion,
 > el algoritmo del Porter stemmer en sus cinco fases,
-> y un analisis riguroso de los limites de BoW que motiva los embeddings de la Clase 17.
+> y un analisis riguroso de los limites de BoW que motiva los embeddings de la [Clase 18](/clases/clase-18) (Word2Vec, GloVe, Skip-Thought).
 
 ---
 
@@ -63,7 +63,7 @@ Para $s = 1$, $H \sim \log \log V$ -- crece muy lentamente con el vocabulario. E
 
 - **Stop-words** (zona izquierda) son ruido para clasificacion → eliminar.
 - **Rare-words** (cola larga) son features muy informativas pero **dispersas**: aparecen en pocos documentos. TF-IDF las pondera al alza (proximo bloque).
-- El **largo de la cola** es indomable: sin importar cuan grande sea el corpus, siempre habra palabras nuevas (justificacion teorica para subword tokenization: BPE, WordPiece -- veremos en Clase 18).
+- El **largo de la cola** es indomable: sin importar cuan grande sea el corpus, siempre habra palabras nuevas (justificacion teorica para subword tokenization: [BPE, WordPiece](/fundamentos/bpe) -- se cubren en [Clase 20](/clases/clase-20)).
 
 ---
 
@@ -305,7 +305,7 @@ La cadena pasa por las cinco fases, cada una aplicando a lo mas una regla. El ou
 
 ### 5.3 Polisemia
 
-*"banco"* (institucion financiera) y *"banco"* (asiento de plaza) reciben el mismo vector. El sentido no se distingue sin contexto. Modelos contextuales (BERT, ELMo) en Clase 18 resuelven esto.
+*"banco"* (institucion financiera) y *"banco"* (asiento de plaza) reciben el mismo vector. El sentido no se distingue sin contexto. Modelos contextuales (BERT, ELMo) en la [Clase 20](/clases/clase-20) resuelven esto.
 
 ### 5.4 Dimensionalidad y dispersion
 
@@ -323,7 +323,7 @@ Lo que necesitamos: una representacion **densa, de baja dimension** ($d \approx 
 - Operaciones algebraicas tengan sentido (`king - man + woman ≈ queen`).
 - Se pueda **componer** vectores para frases.
 
-Esto es exactamente lo que entregaran **Word2Vec** (Mikolov 2013) y **GloVe** (Pennington 2014) en la Clase 17.
+Esto es exactamente lo que entregaran **[Word2Vec](/papers/word2vec-efficient-mikolov-2013)** (Mikolov 2013) y **[GloVe](/papers/glove-pennington-2014)** (Pennington 2014) en la [Clase 18](/clases/clase-18).
 
 ```mermaid
 graph LR
@@ -370,7 +370,7 @@ graph LR
 4. **Porter stemmer** es un sistema de reescritura por reglas en 5 fases, basado en la medida $m$ del stem.
 5. **Stemming vs lematizacion**: stemming es rapido pero produce strings invalidos; lematizacion es lento pero produce lemas validos.
 6. **BoW** pierde orden, sinonimia, polisemia y composicion. n-Grams mitigan parcialmente pero no escalan.
-7. La motivacion para **word embeddings** (Clase 17) es construir representaciones **densas, de baja dimension**, donde la geometria capture semantica.
+7. La motivacion para **word embeddings** ([Clase 18](/clases/clase-18)) es construir representaciones **densas, de baja dimension**, donde la geometria capture semantica.
 8. Heuristica practica: **empezar simple**. Las tecnicas clasicas son interpretables, baratas y frecuentemente suficientes.
 
 ---

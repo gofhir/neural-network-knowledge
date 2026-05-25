@@ -106,7 +106,8 @@ Ejecutado end-to-end en Colab free tier (CPU + GPU T4 cuando disponible). **106 
 - Teoría correspondiente: [Clase 16 — Introducción a NLP](/clases/clase-16/).
 - Dominio relacionado: [Dominio texto](/dominios/texto/) — línea histórica completa del NLP.
 - Lab anterior: [Lab 15 — Faster R-CNN](/laboratorios/lab-15/) (visión).
-- Lab siguiente: pendiente en clase 17+.
+- Lab siguiente: [Lab 17 — Pose Recognition](/laboratorios/lab-17/) (visión, continúa el bloque que conecta con el lab 15).
+- Hilo NLP avanzado: [Lab 18 — Word Embeddings (Word2Vec)](/laboratorios/lab-18/) continúa lo que esta clase introduce (BoW, n-grams) con representaciones distribuidas.
 
 ---
 

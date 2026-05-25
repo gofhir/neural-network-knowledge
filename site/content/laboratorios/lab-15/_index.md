@@ -79,6 +79,7 @@ Entrenamiento real sobre dataset Raccoon (160 train + 40 val), 4 epocas, GPU T4 
   {{< card link="/fundamentos/deteccion-de-objetos" title="Fundamento: Deteccion de Objetos" subtitle="IoU, NMS, anchors, RPN, RoIAlign, FPN, family tree" icon="book-open" >}}
   {{< card link="/fundamentos/redes-convolucionales" title="Fundamento: CNNs" subtitle="Backbone arquitectonico: AlexNet, VGG, ResNet, Inception" icon="book-open" >}}
   {{< card link="/fundamentos/transfer-learning" title="Fundamento: Transfer Learning" subtitle="Pretraining COCO y fine-tuning a nuevas clases" icon="book-open" >}}
+  {{< card link="/laboratorios/lab-16" title="Lab 16 - Introduccion a NLP (lab siguiente)" subtitle="NLTK, spaCy, BoW, Zipf, VADER, NLLB-200" icon="academic-cap" >}}
 {{< /cards >}}
 
 ---

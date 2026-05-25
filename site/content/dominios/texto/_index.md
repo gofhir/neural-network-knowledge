@@ -275,7 +275,13 @@ Las apuestas activas hoy — sin un ganador claro — incluyen: **razonamiento e
 
 - [Clase 16 — Introducción a NLP](/clases/clase-16) (BoW, tokenización, Zipf).
 - [Clase 18 — Modelos de lenguaje, Word2Vec, GloVe y SkipThought](/clases/clase-18).
+- [Clase 20 — ELMo, BERT, GPT, ChatGPT](/clases/clase-20) (cierre del diplomado).
+
+**Laboratorios del diplomado:**
+
+- [Lab 16 — Pipeline NLP con NLTK/spaCy/NLLB/VADER](/laboratorios/lab-16) (estadística de texto, BoW + sentiment + traducción).
+- [Lab 18 — Word Embeddings (Word2Vec)](/laboratorios/lab-18) (analogías, doesnt_match, PCA, sentiment con MLP).
 
 ---
 
-*Última actualización: 2026-05-03.*
+*Última actualización: 2026-05-24.*

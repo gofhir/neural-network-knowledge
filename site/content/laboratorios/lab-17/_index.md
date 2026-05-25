@@ -131,6 +131,7 @@ Con un MLP entrenado con early stopping (Best checkpoint en epoch ~5 sobre datas
   {{< card link="/clases/clase-17" title="Clase 17 - Teoría" subtitle="Recorrido de las 59 diapositivas de Pose Recognition" icon="academic-cap" >}}
   {{< card link="/fundamentos/pose-estimation" title="Fundamento: Pose Estimation 2D" subtitle="Bottom-up vs. top-down, heatmaps, OKS/PCK" icon="book-open" >}}
   {{< card link="/laboratorios/lab-15" title="Lab 15 - Faster R-CNN" subtitle="Detección de objetos como precursor de pose (cabezas adicionales)" icon="academic-cap" >}}
+  {{< card link="/laboratorios/lab-16" title="Lab 16 - Introducción a NLP" subtitle="Lab anterior cronológicamente: NLTK, spaCy, BoW, VADER, NLLB-200" icon="academic-cap" >}}
 {{< /cards >}}
 
 ---

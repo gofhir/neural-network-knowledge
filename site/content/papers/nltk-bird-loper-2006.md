@@ -1,6 +1,6 @@
 ---
-title: "NLTK — The Natural Language Toolkit"
-weight: 80
+title: "NLTK - The Natural Language Toolkit"
+weight: 163
 math: true
 ---
 
@@ -8,131 +8,181 @@ math: true
     title="NLTK: The Natural Language Toolkit"
     authors="Bird, Loper"
     year="2006"
-    venue="COLING/ACL 2006 Interactive Presentation Sessions"
+    venue="COLING/ACL Interactive Presentation Sessions"
     pdf="/papers/nltk-bird-loper-2006.pdf" >}}
-Describe el toolkit pedagógico de NLP más influyente jamás construido. Suite de módulos Python con interfaces uniformes (`TokenizerI`, `ParserI`, `TaggerI`), 15+ corpora preempaquetados (Brown, Penn Treebank, WordNet, Gutenberg, Inaugural), demos GUI interactivas, y arquitectura "blackboard" sobre la clase `Token`. Distribución bajo GPL. **~6700 citas en Google Scholar** a mayo 2026. Adoptado en docenas de cursos universitarios desde 2001 hasta hoy.
+Presenta **NLTK**, una suite modular en Python para enseñar y prototipar NLP: jerarquía de interfaces limpias (`TokenizerI`, `ParserI`, `TaggerI`), arquitectura *blackboard* sobre la clase `Token`, y una colección integrada de corpora (Brown, Penn Treebank, WordNet, Gutenberg, etc.) con API uniforme. Apostó por Python como lengua franca del NLP años antes que el resto del campo y se convirtió en la herramienta pedagógica dominante por casi dos décadas.
 {{< /paper-card >}}
 
 ---
 
-## Contexto
+## Contexto histórico
 
-A inicios de los 2000, el NLP académico vivía en Perl, C++, Java y Tcl. No existía un toolkit Python comprehensivo para enseñar NLP. Cada laboratorio universitario construía su propio tooling desde cero — scripts privados, formatos incompatibles, sin estandarización.
+Para entender la importancia de NLTK hay que mirar el estado del arte en 2001-2006:
 
-Steven Bird (University of Melbourne) y Edward Loper (UPenn) desarrollaron NLTK en 2001 acompañando el curso de Lingüística Computacional de UPenn. La decisión clave: **Python** como lenguaje. En 2001 Python aún no dominaba ML — fue una **apuesta** que precedió y allanó el camino para scikit-learn (2007), gensim (2009), spaCy (2015), Transformers (2018).
+| Dimensión | Antes de NLTK | Lo que NLTK trajo |
+|---|---|---|
+| **Lenguajes** | NLP académico vivía en Perl, C++, Java y Tcl (ej. GATE). | Python como lengua común. |
+| **Distribución** | Cada laboratorio tenía sus propios scripts y corpora privados. | Un único paquete con todo lo necesario para enseñar NLP. |
+| **Pedagogía** | Los cursos universitarios construían tooling propio desde cero. | Plataforma única reutilizable: tareas, demos, proyectos. |
+| **Corpora** | El acceso a Brown, Penn Treebank, WordNet, etc. requería gestionar múltiples APIs y formatos. | Una interfaz uniforme (`nltk.corpus.brown`, `nltk.corpus.treebank`, etc.). |
+| **Algoritmos** | Implementaciones aisladas, sin marco común. | Jerarquía de interfaces (`TokenizerI`, `ParserI`, `TaggerI`) que permite intercambiar implementaciones. |
 
-Tres motivos pedagógicos guiaron el diseño:
+NLTK nace en 2001 acompañando el curso de Lingüística Computacional de UPenn, dictado por Steven Bird. Para 2006 ya había sido adoptado por al menos 13 universidades (entre ellas MIT, Edinburgh, Amsterdam, Pittsburgh, Macquarie, Melbourne).
 
-1. **Assignments**: estudiantes experimentan con componentes existentes para tareas NLP.
-2. **Demonstrations**: GUI interactivas que muestran step-by-step la ejecución de algoritmos.
-3. **Projects**: framework flexible para proyectos avanzados.
+**Decisión clave: Python.** Bird y Loper argumentan que Python ofrece:
+
+- Curva de aprendizaje suave (no requiere expertise en tipos, memoria, builds).
+- Sintaxis transparente que se parece al pseudocódigo de los libros de texto.
+- Buen manejo de strings y unicode.
+- Generadores (introducidos en Python 2.2, popularizados en 2.4) que permiten implementaciones interactivas y *lazy* de algoritmos.
+- Librería estándar fuerte (Tkinter para GUI, módulos numéricos, etc.).
+
+En 2006 este "Python para NLP" era una apuesta — el lenguaje aún no dominaba ML. Hoy parece obvio.
 
 ---
 
-## Ideas principales
+## Contribución central
 
-### 1. Arquitectura "blackboard" sobre `Token`
+NLTK aporta tres cosas que en conjunto cambiaron cómo se enseña y prototipa NLP:
+
+1. **Un suite de módulos minimal-coupling.** Una jerarquía plana donde cada módulo (tokenizer, tagger, parser, chunker, classifier, …) implementa una interfaz limpia y puede usarse independiente de los demás.
+2. **Una arquitectura de "blackboard" sobre la clase `Token`.** En vez de un pipeline donde cada etapa descarta el input de la previa, los `Token`s acumulan propiedades (`TEXT`, `TAG`, `SUBTOKENS`, `SENSE`, etc.) de manera monotónica. Esto **anticipa** ideas que aparecerían más tarde en spaCy (`Doc.tensor` con anotaciones acumuladas) y en HuggingFace `Datasets` (columnas que se van agregando).
+3. **Una colección integrada de corpora, datasets y demos GUI.** Antes había que descargar Brown desde una cinta, configurar Penn Treebank con una licencia, etc. NLTK los empaqueta en `nltk-data` con una API uniforme.
+
+---
+
+## Arquitectura y diseño
+
+### La clase `Token` como tipo central
 
 ```python
 >>> from nltk.token import *
+>>> Token(TEXT="Hello World!")
+<Hello World!>
+>>> Token(TEXT="python", TAG="NN")
+<python/NN>
 >>> tok = Token(TEXT="Hello World!")
 >>> WhitespaceTokenizer().tokenize(tok)
 >>> print(tok['SUBTOKENS'])
 [<Hello>, <World!>]
 ```
 
-Cada `Token` es un mapping parcial de propiedades (`TEXT`, `TAG`, `SUBTOKENS`, `SENSE`, etc.). Las tareas **acumulan** propiedades monotónicamente — el tokenizer agrega `SUBTOKENS`, el tagger agrega `TAG` a cada subtoken, el parser agrega `TREE`. **No se descarta información previa**.
+Cada `Token` es un *mapping parcial* de nombres de propiedad a valores. Esta abstracción es **deliberadamente más laxa que un struct**: cualquier tarea puede agregar propiedades sin que las demás se rompan.
 
-Contraste con arquitectura pipeline tradicional (GATE, OpenNLP): cada etapa recibe solo el output anterior, perdiendo contexto. El blackboard de NLTK preserva todo y permite **revisitar decisiones tempranas** con info posterior.
+Comparación con arquitecturas alternativas:
 
-Esta abstracción anticipó ideas que aparecerían más tarde: `spacy.tokens.Doc` con atributos extensibles, `transformers.tokenization_utils.BatchEncoding` con tensores acumulados.
+- **Pipeline (común en GATE, OpenNLP):** Tokenizer → Tagger → Parser, cada etapa toma el output anterior como string/lista. Se pierde información del paso previo.
+- **Blackboard (NLTK):** Tokenizer agrega `SUBTOKENS`. Tagger agrega `TAG` a cada subtoken. Parser agrega `TREE`. Todo coexiste. Permite que un componente posterior reconsidere decisiones tempranas.
 
-### 2. Interfaces uniformes con sufijo `I`
-
-`ParserI`, `TokenizerI`, `TaggerI`, etc. Cada interfaz define un *action method*:
-
-- `ParserI.parse(sentence)`
-- `TokenizerI.tokenize(text)`
-- `TaggerI.tag(tokens)`
-
-Y *extended action methods*: `parse_n(sentence, n)` para top-N parsings, `xtokenize(text)` para iterator lazy.
-
-Esto permite **intercambiar implementaciones** sin cambiar el código cliente: `PorterStemmer` vs `SnowballStemmer` vs `WordNetLemmatizer` cumplen la misma interface conceptual.
-
-### 3. Suite de módulos minimal-coupling
+### Módulos principales
 
 | Módulo | Propósito |
 |---|---|
 | `nltk.token`, `nltk.tokenizer` | Token data structure, WhitespaceTokenizer, RegexpTokenizer |
-| `nltk.corpus` | Brown, Treebank, Gutenberg, WordNet, stopwords |
+| `nltk.corpus` | Brown, Treebank, Gutenberg, WordNet, stopwords, Names, Genesis, Inaugural, … |
 | `nltk.tagger` | POS taggers (default, lookup, regexp, n-gram, Brill) |
-| `nltk.parser` | Chart parsers, recursive descent, shift-reduce, PCFG, chunk |
-| `nltk.probability` | FreqDist, ConditionalFreqDist, smoothing |
+| `nltk.parser` | Chart parsers, recursive descent, shift-reduce, probabilistic, chunk parsers |
+| `nltk.probability` | FreqDist, ConditionalFreqDist, ProbDistI, suavizado |
 | `nltk.stemmer` | Porter, Lancaster, Snowball |
-| `nltk.cfg` | Context-free grammars, PCFG |
+| `nltk.cfg` | Gramáticas libres de contexto y PCFG |
+| `nltk.featurestruct` | Estructuras de rasgos para gramáticas unification-based |
 | `nltk.sense` | Word-sense disambiguation |
-| `nltk.draw` | GUI demos: chart parsing, árboles, FSA |
+| `nltk.draw` | Visualizadores GUI interactivos (chart parsing, árboles, FSA) |
+| `nltk.eval` | Métricas estándar (precision, recall, accuracy, edit distance) |
 
-Cada módulo es **mínimamente dependiente** de los otros. Podés usar solo el tokenizer sin importar el parser.
+Las interfaces se distinguen con un sufijo `I` mayúsculo: `ParserI`, `TokenizerI`, `TaggerI`. Cada interfaz tiene un *action method* (`parse`, `tokenize`, `tag`) y opcionalmente *extended action methods* (`parse_n` que devuelve los top-N parsings, `xtokenize` que devuelve un iterador en lugar de una lista).
 
-### 4. Corpora preempaquetados (15+)
+### Corpora distribuidos
+
+NLTK 1.4 incluía ya 15 corpora preempaquetados:
 
 | Corpus | Tamaño | Uso típico |
 |---|---|---|
-| Brown Corpus | 1.15M tokens, 15 géneros, POS-tagged | Entrenar taggers, clasificación |
+| Brown Corpus | 1.15M tokens, 15 géneros, taggeado | Entrenar taggers, clasificación de texto |
 | Penn Treebank (sample) | 40k tokens, taggeado + parseado | Desarrollar parsers |
-| Project Gutenberg (selection) | 1.7M tokens, 14 textos clásicos | Modelado de lenguaje |
+| Project Gutenberg (selection) | 1.7M tokens, 14 textos | Modelado de lenguaje, clasificación |
+| CoNLL-2000 Chunking | 270k tokens, chunkeado | Entrenar chunkers |
 | WordNet 1.7 | 180k palabras en red semántica | WSD, NL understanding |
-| Stopwords Corpus | 2400 palabras en 11 idiomas | IR, text classification |
-| CoNLL-2000 Chunking | 270k tokens, chunkeado | Chunker training |
+| Stopwords Corpus | 2400 stopwords en 11 lenguajes | Information retrieval |
+| Names Corpus | 8k nombres (m/f) | Clasificación |
+| Roget's Thesaurus | 200k tokens | WSD |
+| SEMCOR, SENSEVAL-2 | 880k / 600k tokens, POS + sense | WSD |
+| NIST IEER (selection) | 63k tokens, NER markup | Entrenar reconocedores de entidades |
+| PP Attachment Corpus | 28k preposicionales | Parser development |
+| 20 Newsgroups (selection) | 4000 posts | Text classification |
+| Levin Verb Index | 3k verbos | Parser development |
+| Wordlist Corpus | 960k palabras, 20k afijos | Spell checking |
 
-Antes de NLTK había que **conseguir cada corpus por separado**, lidiar con formatos distintos, escribir parsers ad-hoc. NLTK lo unificó.
-
-### 5. Diseño pedagógico controvertido pero efectivo
-
-`from nltk.book import *` carga 9 textos preprocesados (Moby Dick = `text1`, Sense and Sensibility = `text2`, etc.) como variables globales. Esto **viola buenas prácticas** Python (imports con `*`, variables globales) pero funciona perfectamente para el primer día de clase: el estudiante escribe `text1.concordance("whale")` y ve algo interesante sin entender qué es un módulo.
-
-Para producción real, **nunca** harías esto. Cargarías corpora explícitamente. Pero para enseñanza, es genial.
-
----
-
-## Resultados y adopción
-
-El paper de 2006 es un **system paper**, no experimental. La validación es la **adopción institucional**: 13 universidades documentadas usando NLTK en cursos (MIT, Edinburgh, UPenn, Melbourne, UNAM México, Amsterdam, Pittsburgh, Simon Fraser, etc.).
-
-A 2026:
-- **>250,000 descargas mensuales** del paquete `nltk` en PyPI.
-- **Libro gratuito** *Natural Language Processing with Python* (Bird, Klein, Loper 2009) usado como texto en cursos introductorios de NLP en todo el mundo.
-- Soporte sostenido hasta versión actual NLTK 3.9 (2024).
+Esto es importante: NLTK no es "una librería para hacer NLP" — es una librería **+ una colección de datos + tutoriales + demos** todo empaquetado para que un estudiante pueda ejecutar `nltk.download()` y tener todo lo necesario para una clase.
 
 ---
 
-## Limitaciones reconocibles
+## Validación e impacto inicial
 
-- **Performance**: NLTK está optimizado para legibilidad pedagógica, no velocidad. Para producción spaCy es 10-100x más rápido.
-- **Modelos pobres frente al DL moderno**: los taggers y parsers NLTK son estadísticos clásicos (Brill, HMM, n-gram); no compiten con Transformers en accuracy.
-- **APIs inconsistentes entre módulos**: el precio de los "minimally interdependent modules" es que `nltk.tag`, `nltk.parse`, `nltk.classify` tienen patrones de uso ligeramente distintos.
-- **No multilingüe nativo**: corpora y modelos preempaquetados son principalmente inglés.
-- **Sin embeddings nativos**: NLTK no provee word2vec, GloVe, BERT.
+El paper de 2006 es un *system paper*, no un paper de resultados experimentales. La "validación" es la adopción institucional. La tabla 2 del paper lista 13 universidades que ya usaban NLTK en cursos:
+
+- Graz (Austria), Macquarie (Australia), MIT (USA), UNAM (México), Ohio State, Amsterdam, Colorado, Edinburgh, Magdeburg, Malta, Melbourne, UPenn, Pittsburgh, Simon Fraser (Canada).
+
+También documenta contribuciones de terceros que ya estaban integradas:
+
+- **Brill tagger** (Chris Maloof) — transformación basada en reglas con aprendizaje supervisado.
+- **HMM tagger** (Trevor Cohn, Phil Blunsom).
+- **Parser GPSG con rasgos** (Rob Speer, Bob Berwick).
+- **Analizador morfológico FST** (Carl de Marcken, Beracah Yankama, Bob Berwick).
+- **Clasificadores decision list y decision tree** (Trevor Cohn).
+- **Discourse Representation Theory** (Edward Ivanovic).
+
+---
+
+## Limitaciones
+
+Aunque el paper no las discute explícitamente, las limitaciones de NLTK que se han hecho evidentes con los años:
+
+1. **Performance.** NLTK está optimizado para legibilidad pedagógica, no velocidad. Para producción de gran escala, spaCy (4-100× más rápido en parsing y NER) o Stanza son mejores opciones.
+2. **Modelos preentrenados pobres comparados con DL moderno.** Los taggers y parsers de NLTK son estadísticos clásicos (Brill, HMM, n-gram); no compiten con Transformer-based en accuracy.
+3. **APIs inconsistentes entre módulos.** El precio de los "minimally interdependent modules" es que `nltk.tag`, `nltk.parse`, `nltk.classify` tienen patrones de uso ligeramente distintos.
+4. **No multilingüe nativo.** Los corpora y modelos preempaquetados son principalmente en inglés; soporte para otros idiomas depende de stemmers y stopwords listados pero pocos taggers/parsers preentrenados.
+5. **WordNet-centric.** Mucho del módulo `sense` y de los recursos semánticos asumen WordNet, que existe en buena cobertura solo para inglés.
+6. **Sin embeddings nativos.** En 2006 esto no era una crítica, pero para 2014+ NLTK se quedó atrás respecto a gensim (word2vec), fastText, BERT, etc.
 
 ---
 
 ## Por qué importa hoy
 
-- **Empujó la adopción de Python** como lengua franca del NLP. Apuesta arriesgada en 2001 que se volvió obvia para 2010.
-- **Arquitectura blackboard** sobre `Token` influyó en spaCy y HuggingFace Transformers.
-- **NLTK sigue siendo el toolkit pedagógico de elección** para enseñar NLP clásico — incluyendo este lab UC.
-- **Las funciones que usás cotidianamente** (`word_tokenize`, `sent_tokenize`, `pos_tag`, `FreqDist`, `stopwords`, `PorterStemmer`, `WordNetLemmatizer`) son herederas directas de las decisiones de este paper.
+NLTK definió **la lengua franca pedagógica del NLP por casi 20 años**. Algunos efectos medibles:
 
-Para **producción seria** en 2026, spaCy o Transformers superan a NLTK en performance y accuracy. Pero como **caja de herramientas exploratoria** y **plataforma de enseñanza**, NLTK sigue siendo irreemplazable.
+- El libro *Natural Language Processing with Python* (Bird, Klein & Loper, 2009) es texto obligatorio en cursos introductorios de NLP en todo el mundo (~250k descargas/año en su versión gratuita).
+- Empujó la adopción de Python como lengua franca del NLP (precediendo y allanando el camino para scikit-learn 2007, gensim 2009, spaCy 2015, Transformers 2018).
+- La arquitectura blackboard sobre `Token` se ve reflejada en `spacy.tokens.Doc` (atributos extensibles) y en `transformers.tokenization_utils.BatchEncoding`.
+- Funciones como `concordance`, `dispersion_plot`, `FreqDist.plot`, `sent_tokenize`, `word_tokenize`, `PorterStemmer`, `stopwords.words('spanish')` se mantuvieron prácticamente iguales en versiones posteriores — uno de los proyectos open-source con compatibilidad hacia atrás más estables en NLP.
+
+Citas: a mayo de 2026, Google Scholar reporta **~6700 citas para el paper de 2006** y **~12k citas combinadas para el libro de 2009 y el paper de 2002**. Es probablemente el paper más citado en NLP pedagógico jamás escrito.
+
+---
+
+## Lecturas relacionadas
+
+- Loper & Bird (2002), *NLTK: The Natural Language Toolkit*, ACL Workshop on Effective Tools and Methodologies for Teaching NLP — la versión "0" del paper.
+- Bird, Klein & Loper (2009), *Natural Language Processing with Python*, O'Reilly. El libro de referencia (gratuito en nltk.org/book).
+- Loper (2004), *NLTK: Building a Pedagogical Toolkit in Python*, PyCon DC.
+
+El contraste con spaCy (camino opuesto: pipeline industrial sobre blackboard pedagógico) se trabaja en el laboratorio asociado.
 
 ---
 
 ## Notas y enlaces
 
-- Libro gratuito: *Natural Language Processing with Python* — disponible en `nltk.org/book`.
-- Repositorio: `github.com/nltk/nltk`.
-- Versión actual (2024): NLTK 3.9, requiere Python 3.8+.
-- Sucesor pedagógico moderno: NLTK + scikit-learn + HuggingFace forman el stack didáctico estándar 2026.
+- **Clase asociada**: [Clase 16 - NLP clásico, NLTK, BoW, embeddings](/clases/clase-16).
+- **Laboratorio asociado**: [Lab 16 - Pipeline NLP con NLTK/spaCy/NLLB/VADER](/laboratorios/lab-16).
+- **Fundamento relacionado**: [Tokenización clásica](/fundamentos/tokenizacion-clasica).
+- **Cita BibTeX**:
 
-Ver fundamentos: [Tokenización clásica](/fundamentos/tokenizacion-clasica) · [Bag of Words](/fundamentos/bag-of-words). Ver papers relacionados: [Porter Stemmer](/papers/porter-stemmer-1980) · [WordNet](/papers/wordnet-miller-1995) · [Punkt](/papers/punkt-kiss-strunk-2006).
+```bibtex
+@inproceedings{bird2006nltk,
+  title={NLTK: the natural language toolkit},
+  author={Bird, Steven and Loper, Edward},
+  booktitle={Proceedings of the COLING/ACL on Interactive presentation sessions},
+  pages={69--72},
+  year={2006}
+}
+```
