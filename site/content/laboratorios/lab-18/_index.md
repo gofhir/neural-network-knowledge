@@ -173,6 +173,7 @@ Limpio:   "fun furious new mantra bay breakers getting rambunctious..."
   {{< card link="/clases/clase-18" title="Clase 18 - Teoría" subtitle="Word2Vec, GloVe, Skip-Thought" icon="academic-cap" >}}
   {{< card link="/clases/clase-18/profundizacion" title="Profundización matemática" subtitle="Derivaciones de Skip-gram, PMI, etc." icon="academic-cap" >}}
   {{< card link="/laboratorios/lab-17" title="Lab 17 - Pose Recognition" subtitle="Lab anterior" icon="academic-cap" >}}
+  {{< card link="/laboratorios/lab-19" title="Lab 19 - Deployment y MLOps con BentoML" subtitle="Lab siguiente: serving + benchmark de latencia/concurrencia + compresión JPEG" icon="academic-cap" >}}
 {{< /cards >}}
 
 ---

@@ -13,6 +13,7 @@ Cierre del bloque de ingenieria del diplomado. Recorrido por la cadena completa 
 {{< cards >}}
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 59 diapositivas: GPUs, Cloud, Docker, Vertex AI, serving, MLOps" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Memoria GPU, autoscaling, FSDP/pmap, cuantizacion, drift, KFP" icon="beaker" >}}
+  {{< card link="/laboratorios/lab-19" title="Laboratorio 19 - BentoML + benchmark" subtitle="Construir el endpoint, medir latencia/throughput, atacar el bottleneck con compresion JPEG" icon="academic-cap" >}}
   {{< card link="/clases/clase-20" title="Clase siguiente: ELMo, BERT, GPT, ChatGPT" subtitle="Cierre del diplomado con LLMs" icon="arrow-right" >}}
 {{< /cards >}}
 
