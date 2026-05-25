@@ -41,4 +41,12 @@ Segunda clase del bloque de NLP. La clase introduce el **modelo de lenguaje (LM)
   {{< card link="/papers/sgns-implicit-mf-levy-goldberg-2014" title="SGNS as Implicit MF (2014)" subtitle="Levy & Goldberg - SGNS factoriza PMI shifted" icon="document-text" >}}
   {{< card link="/papers/skip-thought-kiros-2015" title="Skip-Thought (2015)" subtitle="Kiros - sentence embeddings autosupervisados" icon="document-text" >}}
   {{< card link="/papers/analogies-explained-allen-hospedales-2019" title="Analogies Explained (2019)" subtitle="Allen & Hospedales - prueba rigurosa de las analogias" icon="document-text" >}}
+  {{< card link="/papers/linguistic-regularities-levy-goldberg-2014" title="Linguistic Regularities / 3CosMul (2014)" subtitle="Levy & Goldberg - fórmula (4) que ejecuta most_similar_cosmul" icon="document-text" >}}
+  {{< card link="/papers/contrastive-analogies-ri-lee-verma-2023" title="Contrastive Analogies (2023)" subtitle="Ri, Lee & Verma - Teorema 1: líneas paralelas con ζ" icon="document-text" >}}
+{{< /cards >}}
+
+## Laboratorio asociado
+
+{{< cards >}}
+  {{< card link="/laboratorios/lab-18" title="Lab 18 - Word Embeddings en acción" subtitle="3CosMul, doesnt_match, PCA y sentiment analysis sobre Sentiment140" icon="academic-cap" >}}
 {{< /cards >}}

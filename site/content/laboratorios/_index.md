@@ -20,4 +20,5 @@ Exploracion en profundidad de los laboratorios del diplomado: librerias, concept
   {{< card link="lab-14" title="Lab 14 - Transformers e Interpretabilidad + CLIP" subtitle="BETO + bertviz (Parte 1) y CLIP zero-shot sobre Food101/Cars (Parte 2)" icon="eye" >}}
   {{< card link="lab-15" title="Lab 15 - Faster R-CNN: Inferencia COCO + Fine-tuning Raccoon" subtitle="Detector pre-entrenado en COCO 2017 y fine-tuning para detectar mapaches" icon="cube-transparent" >}}
   {{< card link="lab-17" title="Lab 17 - Pose Recognition: comparación de modelos + clasificación de acciones" subtitle="OpenPifPaf vs OpenPose como feature extractors + MLP para clasificar acciones de Stanford 40" icon="user-group" >}}
+  {{< card link="lab-18" title="Lab 18 - Word Embeddings: analogías, doesnt_match, PCA y sentiment analysis" subtitle="Google News Word2Vec sobre Sentiment140 — 3CosMul, polisemia, suma vs promedio" icon="academic-cap" >}}
 {{< /cards >}}

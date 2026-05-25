@@ -136,6 +136,7 @@ El embedding preentrenado `GoogleNews-vectors-negative300.bin` (1.6 GB, 3M palab
 - **Sucesor teorico**: [Levy & Goldberg - SGNS as Implicit MF](/papers/sgns-implicit-mf-levy-goldberg-2014).
 - **Sucesor empirico**: [GloVe](/papers/glove-pennington-2014).
 - **Clase asociada**: [Clase 18 - Modelos de lenguaje, Word2Vec, GloVe y SkipThought](/clases/clase-18).
+- **Laboratorio asociado**: [Lab 18 - Word Embeddings en accion](/laboratorios/lab-18) (Negative Sampling sobre Google News 3M palabras).
 - **Fundamentos relacionados**: [Word2Vec](/fundamentos/word2vec), [Embeddings distribuidos](/fundamentos/embeddings-distribuidos).
 - **Cita BibTeX**:
 

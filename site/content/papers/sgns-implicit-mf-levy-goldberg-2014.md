@@ -150,8 +150,10 @@ Levy y Goldberg se convirtieron en figuras centrales del analisis de embeddings;
 
 - **Codigo**: https://bitbucket.org/yoavgo/word2vecf -- una variacion de word2vec que recibe pares pre-extraidos.
 - **Predecesores**: [Word2Vec Distributed](/papers/word2vec-distributed-mikolov-2013), [GloVe](/papers/glove-pennington-2014).
-- **Sucesor teorico**: [Allen & Hospedales - Analogies Explained](/papers/analogies-explained-allen-hospedales-2019).
+- **Sucesor teorico**: [Allen & Hospedales - Analogies Explained](/papers/analogies-explained-allen-hospedales-2019), [Ri-Lee-Verma - Contrastive Analogies](/papers/contrastive-analogies-ri-lee-verma-2023).
+- **Paper hermano**: [Levy & Goldberg 2014 CoNLL - Linguistic Regularities (3CosMul)](/papers/linguistic-regularities-levy-goldberg-2014).
 - **Clase asociada**: [Clase 18 - Modelos de lenguaje, Word2Vec, GloVe y SkipThought](/clases/clase-18).
+- **Laboratorio asociado**: [Lab 18 - Word Embeddings en accion](/laboratorios/lab-18).
 - **Fundamentos relacionados**: [Word2Vec](/fundamentos/word2vec), [Embeddings distribuidos](/fundamentos/embeddings-distribuidos).
 - **Cita BibTeX**:
 

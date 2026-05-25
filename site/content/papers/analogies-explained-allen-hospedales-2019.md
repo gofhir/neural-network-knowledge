@@ -143,7 +143,9 @@ Sucesores que extienden estas ideas:
 - **Blog del autor**: ["Analogies Explained" Explained](https://carl-allen.github.io/nlp/2019/07/01/explaining-analogies-explained.html) -- explicacion informal del paper.
 - **Extension 2023**: ["Contrastive Loss is All You Need to Recover Analogies as Parallel Lines"](https://arxiv.org/abs/2306.08221).
 - **Predecesores**: [Levy & Goldberg - SGNS as MF](/papers/sgns-implicit-mf-levy-goldberg-2014), [GloVe](/papers/glove-pennington-2014).
+- **Sucesor**: [Ri-Lee-Verma - Contrastive Analogies (2023)](/papers/contrastive-analogies-ri-lee-verma-2023) extiende a lineas paralelas con factor ζ.
 - **Clase asociada**: [Clase 18 - Modelos de lenguaje, Word2Vec, GloVe y SkipThought](/clases/clase-18).
+- **Laboratorio asociado**: [Lab 18 - Word Embeddings en accion](/laboratorios/lab-18) (verifica empiricamente ζ=1.16 en plot king/queen/man/woman).
 - **Fundamentos relacionados**: [Word2Vec](/fundamentos/word2vec), [Embeddings distribuidos](/fundamentos/embeddings-distribuidos).
 - **Cita BibTeX**:
 

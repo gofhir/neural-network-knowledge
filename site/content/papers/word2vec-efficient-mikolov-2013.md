@@ -138,6 +138,7 @@ La filosofia "modelos simples + mucha data" guio toda la era de pre-training mas
 - **Continuation**: [Word2Vec Distributed Representations](/papers/word2vec-distributed-mikolov-2013) introduce negative sampling, subsampling, phrases.
 - **Analisis teorico**: [Levy & Goldberg 2014](/papers/sgns-implicit-mf-levy-goldberg-2014) demuestra que SGNS factoriza PMI shifted.
 - **Clase asociada**: [Clase 18 - Modelos de lenguaje, Word2Vec, GloVe y SkipThought](/clases/clase-18).
+- **Laboratorio asociado**: [Lab 18 - Word Embeddings en accion](/laboratorios/lab-18) (Skip-gram entrenado sobre Google News).
 - **Fundamentos relacionados**: [Word2Vec](/fundamentos/word2vec), [Embeddings distribuidos](/fundamentos/embeddings-distribuidos).
 - **Cita BibTeX**:
 
