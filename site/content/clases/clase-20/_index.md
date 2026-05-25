@@ -19,6 +19,7 @@ La clase se complementa con la [Clase 14 (Transformers)](/clases/clase-14) — q
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math detallado de biLM, MLM, atencion causal vs bidireccional, RLHF y Bradley-Terry" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="ELMo mini, BERT mini, GPT mini en PyTorch + TensorFlow + JAX, fine-tuning BETO, RLHF toy" icon="code" >}}
   {{< card link="/clases/clase-16" title="Clase anterior: Introduccion a NLP" subtitle="Tokenizacion, BoW, sentiment, Zipf, Heaps" icon="arrow-left" >}}
+  {{< card link="/clases/clase-21" title="Clase siguiente: Scene Text Recognition" subtitle="STR pipeline, datasets, ABCNet con curvas Bezier" icon="arrow-right" >}}
   {{< card link="/clases/clase-14" title="Base: Transformers" subtitle="Self-attention, encoder, decoder, positional encoding" icon="academic-cap" >}}
 {{< /cards >}}
 

@@ -107,6 +107,35 @@ Tres tensiones recorren toda la historia: (1) cómo construir **invariancia a tr
       Xu et al.: ViT plain como backbone + decoder lightweight, 80.9 AP en COCO test-dev (ViTPose-G de 1B params). **Por qué importó:** demostró que pose no requiere arquitecturas multi-resolución (HRNet); el ViT pretrained con MAE carga toda la representación. Nuevo SOTA con simplicidad.
     {{< /hito >}}
   {{< /era >}}
+  {{< era name="Era Scene Text Recognition" years="2006-2020" >}}
+    {{< hito year="2006" name="CTC (Graves)" status="covered" link="/papers/ctc-graves-2006" >}}
+      Graves, Fernández, Gomez, Schmidhuber: Connectionist Temporal Classification — entrena RNN sobre secuencias **sin alineamiento explícito** entre input frames y labels. "Blank symbol" + forward-backward DP en $O(T \cdot U)$. **Por qué importó:** llave que abrió ASR end-to-end (DeepSpeech), STR (CRNN), handwriting recognition. Aún competitivo en streaming.
+    {{< /hito >}}
+    {{< hito year="2014" name="Synth90k (Jaderberg)" status="minimal" >}}
+      Jaderberg et al.: 9 millones de palabras sintéticas con fondos arbitrarios para entrenar STR. **Por qué importó:** desbloqueó deep learning de scene text — antes la annotation manual saturaba; el sintético escaló a millones de ejemplos.
+    {{< /hito >}}
+    {{< hito year="2015" name="Fast R-CNN" status="covered" link="/papers/fast-rcnn-girshick-2015" >}}
+      Girshick: bisagra entre R-CNN multi-stage y Faster R-CNN end-to-end. Introduce **RoI Pooling**, multi-task loss (softmax + Smooth L1) y joint training. **Por qué importó:** patrón "shared backbone + per-RoI sibling heads" se vuelve universal — base de Mask R-CNN, RoIAlign y BezierAlign en ABCNet.
+    {{< /hito >}}
+    {{< hito year="2015" name="Spatial Transformer Networks (STN)" status="covered" link="/papers/stn-jaderberg-2015" >}}
+      Jaderberg, Simonyan, Zisserman, Kavukcuoglu (DeepMind): módulo diferenciable que aprende transformaciones espaciales (afín, proyectiva, TPS) sólo con la pérdida de la tarea final. **Por qué importó:** base de rectificación en ASTER/MORAN, idea matriz de Deformable Convolutions, predecesor conceptual de attention espacial.
+    {{< /hito >}}
+    {{< hito year="2017" name="CRNN (Shi)" status="covered" link="/papers/crnn-shi-2017" >}}
+      Shi, Bai, Yao: combinación icónica **CNN + BLSTM + CTC** end-to-end para scene text recognition. **Por qué importó:** se volvió el baseline universal del campo; casi todos los STR recognizers post-2015 son variantes (ASTER, MORAN, SAR, NRTR, ABINet, PARSeq).
+    {{< /hito >}}
+    {{< hito year="2017" name="Total-Text dataset" status="covered" link="/papers/total-text-chng-2017" >}}
+      Ch'ng & Chan (ICDAR 2017): primer dataset focado en **texto curvado** en escenas naturales. 1555 imágenes, polygon N-points annotation, 3 orientaciones simultáneas. **Por qué importó:** detonó la generación de spotters para irregular text (TextSnake, Mask TextSpotter, ABCNet). Sin Total-Text no hay curved STR moderno.
+    {{< /hito >}}
+    {{< hito year="2019" name="FCOS (Tian)" status="covered" link="/papers/fcos-tian-2019" >}}
+      Tian, Shen, Chen, He: primer detector one-stage **anchor-free** competitivo. Per-pixel prediction + centerness branch + multi-level FPN assignment. **Por qué importó:** elimina hyperparams de anchors; generaliza a annotations no-rectangulares (polygon, curves). ABCNet lo usa como backbone directo.
+    {{< /hito >}}
+    {{< hito year="2019" name="GIoU (Rezatofighi)" status="covered" link="/papers/giou-rezatofighi-2019" >}}
+      Rezatofighi et al.: Generalized IoU como **métrica y loss diferenciable** acotada en $[-1, 1]$, con gradient no-cero cuando las cajas no se solapan. **Por qué importó:** arregla el gradient mismatch entre $\ell_2$ y IoU; base de DIoU/CIoU, estándar en YOLOv4+, RTMDet, text spotters modernos.
+    {{< /hito >}}
+    {{< hito year="2020" name="ABCNet (Liu)" status="deep" link="/papers/abcnet-liu-2020" >}}
+      Liu, Chen, Bian, Shen, Liu (CVPR 2020 oral): primer pipeline **end-to-end real-time** de scene text spotting con **curvas Bézier cúbicas** (4 control points × 2 lados = 8 puntos) + **BezierAlign** + recognizer attention-based. F-measure 69.5 (None) / 78.4 (Full) en Total-Text a 6.9 FPS multi-scale, 22.8 FPS single-scale. **Por qué importó:** unifica detección anchor-free + representación paramétrica de texto + alineación geométrica + recognition en un modelo. Inspira ABCNet++, TESTR, SPTS — la familia "Bezier-based STR".
+    {{< /hito >}}
+  {{< /era >}}
   {{< era name="Era Transformer" years="2020-presente" >}}
     {{< hito year="2020" name="Vision Transformer (ViT)" status="deep" link="/fundamentos/vision-transformer" >}}
       Aplica un Transformer puro sobre parches de la imagen. Con suficiente data y escala, supera a CNNs sin sesgos inductivos visuales explícitos.
@@ -214,6 +243,37 @@ En paralelo, **face recognition** se reinventó con [FaceNet](/papers/facenet-sc
 
 La frontera es **3D body recovery** (HMR, VIBE, 4DHumans) que fittea SMPL completo desde una imagen 2D, **animal pose** (Continuous Surface Embeddings), y **vision-language pose** (modelos que aceptan instrucciones textuales para inferir poses category-agnostic). Toda esta era está plagada de implicaciones éticas — vigilancia masiva, aplicaciones militares, sesgos demográficos — que el ingeniero responsable debe contemplar y a menudo rechazar.
 
+## Era de Scene Text Recognition (2006-2020)
+
+### Problema heredado
+
+Las eras 2-4 perfeccionaron clasificación, detección y segmentación de **objetos genéricos**. Pero el texto incrustado en escenas naturales (señalizaciones, vitrinas, productos, vehículos) presenta un problema cualitativamente distinto del OCR clásico sobre documentos escaneados: el fondo es arbitrario, la fuente es decorativa, la orientación es libre, y la iluminación es no-controlada. Las CNN tradicionales fallaban en lectura cuando el texto se curvaba severamente.
+
+### Idea clave
+
+El campo converge sobre un **pipeline canónico de 4 stages** (preprocessing → feature extraction → sequence modeling → prediction), donde cada slot tiene su menú de opciones:
+
+- **Preprocessing**: rectificar texto curvado con [STN](/papers/stn-jaderberg-2015) o TPS aprendido sólo con la pérdida final.
+- **Feature extraction**: backbones VGG, ResNet, DenseNet — la misma evolución de la era CNN.
+- **Sequence modeling**: BiLSTM (caballo de batalla histórico, [CRNN](/papers/crnn-shi-2017)) o Transformer (post-2019).
+- **Prediction**: [CTC](/papers/ctc-graves-2006) — paralelo y rápido pero monótono — vs **attention decoder** — no-monótono y mejor en curved text pero secuencial.
+
+En paralelo, los **datasets sintéticos** (Synth90k 2014, SynthText 2016, UnrealText 2020) democratizaron el deep learning: la annotation manual nunca pudo escalar a millones de instancias, pero la síntesis sí. Y el dataset [Total-Text](/papers/total-text-chng-2017) (2017) detonó la era curved-text al introducir annotations polygon de N puntos.
+
+La síntesis de toda la era llega con **[ABCNet](/papers/abcnet-liu-2020)** (Liu et al. CVPR 2020): combina detección anchor-free ([FCOS](/papers/fcos-tian-2019)), representación de texto curvado con **curvas Bézier cúbicas** (4 control points × 2 lados), una alineación geométrica novedosa (**BezierAlign**, generalización de RoIAlign), y un recognizer attention-based — todo en un modelo end-to-end real-time. La contribución del sampling sobre la curva (BezierAlign) aporta **+23.5 puntos F-measure** sobre Horizontal sampling — el delta más grande de las ablations.
+
+### Qué viene
+
+Post-2020 el campo se diversificó:
+
+- **TrOCR** (Microsoft 2021): encoder ViT + decoder Transformer + pretraining masivo. Foundation model para text recognition.
+- **PARSeq** (Bautista 2022): permutation language modeling — autoregressive sin orden fijo.
+- **ABINet** (Fang 2021): language modeling explícito sobre top de visual features.
+- **SPTS / TESTR** (2022): query-based end-to-end inspirados en DETR.
+- **MaskOCR / DiT** (2022-2023): self-supervised pretraining masivo.
+
+La frontera actual: integrar STR como capacidad nativa de **foundation models multimodales** (GPT-4V, Claude Vision, Gemini) — el OCR se vuelve subtarea de comprensión visual general.
+
 ## Era 5 — Vision Transformer y foundation models (2020-presente)
 
 ### Problema heredado
@@ -265,6 +325,10 @@ Las apuestas activas en visión hoy: **modelos generativos de video con coherenc
 **Fundamentos:**
 - [Redes convolucionales](/fundamentos/redes-convolucionales).
 - [Detección de objetos](/fundamentos/deteccion-de-objetos) — IoU, NMS, anchors, RPN, RoIAlign, FPN, family tree completa.
+- [Anchor-Free Detection](/fundamentos/anchor-free-detection) — FCOS, CenterNet, CornerNet, DETR.
+- [Scene Text Recognition](/fundamentos/scene-text-recognition) — pipeline 4-stages, datasets, métricas.
+- [Curvas de Bézier](/fundamentos/bezier-curves) — Bernstein polynomials, control points, representación de texto curvado.
+- [CTC Loss](/fundamentos/ctc-loss) — Connectionist Temporal Classification.
 - [Vision Transformer](/fundamentos/vision-transformer).
 - [Transfer learning](/fundamentos/transfer-learning).
 - [Data augmentation](/fundamentos/data-augmentation).
@@ -288,6 +352,15 @@ Las apuestas activas en visión hoy: **modelos generativos de video con coherenc
 - [BlazePose (Bazarevsky 2020)](/papers/blazepose-bazarevsky-2020) — detector-tracker mobile single-person, MediaPipe Pose.
 - [ViTPose (Xu 2022)](/papers/vitpose-xu-2022) — SOTA pose con ViT plain.
 - [ViT (Dosovitskiy 2021)](/papers/vit-dosovitskiy-2021).
+- [Fast R-CNN (Girshick 2015)](/papers/fast-rcnn-girshick-2015) — RoI Pooling + multi-task loss.
+- [STN (Jaderberg 2015)](/papers/stn-jaderberg-2015) — Spatial Transformer Networks.
+- [CTC (Graves 2006)](/papers/ctc-graves-2006) — Connectionist Temporal Classification.
+- [CRNN (Shi 2017)](/papers/crnn-shi-2017) — CNN+BLSTM+CTC para scene text.
+- [Total-Text (Ch'ng 2017)](/papers/total-text-chng-2017) — dataset curved text.
+- [GIoU (Rezatofighi 2019)](/papers/giou-rezatofighi-2019) — IoU diferenciable acotada.
+- [FCOS (Tian 2019)](/papers/fcos-tian-2019) — anchor-free one-stage detection.
+- [ABCNet (Liu 2020)](/papers/abcnet-liu-2020) — end-to-end Bezier curve scene text spotting.
+- [STR Survey (Chen 2020)](/papers/text-recognition-wild-chen-2020) — survey de referencia del campo.
 - [Batch Normalization (Ioffe 2015)](/papers/batch-norm-ioffe-2015).
 - [Dropout (Srivastava 2014)](/papers/dropout-srivastava-2014).
 - [Mixup (Zhang 2017)](/papers/mixup-zhang-2017).
@@ -298,9 +371,11 @@ Las apuestas activas en visión hoy: **modelos generativos de video con coherenc
 - [Laboratorio 15 — Faster R-CNN práctico](/laboratorios/lab-15) — inferencia COCO + fine-tuning para mapaches con torchvision.
 - [Clase 17 — Pose Recognition](/clases/clase-17) — keypoints, DensePose, PifPaf, ViTPose, FaceNet, ética.
 - [Laboratorio 17 — Pose Recognition práctico](/laboratorios/lab-17) — A/B test PifPaf vs OpenPose + clasificación de acciones con MLP downstream.
+- [Clase 21 — Scene Text Recognition](/clases/clase-21) — STR pipeline, datasets, ABCNet con curvas Bézier + BezierAlign + attention recognizer.
+- [Laboratorio 21 — Scene Text Recognition](/laboratorios/lab-21) — práctico con notebook ejecutado.
 - Clases sobre CNNs, ResNets y backbones modernas.
 - Clases sobre ViT y atención visual.
 
 ---
 
-*Última actualización: 2026-05-18.*
+*Última actualización: 2026-05-24.*
