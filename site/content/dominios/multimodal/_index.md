@@ -23,16 +23,31 @@ Tres tensiones definen el campo: (1) cómo **alinear modalidades sin pares anota
     {{< hito year="2015" name="Show, Attend and Tell" status="covered" link="/papers/show-attend-tell-xu-2015" >}}
       Xu et al.: añade atención sobre regiones de la imagen en cada paso del decoder. El modelo "mira" donde necesita para generar la siguiente palabra.
     {{< /hito >}}
-    {{< hito year="2015" name="VQA dataset" status="minimal" >}}
-      Antol et al.: Visual Question Answering como benchmark — *"¿De qué color es el casco?"* sobre una imagen. **Por qué importó:** forzó al campo más allá del captioning hacia razonamiento sobre imagen + texto.
+    {{< hito year="2015" name="VQA dataset" status="covered" link="/papers/vqa-antol-2015" >}}
+      Antol et al.: Visual Question Answering como benchmark — *"¿De qué color es el casco?"* sobre una imagen. **Por qué importó:** forzó al campo más allá del captioning hacia razonamiento sobre imagen + texto. Cubierto en la [Clase 23](/clases/clase-23).
+    {{< /hito >}}
+    {{< hito year="2016" name="Stacked Attention Networks" status="covered" link="/papers/stacked-attention-yang-2016" >}}
+      Yang et al.: atención espacial **multi-hop** guiada por la pregunta — razonar en varios pasos refinando dónde mirar. Antecedente directo de la top-down attention de VQA.
+    {{< /hito >}}
+    {{< hito year="2016" name="MCB (Compact Bilinear)" status="covered" link="/papers/mcb-fukui-2016" >}}
+      Fukui et al.: fusión multimodal por **bilinear pooling** aproximado con Count Sketch + FFT. Ganó el VQA Challenge 2016. Abrió la línea de fusión bilineal.
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de atención visual estructurada" years="2017-2018" >}}
     {{< hito year="2017" name="Relation Networks" status="covered" link="/papers/relation-networks-santoro-2017" >}}
       Santoro et al.: módulo que razona sobre **pares de objetos** detectados, no sobre features uniformes de la imagen. Resolvió tareas de razonamiento visual donde CNNs puras fallaban.
     {{< /hito >}}
+    {{< hito year="2017" name="VQAv2 (dataset balanceado)" status="covered" link="/papers/vqav2-goyal-2017" >}}
+      Goyal et al.: rebalancea VQA con **pares de imágenes complementarias** (misma pregunta, respuesta distinta) para neutralizar los language priors. Se vuelve el benchmark estándar. Las slides 7-8 de la [Clase 23](/clases/clase-23).
+    {{< /hito >}}
+    {{< hito year="2017" name="MUTAN (Tucker Fusion)" status="covered" link="/papers/mutan-ben-younes-2017" >}}
+      Ben-younes et al.: fusión bilineal parametrizada por **descomposición de Tucker**, controlando el trade-off expresividad/parámetros. Generaliza MCB y MLB.
+    {{< /hito >}}
     {{< hito year="2018" name="Bottom-Up and Top-Down Attention" status="covered" link="/papers/bottom-up-attention-anderson-2018" >}}
       Anderson et al.: la atención visual opera sobre regiones detectadas con Faster R-CNN, no sobre la grilla densa. Estado del arte en captioning y VQA durante 2018-2019.
+    {{< /hito >}}
+    {{< hito year="2018" name="Pythia v0.1" status="covered" link="/papers/pythia-jiang-2018" >}}
+      Jiang et al.: extiende Bottom-Up/Top-Down con mejoras incrementales (weight norm, ReLU, fusión Hadamard, ensemble) y **gana el VQA Challenge 2018**. El modelo central de la [Clase 23](/clases/clase-23).
     {{< /hito >}}
     {{< hito year="2019" name="GQA / VCR" status="minimal" >}}
       Hudson & Manning (GQA), Zellers et al. (VCR): benchmarks de razonamiento visual con preguntas composicionales y de sentido común. **Por qué importó:** revelaron lo lejos que estaban los modelos de razonar realmente.
@@ -204,10 +219,21 @@ Las apuestas activas en multimodal hoy: **modelos any-to-any** (entrada y salida
 **Papers:**
 - [Show and Tell (Vinyals 2015)](/papers/show-and-tell-vinyals-2015).
 - [Show, Attend and Tell (Xu 2015)](/papers/show-attend-tell-xu-2015).
+- [VQA (Antol 2015)](/papers/vqa-antol-2015) — el paper fundacional de Visual Question Answering.
+- [Stacked Attention (Yang 2016)](/papers/stacked-attention-yang-2016) — atención visual multi-hop.
+- [MCB (Fukui 2016)](/papers/mcb-fukui-2016) — fusión bilineal compacta.
 - [Relation Networks (Santoro 2017)](/papers/relation-networks-santoro-2017).
+- [VQAv2 (Goyal 2017)](/papers/vqav2-goyal-2017) — dataset balanceado contra language priors.
+- [MUTAN (Ben-younes 2017)](/papers/mutan-ben-younes-2017) — fusión por descomposición de Tucker.
 - [Bottom-Up Attention (Anderson 2018)](/papers/bottom-up-attention-anderson-2018).
+- [Pythia (Jiang 2018)](/papers/pythia-jiang-2018) — ganador del VQA Challenge 2018.
+- [BLEU (Papineni 2002)](/papers/bleu-papineni-2002) — métrica de evaluación de captions.
 - [CLIP (Radford 2021)](/papers/clip-radford-2021).
 - [Bahdanau attention (2015)](/papers/bahdanau-attention-2015) — antecedente de show-attend-tell.
+
+**Fundamentos:**
+- [Visual Question Answering](/fundamentos/visual-question-answering) y [Image Captioning](/fundamentos/image-captioning) — las dos tareas de la [Clase 23](/clases/clase-23).
+- [BLEU Metric](/fundamentos/bleu-metric) — la métrica de evaluación de generación.
 
 **Dominios relacionados:**
 - [Texto / NLP](/dominios/texto) — la mitad lingüística de los VLMs.
@@ -215,4 +241,4 @@ Las apuestas activas en multimodal hoy: **modelos any-to-any** (entrada y salida
 
 ---
 
-*Última actualización: 2026-05-05.*
+*Última actualización: 2026-06-01.*

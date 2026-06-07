@@ -17,6 +17,7 @@ La clase complementa la [Clase 14 (Transformers)](/clases/clase-14) con la arqui
 {{< cards >}}
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 67 diapositivas: task, datasets, BERTSum, T5, decoding, ROUGE, prompt engineering" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math detallada: T5 span-corruption, BERTSum oracle ROUGE, beam search, nucleus sampling, ROUGE family completa" icon="beaker" >}}
+  {{< card link="/clases/clase-23" title="Clase siguiente: VQA e Image Captioning" subtitle="Pythia, VQAv2, beam search, BLEU" icon="arrow-right" >}}
   {{< card link="/clases/clase-21" title="Clase anterior: Scene Text Recognition" subtitle="ABCNet, curvas Bezier, BezierAlign" icon="arrow-left" >}}
   {{< card link="/clases/clase-20" title="Base: ELMo, BERT, GPT, ChatGPT" subtitle="Pretrained models que potencian summarization" icon="academic-cap" >}}
   {{< card link="/clases/clase-14" title="Base: Transformers" subtitle="Encoder-decoder, self-attention, cross-attention" icon="academic-cap" >}}
