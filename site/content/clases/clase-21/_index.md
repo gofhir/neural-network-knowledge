@@ -57,7 +57,7 @@ ABCNet (Liu et al. CVPR 2020) sintetiza el material: combina un detector anchor-
 ## Recursos del laboratorio
 
 {{< cards >}}
-  {{< card link="/laboratorios/lab-21" title="Laboratorio 21" subtitle="Practico de Scene Text Recognition con notebook ejecutado" icon="academic-cap" >}}
+  {{< card link="/laboratorios/lab-21" title="Laboratorio 21" subtitle="ABCNet end-to-end: disección de la salida (beziers + recs + charset), OCR de marcas en alemán (transfer zero-shot) y minería geoespacial sobre Street View" icon="academic-cap" >}}
 {{< /cards >}}
 
 ## Dominio relacionado

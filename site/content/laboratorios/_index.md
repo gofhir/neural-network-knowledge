@@ -23,4 +23,6 @@ Exploracion en profundidad de los laboratorios del diplomado: librerias, concept
   {{< card link="lab-17" title="Lab 17 - Pose Recognition: comparación de modelos + clasificación de acciones" subtitle="OpenPifPaf vs OpenPose como feature extractors + MLP para clasificar acciones de Stanford 40" icon="user-group" >}}
   {{< card link="lab-18" title="Lab 18 - Word Embeddings: analogías, doesnt_match, PCA y sentiment analysis" subtitle="Google News Word2Vec sobre Sentiment140 — 3CosMul, polisemia, suma vs promedio" icon="academic-cap" >}}
   {{< card link="lab-19" title="Lab 19 - Entrenamiento, Deployment y MLOps con BentoML" subtitle="Caso Space Z + servidor BentoML + benchmark latencia/concurrencia + compresión JPEG (throughput 1.2 req/s saturado por JSON)" icon="cube-transparent" >}}
+  {{< card link="lab-21" title="Lab 21 - Scene Text Recognition: ABCNet end-to-end" subtitle="Disección de la salida (beziers + recs + charset) + OCR de marcas en alemán (transfer zero-shot) + minería geoespacial sobre Street View" icon="photograph" >}}
+  {{< card link="lab-22" title="Lab 22 - Summarization: Extractivo (BertSum) y Abstractivo (T5)" subtitle="Selección de oraciones vs generación, trigram blocking, decodificación, ROUGE real sobre CNN/DailyMail" icon="document-text" >}}
 {{< /cards >}}
