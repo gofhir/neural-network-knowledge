@@ -131,6 +131,38 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
       Holtzman, Buys, Du, Forbes, Choi (UW + AI2): identifica neural text degeneration; propone Top-p sampling con nucleus de tamaño dinámico. **Por qué importó:** default decoding en GPT-3/4, Claude, HuggingFace `generate()`. Resuelve el likelihood paradox y habilita open-ended generation moderna.
     {{< /hito >}}
   {{< /era >}}
+  {{< era name="Era de Question Answering" years="2015-2020" >}}
+    {{< hito year="2015" name="bAbI (Weston)" status="covered" link="/papers/babi-weston-2015" >}}
+      Weston et al. (Facebook AI): 20 toy tasks sintéticas, cada una aislando una habilidad de razonamiento (supporting facts, coreferencia, deducción, conteo, path finding). **Por qué importó:** banco de pruebas diagnóstico que impulsó las Memory Networks y la agenda de reasoning; QA como proxy de "AI-complete".
+    {{< /hito >}}
+    {{< hito year="2015" name="CNN/Daily Mail (Hermann)" status="deep" link="/papers/cnn-dailymail-hermann-2015" >}}
+      Hermann et al. (DeepMind/Oxford): primer dataset masivo de reading comprehension, construido como tarea cloze con entidades anonimizadas; introduce el Attentive Reader. **Por qué importó:** hizo viable el deep learning para QA y detonó la oleada de datasets de MRC.
+    {{< /hito >}}
+    {{< hito year="2016" name="Children's Book Test (Hill)" status="covered" link="/papers/childrens-book-test-hill-2016" >}}
+      Hill et al. (Facebook AI): cloze sobre libros infantiles variando el tipo de palabra omitida (named entities, nouns, verbs, prepositions). **Por qué importó:** el Goldilocks Principle reveló qué mide realmente un cloze task — la memoria ayuda en nombres y entidades, no en verbos ni preposiciones.
+    {{< /hito >}}
+    {{< hito year="2016" name="LAMBADA (Paperno)" status="covered" link="/papers/lambada-paperno-2016" >}}
+      Paperno et al. (CIMeC Trento): predecir la última palabra de un pasaje que los humanos solo aciertan viendo todo el contexto, no la última oración. **Por qué importó:** aisló la comprensión de discurso amplio; se volvió benchmark estándar de contexto largo reportado por GPT-2/GPT-3.
+    {{< /hito >}}
+    {{< hito year="2016" name="SQuAD (Rajpurkar)" status="deep" link="/papers/squad-rajpurkar-2016" >}}
+      Rajpurkar et al. (Stanford): 100,000+ preguntas sobre Wikipedia donde la respuesta es un span contiguo del pasaje; métricas Exact Match y token-F1. **Por qué importó:** el benchmark que estructuró el campo MRC 2016-2019, hasta que BERT superó el desempeño humano.
+    {{< /hito >}}
+    {{< hito year="2016" name="Stanford Attentive Reader (Chen)" status="deep" link="/papers/stanford-attentive-reader-chen-2016" >}}
+      Danqi Chen, Bolton, Manning (Stanford): modelo bilinear minimal $\alpha_i=\mathrm{softmax}(q^TW_s\tilde{p}_i)$ + análisis manual que mostró que CNN/DM estaba esencialmente resuelto (~25% de ruido). **Por qué importó:** arquitectura didáctica canónica de MRC (CS224n); motivó benchmarks más difíciles.
+    {{< /hito >}}
+    {{< hito year="2016" name="MS MARCO (Nguyen)" status="covered" link="/papers/ms-marco-nguyen-2016" >}}
+      Nguyen et al. (Microsoft): preguntas reales de query logs de Bing, pasajes recuperados por el buscador, respuestas generadas por humanos en lenguaje natural. **Por qué importó:** QA generativo realista; base del passage ranking y del dense retrieval moderno (DPR, ColBERT) y de RAG.
+    {{< /hito >}}
+    {{< hito year="2017" name="BiDAF (Seo)" status="deep" link="/papers/bidaf-seo-2017" >}}
+      Seo et al. (UW + AI2): atención bidireccional (Context2Query y Query2Context) con attention-flow sin resumen prematuro; predicción de span. **Por qué importó:** arquitectura de referencia de span extraction pre-BERT; popularizó la atención bidireccional en MRC.
+    {{< /hito >}}
+    {{< hito year="2018" name="SQuAD 2.0 (Rajpurkar)" status="covered" link="/papers/squad2-rajpurkar-2018" >}}
+      Rajpurkar, Jia, Liang (Stanford): agrega 53,775 preguntas sin respuesta escritas adversarialmente; el modelo debe abstenerse. **Por qué importó:** calibración y abstención como capacidad clave — "no sé" es mejor que alucinar, crítico en RAG y QA en producción.
+    {{< /hito >}}
+    {{< hito year="2020" name="DPR (Karpukhin)" status="deep" link="/papers/dpr-karpukhin-2020" >}}
+      Karpukhin et al. (Facebook AI): bi-encoder denso entrenado con in-batch negatives que reemplaza BM25 para open-domain QA; recuperación por MIPS/FAISS. **Por qué importó:** base del retrieval neuronal moderno y de RAG; reformuló el passage retrieval del pipeline IR-based factoid.
+    {{< /hito >}}
+  {{< /era >}}
   {{< era name="Era de los LLMs" years="2020-presente" >}}
     {{< hito year="2020" name="GPT-3" status="deep" link="/papers/gpt-3-brown-2020" >}}
       175B parámetros, few-shot in-context learning (Brown et al., NeurIPS 2020 Best Paper). 300B tokens entrenados sobre Common Crawl filtered + WebText2 + Books + Wikipedia. **Por qué importó:** la escala desbloqueó capacidades cualitativamente nuevas (razonamiento, programación, aritmética) sin fine-tuning; pavimentó la era de prompt engineering.
@@ -248,6 +280,28 @@ Post-2020, la era LLM absorbe summarization como capacidad nativa:
 - **Faithfulness research**: FactCC, QAGS, MFMA, G-Eval para detectar hallucinations.
 - **Long-context** (Claude 200k, Gemini 2M): leer documentos enteros sin chunking.
 
+## Era de Question Answering (2015-2020)
+
+### Problema heredado
+
+QA es una de las tareas más antiguas del NLP — del Turing Test (1950) a los sistemas de tarjetas perforadas y de interfaz a bases de datos (BASEBALL 1961, LUNAR 1973). Pero el paradigma simbólico (parsing sintáctico + lógica + bases de conocimiento) era frágil y no escalaba. Para que el deep learning atacara QA faltaban dos cosas: **datasets masivos** y una manera de **medir comprensión** en vez de coincidencia léxica.
+
+### Idea clave
+
+El campo converge sobre tres pilares entre 2015 y 2020:
+
+1. **Datasets que fuerzan comprensión.** [CNN/Daily Mail](/papers/cnn-dailymail-hermann-2015) (Hermann 2015) introdujo el cloze con entidades anonimizadas para obligar a leer el pasaje; [bAbI](/papers/babi-weston-2015) (Weston 2015) descompuso el razonamiento en 20 habilidades atómicas; [Children's Book Test](/papers/childrens-book-test-hill-2016) y [LAMBADA](/papers/lambada-paperno-2016) (2016) refinaron qué mide un cloze. El salto cualitativo fue [SQuAD](/papers/squad-rajpurkar-2016) (Rajpurkar 2016): 100k+ preguntas humanas con respuesta como span y métricas EM/F1, que se volvió el benchmark del campo. [MS MARCO](/papers/ms-marco-nguyen-2016) (Nguyen 2016) aportó realismo con preguntas reales de Bing y respuestas generadas, y [SQuAD 2.0](/papers/squad2-rajpurkar-2018) (2018) agregó la abstención con preguntas sin respuesta.
+
+2. **Arquitecturas de Machine Reading Comprehension.** La evolución es acumulativa: el [Stanford Attentive Reader](/papers/stanford-attentive-reader-chen-2016) (Chen 2016) demostró que una atención bilineal minimal bastaba —y, de paso, que CNN/DM estaba casi resuelto—; [BiDAF](/papers/bidaf-seo-2017) (Seo 2017) introdujo la atención bidireccional con attention-flow sin resumen prematuro; BERT (2018) reemplazó las RNN por self-attention preentrenada con un clasificador de span, superando el desempeño humano en SQuAD. Ver el [fundamento de MRC](/fundamentos/machine-reading-comprehension).
+
+3. **Retrieval neuronal para open-domain QA.** [DPR](/papers/dpr-karpukhin-2020) (Karpukhin 2020) reemplazó BM25 por un bi-encoder denso entrenado con in-batch negatives, modernizando el passage retrieval del pipeline IR-based factoid. Ver el [fundamento de dense retrieval](/fundamentos/dense-retrieval).
+
+El [fundamento de Question Answering](/fundamentos/question-answering) organiza la taxonomía completa (las cuatro áreas, formatos de respuesta, pipeline) y el [fundamento de métricas de QA](/fundamentos/qa-evaluation-metrics) las maneras de evaluar.
+
+### Qué viene
+
+Post-2020, la era LLM absorbe QA como capacidad nativa: **closed-book QA** (el modelo responde de memoria), **retrieval-augmented generation (RAG)** (retriever denso + LLM generador, descendiente directo del pipeline retriever-reader y de DPR), y **tool use** (el modelo consulta APIs y bases de datos). La abstención —"no sé" en vez de alucinar, la lección de SQuAD 2.0— se vuelve central para QA confiable en producción.
+
 ## Era 5 — LLMs y alineamiento (2020-presente)
 
 ### Problema heredado
@@ -340,4 +394,4 @@ Las apuestas activas hoy — sin un ganador claro — incluyen: **razonamiento e
 
 ---
 
-*Última actualización: 2026-05-25.*
+*Última actualización: 2026-06-07.*
