@@ -136,6 +136,32 @@ Tres tensiones recorren toda la historia: (1) cómo construir **invariancia a tr
       Liu, Chen, Bian, Shen, Liu (CVPR 2020 oral): primer pipeline **end-to-end real-time** de scene text spotting con **curvas Bézier cúbicas** (4 control points × 2 lados = 8 puntos) + **BezierAlign** + recognizer attention-based. F-measure 69.5 (None) / 78.4 (Full) en Total-Text a 6.9 FPS multi-scale, 22.8 FPS single-scale. **Por qué importó:** unifica detección anchor-free + representación paramétrica de texto + alineación geométrica + recognition en un modelo. Inspira ABCNet++, TESTR, SPTS — la familia "Bezier-based STR".
     {{< /hito >}}
   {{< /era >}}
+  {{< era name="Era Meta-aprendizaje y Few-shot" years="2015-2025" >}}
+    {{< hito year="2015" name="Omniglot / Bayesian Program Learning" status="covered" link="/papers/omniglot-lake-2015" >}}
+      Lake, Salakhutdinov, Tenenbaum (Science 2015): el "transpose de MNIST" — 1623 caracteres de 50 alfabetos, 20 instancias cada uno — y un modelo generativo composicional que aprende conceptos one-shot a nivel humano (3.3% error vs 4.5% humano en 20-way). **Por qué importó:** definió el benchmark fundacional del few-shot learning y la pregunta de fondo del campo.
+    {{< /hito >}}
+    {{< hito year="2015" name="Siamese Networks (one-shot)" status="covered" link="/papers/siamese-networks-koch-2015" >}}
+      Koch, Zemel, Salakhutdinov: torres gemelas que comparten pesos + distancia L1 ponderada + sigmoide para verificación; one-shot 20-way ~92% en Omniglot. **Por qué importó:** estableció el deep metric learning como vía para one-shot, antecedente de Matching/Prototypical y de FaceNet.
+    {{< /hito >}}
+    {{< hito year="2016" name="Matching Networks" status="covered" link="/papers/matching-networks-vinyals-2016" >}}
+      Vinyals et al. (DeepMind): clasificador no-paramétrico por atención sobre el support set; creó el protocolo episódico N-way K-shot y el benchmark miniImageNet. **Por qué importó:** atención key-value como clasificador — prefiguró el in-context learning de los LLMs.
+    {{< /hito >}}
+    {{< hito year="2016" name="MANN (memoria externa)" status="covered" link="/papers/mann-santoro-2016" >}}
+      Santoro et al. (DeepMind): controlador + memoria externa direccionable (LRUA) que aprende a guardar y recuperar info nueva one-shot. **Por qué importó:** separó el aprendizaje lento de pesos del rápido en memoria; nexo con NTM y la atención de Transformers.
+    {{< /hito >}}
+    {{< hito year="2017" name="MAML" status="deep" link="/papers/maml-finn-2017" >}}
+      Finn, Abbeel, Levine: aprender una inicialización adaptable vía optimización bi-nivel (inner/outer loop, segundo orden). **Por qué importó:** model-agnostic, aplicable a clasificación, regresión y RL; la línea optimization-based del meta-aprendizaje (Reptile, ANIL, iMAML).
+    {{< /hito >}}
+    {{< hito year="2017" name="Prototypical Networks" status="covered" link="/papers/prototypical-networks-snell-2017" >}}
+      Snell, Swersky, Zemel: prototipos como centroides + softmax sobre distancias euclidianas (justificado por divergencias de Bregman). **Por qué importó:** simplicidad + SOTA, se volvió el baseline de facto del metric-based few-shot.
+    {{< /hito >}}
+    {{< hito year="2020" name="Meta-Learning Survey (Hospedales)" status="covered" link="/papers/meta-learning-survey-hospedales-2020" >}}
+      Hospedales, Antoniou, Micaelli, Storkey (TPAMI): la taxonomía canónica de 3 ejes (meta-representation / meta-optimizer / meta-objective). **Por qué importó:** dio vocabulario común al campo.
+    {{< /hito >}}
+    {{< hito year="2021-2025" name="Meta-learning en imagen médica" status="covered" link="/papers/metaseg-vyas-2025" >}}
+      [Liu et al. (MICCAI 2021)](/papers/meta-disentanglement-liu-2021) para segmentación con generalización de dominio multi-centro; MetaSeg (Vyas et al., MICCAI 2025 best paper) con INR meta-aprendido (Dice de U-Net, 90% menos parámetros); [fMRI denoising](/papers/fmri-denoising-heo-2025) (Heo et al.). **Por qué importó:** el few-shot/meta-learning pasó de benchmark académico a herramienta clínica para datos escasos y multi-institucionales.
+    {{< /hito >}}
+  {{< /era >}}
   {{< era name="Era Transformer" years="2020-presente" >}}
     {{< hito year="2020" name="Vision Transformer (ViT)" status="deep" link="/fundamentos/vision-transformer" >}}
       Aplica un Transformer puro sobre parches de la imagen. Con suficiente data y escala, supera a CNNs sin sesgos inductivos visuales explícitos.
