@@ -10,7 +10,8 @@ math: true
     year="2020"
     venue="IEEE TPAMI 2021"
     pdf="/papers/meta-learning-survey-hospedales-2020.pdf"
-    arxiv="2004.05439" />}}
+    arxiv="2004.05439" >}}
+{{< /paper-card >}}
 
 ## Por qué este survey es la referencia canónica
 

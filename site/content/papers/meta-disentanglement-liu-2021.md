@@ -9,7 +9,8 @@ math: true
     year="2021"
     venue="MICCAI 2021 (Oral)"
     pdf="/papers/meta-disentanglement-liu-2021.pdf"
-    arxiv="2106.13292" />}}
+    arxiv="2106.13292" >}}
+{{< /paper-card >}}
 
 ## El problema clínico: domain shift y escasez de anotaciones en imagen médica
 

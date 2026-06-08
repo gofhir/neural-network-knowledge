@@ -9,7 +9,8 @@ math: true
     year="2016"
     venue="NeurIPS 2016 (Google DeepMind)"
     pdf="/papers/matching-networks-vinyals-2016.pdf"
-    arxiv="1606.04080" />}}
+    arxiv="1606.04080" >}}
+{{< /paper-card >}}
 
 ## El problema
 
