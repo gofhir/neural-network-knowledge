@@ -72,7 +72,7 @@ Para la teoria detras de la arquitectura Transformer ver la [clase 14](/clases/c
 
 {{< cards >}}
   {{< card link="/clases/clase-14" title="Clase 14 - Teoria" subtitle="Recorrido tematico del lecture de Gabriel Sepulveda" icon="academic-cap" >}}
-  {{< card link="/fundamentos/transformers" title="Fundamento: Transformers" subtitle="Self-attention, multi-head, positional encoding" icon="book-open" >}}
+  {{< card link="/fundamentos/transformer" title="Fundamento: Transformers" subtitle="Self-attention, multi-head, positional encoding" icon="book-open" >}}
   {{< card link="/fundamentos/bert" title="Fundamento: BERT" subtitle="MLM, NSP, fine-tuning para tareas downstream" icon="book-open" >}}
 {{< /cards >}}
 

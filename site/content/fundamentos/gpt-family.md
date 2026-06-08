@@ -789,10 +789,10 @@ Frameworks: **LiteLLM**, **OpenRouter** (gateway managed), **Bedrock** (gateway 
 
 ### Papers clave
 
-- [GPT-1: Improving Language Understanding by Generative Pre-Training](/papers/gpt-1) (Radford et al., 2018).
-- [GPT-2: Language Models are Unsupervised Multitask Learners](/papers/gpt-2) (Radford et al., 2019).
-- [GPT-3: Language Models are Few-Shot Learners](/papers/gpt-3) (Brown et al., NeurIPS 2020).
-- [InstructGPT: Training language models to follow instructions with human feedback](/papers/instructgpt) (Ouyang et al., NeurIPS 2022).
+- [GPT-1: Improving Language Understanding by Generative Pre-Training](/papers/gpt-1-radford-2018) (Radford et al., 2018).
+- [GPT-2: Language Models are Unsupervised Multitask Learners](/papers/gpt-2-radford-2019) (Radford et al., 2019).
+- [GPT-3: Language Models are Few-Shot Learners](/papers/gpt-3-brown-2020) (Brown et al., NeurIPS 2020).
+- [InstructGPT: Training language models to follow instructions with human feedback](/papers/instructgpt-ouyang-2022) (Ouyang et al., NeurIPS 2022).
 - [Attention is All You Need](/papers/attention-is-all-you-need-vaswani-2017) (Vaswani et al., NeurIPS 2017).
 
 ---

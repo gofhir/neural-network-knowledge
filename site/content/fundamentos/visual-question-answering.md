@@ -244,7 +244,7 @@ graph LR
     style FU fill:#fbbf24,color:#000
 ```
 
-1. **Embedding de la pregunta.** Hasta 14 tokens → embeddings **GloVe de 300-D** → **GRU** que produce un estado de 512-D. Pythia añade un módulo de **atención sobre los tokens** de la pregunta (no toma solo el último estado). Ver [word embeddings](/fundamentos/word-embeddings) y [LSTM y GRU](/fundamentos/lstm-gru).
+1. **Embedding de la pregunta.** Hasta 14 tokens → embeddings **GloVe de 300-D** → **GRU** que produce un estado de 512-D. Pythia añade un módulo de **atención sobre los tokens** de la pregunta (no toma solo el último estado). Ver [word embeddings](/fundamentos/glove) y [LSTM y GRU](/fundamentos/lstm-gru).
 
 2. **Características de imagen.** El detector (Detectron con FPN, backbone ResNeXt) produce $V \in \mathbb{R}^{K \times 2048}$ — un vector de 2048-D por cada una de las $K$ regiones. La mejor configuración usa $K = 100$ cajas fijas por imagen.
 
@@ -307,7 +307,7 @@ Los grandes Vision-Language Models cambiaron el paradigma. En lugar de clasifica
 
 ### 8.1 Cómo lo hacen
 
-El patrón dominante (BLIP-2, LLaVA, GPT-4V, Gemini, Claude) acopla un **encoder visual** congelado (típicamente un [ViT](/papers/vit-dosovitskiy-2020)) con un **LLM** preentrenado, mediante un puente que proyecta las features visuales al espacio de embeddings del lenguaje:
+El patrón dominante (BLIP-2, LLaVA, GPT-4V, Gemini, Claude) acopla un **encoder visual** congelado (típicamente un [ViT](/papers/vit-dosovitskiy-2021)) con un **LLM** preentrenado, mediante un puente que proyecta las features visuales al espacio de embeddings del lenguaje:
 
 - **BLIP-2** introduce el **Q-Former**, un Transformer ligero con queries aprendibles que extrae las features visuales más relevantes y las inyecta como tokens al LLM. Congela tanto el ViT como el LLM, entrenando solo el puente.
 - **LLaVA** usa una simple proyección lineal/MLP del encoder CLIP al espacio del LLM, más instruction tuning con datos de conversación visual.
@@ -332,7 +332,7 @@ La evolución es una espiral: del **vocabulario cerrado** (clasificación sobre 
 
 ### 9.1 Lab-23 (BLIP)
 
-El [Laboratorio 23](/laboratorios/lab-23) usa **BLIP**, un VLM generativo, para hacer VQA en la práctica. Es el contraste perfecto con Pythia: donde Pythia clasifica sobre un vocabulario cerrado con detección + atención + Hadamard, BLIP **genera la respuesta como texto** con un encoder-decoder multimodal preentrenado. El lab permite ver de primera mano cómo un VLM moderno responde preguntas abiertas, sus aciertos y sus fallas residuales (conteo, alucinaciones).
+El Laboratorio 23 usa **BLIP**, un VLM generativo, para hacer VQA en la práctica. Es el contraste perfecto con Pythia: donde Pythia clasifica sobre un vocabulario cerrado con detección + atención + Hadamard, BLIP **genera la respuesta como texto** con un encoder-decoder multimodal preentrenado. El lab permite ver de primera mano cómo un VLM moderno responde preguntas abiertas, sus aciertos y sus fallas residuales (conteo, alucinaciones).
 
 ### 9.2 Otras clases
 
@@ -340,7 +340,7 @@ VQA integra prácticamente todo el curso:
 
 - **[Clase 09 (CNN)](/clases/clase-09):** los backbones visuales (VGG, ResNet, ResNeXt) que extraen features de imagen. Ver [redes convolucionales](/fundamentos/redes-convolucionales).
 - **Detección de objetos:** el componente bottom-up de Pythia es un Faster R-CNN/Detectron. Ver [detección de objetos](/fundamentos/deteccion-de-objetos).
-- **[Word embeddings](/fundamentos/word-embeddings):** GloVe codifica la pregunta en Pythia.
+- **[Word embeddings](/fundamentos/glove):** GloVe codifica la pregunta en Pythia.
 - **[LSTM y GRU](/fundamentos/lstm-gru):** la GRU/LSTM que procesa la pregunta en los modelos clásicos.
 - **[Clase 15 (atención)](/clases/clase-15):** la top-down attention y la co-atención multimodal heredan del [mecanismo de atención](/fundamentos/mecanismo-atencion).
 - **[Clase 14 (Transformers)](/clases/clase-14):** LXMERT, ViLBERT y los VLMs usan el [Transformer](/fundamentos/transformer).
@@ -383,12 +383,12 @@ VQA integra prácticamente todo el curso:
 - [Transformer](/fundamentos/transformer) — arquitectura de los VLMs multimodales.
 - [Redes convolucionales](/fundamentos/redes-convolucionales) — backbones visuales.
 - [Detección de objetos](/fundamentos/deteccion-de-objetos) — el componente bottom-up.
-- [Word embeddings](/fundamentos/word-embeddings) — GloVe para codificar la pregunta.
+- [Word embeddings](/fundamentos/glove) — GloVe para codificar la pregunta.
 - [LSTM y GRU](/fundamentos/lstm-gru) — encoder de la pregunta en modelos clásicos.
 - [Scene Text Recognition](/fundamentos/scene-text-recognition) — conexión con TextVQA.
 
 ### Clase y dominio
 
 - [Clase 23](/clases/clase-23) — VQA e Image Captioning, la clase principal de este fundamento.
-- [Laboratorio 23](/laboratorios/lab-23) — VQA práctico con BLIP.
+- Laboratorio 23 — VQA práctico con BLIP.
 - [Dominio Multimodal](/dominios/multimodal) — el área transversal donde VQA es un benchmark central.

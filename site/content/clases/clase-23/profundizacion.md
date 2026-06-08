@@ -273,4 +273,4 @@ BLEU se diseñó para calcularse **a nivel de corpus**: se acumulan los numerado
 - [Teoría de la clase](/clases/clase-23/teoria) — el recorrido conceptual de las slides.
 - [Fundamento: Visual Question Answering](/fundamentos/visual-question-answering), [Image Captioning](/fundamentos/image-captioning), [BLEU Metric](/fundamentos/bleu-metric).
 - Papers: [Pythia](/papers/pythia-jiang-2018), [Bottom-Up/Top-Down](/papers/bottom-up-attention-anderson-2018), [MCB](/papers/mcb-fukui-2016), [MUTAN](/papers/mutan-ben-younes-2017), [BLEU](/papers/bleu-papineni-2002).
-- [Laboratorio 23](/laboratorios/lab-23) — práctica con BLIP.
+- Laboratorio 23 — práctica con BLIP.

@@ -17,7 +17,6 @@ La clase integra piezas de todo el curso: la [Clase 09 (CNN)](/clases/clase-09) 
 {{< cards >}}
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 29 diapositivas: VQA, dataset VQAv2, modelo Pythia, problemas, Image Captioning, greedy/beam search, BLEU" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math detallada: top-down attention, fusion multimodal, fusion bilineal (MCB/MUTAN), beam search, BLEU paso a paso" icon="beaker" >}}
-  {{< card link="/laboratorios/lab-23" title="Laboratorio 23" subtitle="VQA e Image Captioning con BLIP (Salesforce) en HuggingFace" icon="academic-cap" >}}
   {{< card link="/clases/clase-22" title="Clase anterior: Summarization" subtitle="BERTSum, T5, decoding, ROUGE" icon="arrow-left" >}}
   {{< card link="/clases/clase-15" title="Base: Mecanismo de atencion" subtitle="La base de la top-down attention" icon="academic-cap" >}}
 {{< /cards >}}

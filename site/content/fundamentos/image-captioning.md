@@ -6,7 +6,7 @@ math: true
 
 El **Image Captioning** consiste en generar una **descripción en lenguaje natural** a partir de una imagen: dada una fotografía, el sistema produce una oración como "un perro corre sobre la nieve" o "dos personas sentadas en un banco frente al mar". Es la tarea que tiende el **puente entre visión y lenguaje**: requiere simultáneamente *entender* el contenido visual (qué objetos hay, qué hacen, cómo se relacionan) y *expresarlo* como una secuencia de palabras gramaticalmente coherente. Por esa naturaleza dual, captioning fue históricamente el **primer terreno de prueba multimodal** del deep learning moderno: cuando en 2014-2015 maduraron por separado las CNN para visión y los modelos seq2seq para lenguaje, captioning fue la tarea natural donde unirlos, y dio origen al patrón "CNN encoder + RNN decoder" que dominó la disciplina antes de los Transformers.
 
-Esta página consolida los conceptos transversales del área: la arquitectura encoder-decoder canónica, la atención visual, la atención sobre regiones, las estrategias de decodificación, las métricas de evaluación, los datasets dominantes y la era actual de los Vision-Language Models (VLMs). Es el fundamento transversal de la [Clase 23](/clases/clase-23) y se conecta directamente con el [Laboratorio 23](/laboratorios/lab-23), donde se experimenta con **BLIP** para captioning zero-shot.
+Esta página consolida los conceptos transversales del área: la arquitectura encoder-decoder canónica, la atención visual, la atención sobre regiones, las estrategias de decodificación, las métricas de evaluación, los datasets dominantes y la era actual de los Vision-Language Models (VLMs). Es el fundamento transversal de la [Clase 23](/clases/clase-23) y se conecta directamente con el Laboratorio 23, donde se experimenta con **BLIP** para captioning zero-shot.
 
 ---
 
@@ -241,7 +241,7 @@ Distinción importante:
 
 Desde ~2021, captioning dejó de ser una arquitectura dedicada para volverse una **capacidad emergente** de los **Vision-Language Models** (VLMs): modelos grandes preentrenados sobre cientos de millones de pares imagen-texto que resuelven captioning, VQA, retrieval y más con la misma red. El encoder dejó de ser una CNN y pasó a ser un **Vision Transformer** (parches de imagen como tokens); el decoder pasó de LSTM a Transformer estilo GPT.
 
-- **BLIP** (Li 2022) — *el modelo del [Laboratorio 23](/laboratorios/lab-23)*. Bootstrapping Language-Image Pre-training: unifica comprensión y generación con tres objetivos (contrastive image-text, image-text matching, y generación de captions). Su innovación de datos es **CapFilt**: un *captioner* genera captions sintéticos para imágenes web y un *filter* descarta los malos, limpiando el ruido de los datos web a escala. BLIP hace captioning **zero-shot**: describe imágenes de dominios que nunca vio explícitamente.
+- **BLIP** (Li 2022) — *el modelo del Laboratorio 23*. Bootstrapping Language-Image Pre-training: unifica comprensión y generación con tres objetivos (contrastive image-text, image-text matching, y generación de captions). Su innovación de datos es **CapFilt**: un *captioner* genera captions sintéticos para imágenes web y un *filter* descarta los malos, limpiando el ruido de los datos web a escala. BLIP hace captioning **zero-shot**: describe imágenes de dominios que nunca vio explícitamente.
 - **GIT** (Wang 2022, Microsoft) — Generative Image-to-text Transformer: arquitectura minimalista de un solo encoder de imagen + un decoder de texto, escalada masivamente. Demostró que con suficientes datos, simplicidad arquitectural + escala superan a los diseños elaborados.
 - **CoCa** (Yu 2022, Google) — Contrastive Captioner: combina en un mismo modelo el objetivo **contrastivo** (estilo CLIP, para retrieval y clasificación zero-shot) con el objetivo **generativo** (captioning). Un modelo, dos paradigmas.
 - **GPT-4V, Gemini, Claude con visión** (2023+) — los LLM multimodales generales absorben captioning como un caso trivial de su capacidad de razonar sobre imágenes. Se les pide describir una imagen en lenguaje natural, con el nivel de detalle y estilo que se indique en el prompt, sin entrenamiento específico.
@@ -250,7 +250,7 @@ Desde ~2021, captioning dejó de ser una arquitectura dedicada para volverse una
 
 El talón de Aquiles de captioning, presente desde Show and Tell y *no resuelto* por los VLMs, es la **alucinación**: el modelo genera descripciones **plausibles pero no fieles** a la imagen, mencionando objetos que no están o malinterpretando los que sí. La causa es estructural: el decoder de lenguaje tiene un **prior lingüístico** fuerte aprendido del texto de entrenamiento, y cuando la señal visual es ambigua o desconocida, el prior "completa" con lo estadísticamente probable en lugar de con lo realmente presente.
 
-El [Laboratorio 23](/laboratorios/lab-23) ilustra esto de forma vívida: al pasarle a BLIP la foto de un **ornitorrinco bebé**, el modelo genera *"a baby bird is held in a box"* ("un pájaro bebé sostenido en una caja"). El ornitorrinco —un mamífero raro que casi con certeza no estaba en los datos de preentrenamiento— se reduce al concepto más cercano y frecuente que el modelo conoce: un pájaro bebé. La forma general (pequeño, con pico, sostenido en las manos) activa el prior "bird" porque el modelo nunca aprendió "platypus". Es un fallo de **generalización a objetos nuevos** (justo lo que mide nocaps) cruzado con el sesgo del prior lingüístico.
+El Laboratorio 23 ilustra esto de forma vívida: al pasarle a BLIP la foto de un **ornitorrinco bebé**, el modelo genera *"a baby bird is held in a box"* ("un pájaro bebé sostenido en una caja"). El ornitorrinco —un mamífero raro que casi con certeza no estaba en los datos de preentrenamiento— se reduce al concepto más cercano y frecuente que el modelo conoce: un pájaro bebé. La forma general (pequeño, con pico, sostenido en las manos) activa el prior "bird" porque el modelo nunca aprendió "platypus". Es un fallo de **generalización a objetos nuevos** (justo lo que mide nocaps) cruzado con el sesgo del prior lingüístico.
 
 {{< concept-alert type="advertencia" >}}
 La alucinación es el riesgo central de captioning en producción: un caption fluido y gramaticalmente perfecto **puede ser completamente falso**. Por eso métricas como SPICE (semántica) y CIDEr (relevancia distintiva) importan más que BLEU, y por eso aplicaciones de accesibilidad o médicas requieren verificación. Un modelo que "suena seguro" no es un modelo que "ve bien".
@@ -263,7 +263,7 @@ La alucinación es el riesgo central de captioning en producción: un caption fl
 Captioning conecta múltiples áreas del curso IA UC:
 
 - **[Clase 23](/clases/clase-23)**: la clase principal de este fundamento. Cubre la arquitectura encoder-decoder, atención visual, las estrategias de decodificación (greedy vs beam, slides 24-26) y la evaluación con BLEU (slide 27).
-- **[Laboratorio 23](/laboratorios/lab-23)**: experimentación práctica con **BLIP** para captioning zero-shot, incluyendo el caso del ornitorrinco que ilustra la alucinación.
+- **Laboratorio 23**: experimentación práctica con **BLIP** para captioning zero-shot, incluyendo el caso del ornitorrinco que ilustra la alucinación.
 - **[Mecanismo de atención](/fundamentos/mecanismo-atencion)** (Clase 15): la atención visual de Show, Attend and Tell es la atención de Bahdanau aplicada al eje espacial de la imagen.
 - **[seq2seq](/fundamentos/seq2seq)**: captioning es seq2seq con la "lengua fuente" reemplazada por una imagen. El decoder y el loss MLE son idénticos.
 - **[Visual Question Answering](/fundamentos/visual-question-answering)**: tarea hermana que comparte el encoder visual; Bottom-Up Attention unificó ambas.
@@ -291,7 +291,7 @@ El arco histórico es nítido: **Show and Tell (2015)** estableció el patrón C
 ### Clases y laboratorio
 
 - [Clase 23](/clases/clase-23) — clase principal del fundamento (Image Captioning).
-- [Laboratorio 23](/laboratorios/lab-23) — práctica con BLIP, captioning zero-shot y el caso de la alucinación.
+- Laboratorio 23 — práctica con BLIP, captioning zero-shot y el caso de la alucinación.
 
 ### Papers
 

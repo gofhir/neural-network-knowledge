@@ -180,5 +180,5 @@ Con esta seccion termina el lab Parte 1. Las respuestas concretas a las **7 preg
 Para profundizar en la teoria del Transformer, ver:
 
 - [Clase 14 — Teoria](/clases/clase-14/) — el lecture de Gabriel
-- [Fundamento: Transformers](/fundamentos/transformers/) — encoder-decoder, multi-head, positional encoding
+- [Fundamento: Transformers](/fundamentos/transformer/) — encoder-decoder, multi-head, positional encoding
 - [Fundamento: BERT](/fundamentos/bert/) — MLM, NSP, fine-tuning para tareas downstream

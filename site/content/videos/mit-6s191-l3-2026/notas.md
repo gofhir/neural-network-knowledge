@@ -8,7 +8,7 @@ sidebar:
 
 > Recorrido temático de las 70 diapositivas del lecture **MIT 6.S191 (2026) Lecture 3 — Deep Computer Vision** (Alexander Amini, 6 de enero de 2026). Se omite la slide 70 (anuncios del curso, sin contenido técnico).
 >
-> [Video en YouTube](https://www.youtube.com/watch?v=pqIcoskUuWs) — [Slides oficiales (PDF)](/videos/mit-6s191-l3-2026/slides.pdf) — [PNGs individuales](/videos/mit-6s191-l3-2026/slides/)
+> [Video en YouTube](https://www.youtube.com/watch?v=pqIcoskUuWs) — [Slides oficiales (PDF)](/videos/mit-6s191-l3-2026/slides.pdf)
 
 ---
 

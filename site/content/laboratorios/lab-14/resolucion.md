@@ -269,5 +269,5 @@ Este lab te dio herramientas para inspeccionar la **primera** familia (encoder-o
 ### Conexion con la teoria de la clase
 
 - La arquitectura completa del Transformer (encoder + decoder + cross-attention + positional encoding + multi-head) esta en la [teoria de la clase 14](/clases/clase-14/).
-- Para fundamentos sobre Q/K/V, softmax escalado y multi-head, ver [fundamentos/transformers](/fundamentos/transformers/).
+- Para fundamentos sobre Q/K/V, softmax escalado y multi-head, ver [fundamentos/transformers](/fundamentos/transformer/).
 - Para BERT especifico (MLM, NSP, fine-tuning), ver [fundamentos/bert](/fundamentos/bert/).

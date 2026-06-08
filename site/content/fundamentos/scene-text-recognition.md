@@ -157,7 +157,7 @@ Backbones canónicos:
 - **ResNet** ([He 2015](/papers/resnet-he-2015)): residual connections, mejor convergencia. Standard en TPS-ResNet-BiLSTM-Attn de Baek et al. 2019.
 - **DenseNet** (Huang 2017): feature reuse exhaustivo, parámetros eficientes.
 - **Recursive CNN, Gated CNN**: variantes con conexiones recurrentes o gating dentro de la convolución, útiles para sequence-aware features.
-- **ViT** ([Dosovitskiy 2020](/papers/vit-dosovitskiy-2020)): backbone para los métodos modernos basados puramente en Transformers (TrOCR, PARSeq).
+- **ViT** ([Dosovitskiy 2020](/papers/vit-dosovitskiy-2021)): backbone para los métodos modernos basados puramente en Transformers (TrOCR, PARSeq).
 
 Ver [redes convolucionales](/fundamentos/redes-convolucionales) para el detalle de backbones.
 

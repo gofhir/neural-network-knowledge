@@ -94,7 +94,7 @@ La [Clase 25](/clases/clase-25) ("Recomendación usando Imágenes y Texto") es u
 - **De identificación a recomendación.** La afinidad usuario↔contenido que aquí identifica autoría es la misma señal que un [sistema de recomendación](/fundamentos/recommender-systems) usa para predecir gustos; la estructura usuario×ítem y la similitud coseno son nucleares en esa área.
 - **Lecciones honestas.** Que el techo sea 38% enseña a leer resultados con escepticismo, diagnosticar por qué una modalidad aporta poco y analizar por usuario en lugar de quedarse con un solo número.
 
-El laboratorio práctico está en [lab-25](/laboratorios/lab-25).
+El laboratorio práctico está en lab-25.
 
 ## Notas y enlaces
 

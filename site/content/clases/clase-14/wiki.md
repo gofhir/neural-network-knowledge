@@ -96,9 +96,9 @@ donde cada cabeza vive en $\mathbb{R}^{d_k}$ con $d_k = d_{model}/h$. Hyperparam
 
 Ver [fundamento self-attention](/fundamentos/self-attention) para code completo. Aqui la version compacta del **scaled dot-product attention** en los tres frameworks:
 
-{{< tabs items="PyTorch,JAX,TensorFlow" >}}
+{{< tabs >}}
 
-{{< tab >}}
+{{< tab name="PyTorch" >}}
 ```python
 import torch
 import torch.nn.functional as F
@@ -114,7 +114,7 @@ def scaled_dot_product_attention(Q, K, V, mask=None):
 ```
 {{< /tab >}}
 
-{{< tab >}}
+{{< tab name="JAX" >}}
 ```python
 import jax.numpy as jnp
 from jax import nn as jnn
@@ -130,7 +130,7 @@ def scaled_dot_product_attention(Q, K, V, mask=None):
 ```
 {{< /tab >}}
 
-{{< tab >}}
+{{< tab name="TensorFlow" >}}
 ```python
 import tensorflow as tf
 

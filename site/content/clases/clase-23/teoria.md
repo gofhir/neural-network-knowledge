@@ -211,7 +211,7 @@ El modelo no compone significados de forma robusta: trata *"orange and black"* y
 Como el modelo es un **clasificador sobre un vocabulario cerrado** (~3000 respuestas), no puede producir respuestas fuera de esa lista. Si la respuesta correcta es una especie rara no incluida, el modelo está condenado a equivocarse. Es la limitación de fondo: VQA-como-clasificación no es VQA-como-generación.
 
 {{< concept-alert type="contexto" >}}
-Estos tres problemas — priors, composicionalidad, vocabulario cerrado — son exactamente lo que la era de los **VLMs generativos** (BLIP, GPT-4V, Gemini) vino a atacar: tratar VQA como **generación de texto** condicionada en la imagen, no como clasificación. El [Laboratorio 23](/laboratorios/lab-23) usa **BLIP**, que genera la respuesta token por token y por tanto no está limitado a un vocabulario fijo (aunque hereda otros problemas, como la alucinación).
+Estos tres problemas — priors, composicionalidad, vocabulario cerrado — son exactamente lo que la era de los **VLMs generativos** (BLIP, GPT-4V, Gemini) vino a atacar: tratar VQA como **generación de texto** condicionada en la imagen, no como clasificación. El Laboratorio 23 usa **BLIP**, que genera la respuesta token por token y por tanto no está limitado a un vocabulario fijo (aunque hereda otros problemas, como la alucinación).
 {{< /concept-alert >}}
 
 ---
@@ -297,13 +297,13 @@ La clase traza, sin nombrarlo explícitamente, el arco completo del campo:
 
 1. **VQA como clasificación** (Pythia): potente pero limitado por priors, composicionalidad y vocabulario cerrado.
 2. **Captioning como generación** (encoder-decoder + beam search): más flexible, pero difícil de evaluar (BLEU es imperfecto).
-3. **La síntesis** (no en las slides, pero implícita en el lab): los **VLMs generativos** como [BLIP](/laboratorios/lab-23) unifican ambas tareas — generan tanto respuestas como captions token por token, atacando los problemas de Pythia, aunque heredan otros (alucinación).
+3. **La síntesis** (no en las slides, pero implícita en el lab): los **VLMs generativos** como BLIP unifican ambas tareas — generan tanto respuestas como captions token por token, atacando los problemas de Pythia, aunque heredan otros (alucinación).
 
-El [Laboratorio 23](/laboratorios/lab-23) materializa este cierre usando BLIP para hacer VQA e Image Captioning sobre imágenes reales, incluyendo los casos de error vistos en clase (el ornitorrinco descrito como "a baby bird", relaciones espaciales mal interpretadas).
+El Laboratorio 23 materializa este cierre usando BLIP para hacer VQA e Image Captioning sobre imágenes reales, incluyendo los casos de error vistos en clase (el ornitorrinco descrito como "a baby bird", relaciones espaciales mal interpretadas).
 
 ## Para seguir
 
 - [Profundización](/clases/clase-23/profundizacion) — la matemática de top-down attention, fusión multimodal y bilineal, beam search y BLEU.
 - [Fundamento: Visual Question Answering](/fundamentos/visual-question-answering) y [Image Captioning](/fundamentos/image-captioning).
 - [Dominio Multimodal](/dominios/multimodal) — la línea de tiempo de 2014 a los VLMs frontier.
-- [Laboratorio 23](/laboratorios/lab-23) — práctica con BLIP.
+- Laboratorio 23 — práctica con BLIP.

@@ -49,12 +49,6 @@ La clase se complementa con la [Clase 14 (Transformers)](/clases/clase-14) — q
   {{< card link="/papers/instructgpt-ouyang-2022" title="InstructGPT (2022)" subtitle="Ouyang et al. -- RLHF formalizado: precursor directo de ChatGPT" icon="document-text" >}}
 {{< /cards >}}
 
-## Recursos del laboratorio
-
-{{< cards >}}
-  {{< card link="/laboratorios/lab-20" title="Laboratorio 20" subtitle="Practico de Hugging Face Transformers, BETO, ChatGPT API y fine-tuning" icon="academic-cap" >}}
-{{< /cards >}}
-
 ## Dominio relacionado
 
 {{< cards >}}
