@@ -162,6 +162,9 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
     {{< hito year="2020" name="DPR (Karpukhin)" status="deep" link="/papers/dpr-karpukhin-2020" >}}
       Karpukhin et al. (Facebook AI): bi-encoder denso entrenado con in-batch negatives que reemplaza BM25 para open-domain QA; recuperación por MIPS/FAISS. **Por qué importó:** base del retrieval neuronal moderno y de RAG; reformuló el passage retrieval del pipeline IR-based factoid.
     {{< /hito >}}
+    {{< hito year="2024" name="Seq2Seq Spanish PLMs (Araujo)" status="covered" link="/papers/seq2seq-spanish-araujo-2024" >}}
+      Araujo et al. (LREC-COLING): BARTO y T5S, los primeros modelos seq2seq nativos en español (encoder-decoder, denoising / span corruption sobre ~120GB), para llevar la QA generativa al español. **Por qué importó:** cierra la brecha de recursos seq2seq fuera del inglés; son los modelos del [Lab 24](/laboratorios/lab-24), que contrasta QA extractivo (BETO) vs generativo (T5S/BARTO).
+    {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de los LLMs" years="2020-presente" >}}
     {{< hito year="2020" name="GPT-3" status="deep" link="/papers/gpt-3-brown-2020" >}}

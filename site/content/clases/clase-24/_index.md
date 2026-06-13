@@ -18,6 +18,7 @@ La clase se apoya en la [Clase 14 (Transformers)](/clases/clase-14) y la [Clase 
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 43 diapositivas: historia, areas de QA, IR-based factoid, MRC, Stanford Attentive Reader, BiDAF, BERT, Generative QA, metricas" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math detallada: red neuronal generica para MRC, bilinear attention, BiDAF attention flow, span prediction de BERT, EM/F1 token-level, MRR, in-batch negatives de DPR" icon="beaker" >}}
   {{< card link="/clases/clase-22" title="Clase anterior: Summarization" subtitle="Encoder-decoder, BART, T5, decoding strategies" icon="arrow-left" >}}
+  {{< card link="/laboratorios/lab-24" title="Laboratorio 24: QA en español" subtitle="BERT extractivo (BETO) vs T5/BART generativo en codigo — el contraste extraer vs generar" icon="beaker" >}}
   {{< card link="/clases/clase-20" title="Base: ELMo, BERT, GPT, ChatGPT" subtitle="Modelos preentrenados que dominan QA" icon="academic-cap" >}}
   {{< card link="/clases/clase-14" title="Base: Transformers" subtitle="Self-attention, encoder-decoder" icon="academic-cap" >}}
 {{< /cards >}}
@@ -42,6 +43,7 @@ La clase se apoya en la [Clase 14 (Transformers)](/clases/clase-14) y la [Clase 
   {{< card link="/papers/stanford-attentive-reader-chen-2016" title="Stanford Attentive Reader (2016)" subtitle="Chen et al. -- modelo bilinear + critica del dataset CNN/DM" icon="document-text" >}}
   {{< card link="/papers/squad-rajpurkar-2016" title="SQuAD (2016)" subtitle="Rajpurkar et al. -- 100k+ preguntas, extractive QA span-based, EM/F1" icon="document-text" >}}
   {{< card link="/papers/bidaf-seo-2017" title="BiDAF (2017)" subtitle="Seo et al. -- Bidirectional Attention Flow para machine comprehension" icon="document-text" >}}
+  {{< card link="/papers/seq2seq-spanish-araujo-2024" title="Seq2Seq Spanish PLMs (2024)" subtitle="Araujo et al. -- BARTO y T5S, modelos seq2seq en espanol del Laboratorio 24 (el profesor es el primer autor)" icon="document-text" >}}
 {{< /cards >}}
 
 ## Papers canonicos (complementarios)
