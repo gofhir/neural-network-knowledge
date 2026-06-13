@@ -71,8 +71,8 @@ Tres tensiones definen el campo: (1) cómo **alinear modalidades sin pares anota
     {{< hito year="2021" name="ALIGN" status="minimal" >}}
       Jia et al. (Google): replica CLIP a 1.8B pares ruidosos, demostrando que la calidad del scraping importa menos que el volumen. **Por qué importó:** validó el contraste a escala como receta robusta.
     {{< /hito >}}
-    {{< hito year="2022" name="BLIP" status="minimal" >}}
-      Li et al. (Salesforce): unifica entendimiento (CLIP-style) y generación (captioning) en un mismo modelo, con pretraining sobre datos auto-filtrados. **Por qué importó:** primer paso hacia VLMs unificados.
+    {{< hito year="2022" name="BLIP" status="covered" link="/papers/blip-li-2022" >}}
+      Li et al. (Salesforce): unifica entendimiento (CLIP-style) y generación (captioning) en un mismo modelo (el **MED**, Multimodal mixture of Encoder-Decoder), con pretraining sobre datos auto-filtrados (**CapFilt**). **Por qué importó:** primer paso hacia VLMs unificados. Es el modelo del [Laboratorio 23](/laboratorios/lab-23); ver el [fundamento Vision-Language Models](/fundamentos/vision-language-models).
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de VLMs y generación" years="2022-presente" >}}

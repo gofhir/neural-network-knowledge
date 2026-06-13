@@ -17,6 +17,7 @@ La clase integra piezas de todo el curso: la [Clase 09 (CNN)](/clases/clase-09) 
 {{< cards >}}
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 29 diapositivas: VQA, dataset VQAv2, modelo Pythia, problemas, Image Captioning, greedy/beam search, BLEU" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math detallada: top-down attention, fusion multimodal, fusion bilineal (MCB/MUTAN), beam search, BLEU paso a paso" icon="beaker" >}}
+  {{< card link="/laboratorios/lab-23" title="Laboratorio 23: BLIP" subtitle="VQA e Image Captioning en codigo con BLIP — el contraste generacion vs clasificacion" icon="beaker" >}}
   {{< card link="/clases/clase-22" title="Clase anterior: Summarization" subtitle="BERTSum, T5, decoding, ROUGE" icon="arrow-left" >}}
   {{< card link="/clases/clase-15" title="Base: Mecanismo de atencion" subtitle="La base de la top-down attention" icon="academic-cap" >}}
 {{< /cards >}}
@@ -24,6 +25,7 @@ La clase integra piezas de todo el curso: la [Clase 09 (CNN)](/clases/clase-09) 
 ## Fundamentos relacionados
 
 {{< cards >}}
+  {{< card link="/fundamentos/vision-language-models" title="Vision-Language Models" subtitle="ViT, cross-attention, contrastivo vs generativo, alucinacion en VLMs" icon="book-open" >}}
   {{< card link="/fundamentos/visual-question-answering" title="Visual Question Answering" subtitle="La tarea, datasets, language priors, arquitecturas, metrica de consenso" icon="book-open" >}}
   {{< card link="/fundamentos/image-captioning" title="Image Captioning" subtitle="Encoder-decoder, atencion, decoding, metricas, era VLM" icon="book-open" >}}
   {{< card link="/fundamentos/bleu-metric" title="BLEU Metric" subtitle="Modified n-gram precision, brevity penalty, BLEU en captioning" icon="book-open" >}}
