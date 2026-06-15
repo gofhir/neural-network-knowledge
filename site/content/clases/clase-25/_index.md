@@ -21,6 +21,7 @@ La clase integra casi todo el curso: [CNNs](/fundamentos/redes-convolucionales) 
 {{< cards >}}
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 56 diapositivas: framework de preguntas, problem/data/model, representación de datos, métricas" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: formalización de r_ij, metric learning, two-tower y log-Q correction, invarianza a permutación, derivación de nDCG" icon="beaker" >}}
+  {{< card link="/laboratorios/lab-25" title="Laboratorio 25: Recomendación multimodal" subtitle="AlexNet + BERT, proxy task, recomendación por similitud y dos bugs de métrica (nDCG 0.02 a 0.86)" icon="beaker" >}}
   {{< card link="/clases/clase-22" title="Clase previa integrada: Summarization" subtitle="T5, BERTSum, decoding, ROUGE" icon="arrow-left" >}}
   {{< card link="/clases/clase-20" title="Base: ELMo, BERT, GPT, ChatGPT" subtitle="BERT como encoder de texto del pin" icon="academic-cap" >}}
   {{< card link="/clases/clase-14" title="Base: Transformers" subtitle="Encoder para texto, sets y secuencias" icon="academic-cap" >}}
