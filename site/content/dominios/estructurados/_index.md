@@ -39,14 +39,29 @@ Tres tensiones definen el campo: (1) **¿deep learning o gradient boosting en ta
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de DL para grafos y series" years="2016-2019" >}}
-    {{< hito year="2017" name="GCN" status="minimal" >}}
-      Kipf & Welling: *Graph Convolutional Network* — generaliza convolución a grafos vía propagación de mensajes con la matriz de adyacencia normalizada. **Por qué importó:** arquitectura simple y efectiva que abrió la era moderna de Graph Neural Networks.
+    {{< hito year="2009" name="GNN Model (Scarselli)" status="covered" link="/papers/gnn-model-scarselli-2009" >}}
+      Scarselli et al.: el paper que **acuñó el término** "Graph Neural Network" — estado por nodo iterado hasta un punto fijo (vía contracción de Banach). **Por qué importó:** el origen del campo; toda la era moderna es su descendencia simplificada. Cubierto en la [Clase 27](/clases/clase-27).
     {{< /hito >}}
-    {{< hito year="2017" name="GraphSAGE" status="minimal" >}}
-      Hamilton et al.: muestrea vecinos en lugar de procesar todo el grafo, permitiendo entrenamiento inductive sobre grafos enormes. **Por qué importó:** primer GNN que escalaba a producción industrial (Pinterest, redes sociales).
+    {{< hito year="2015" name="GGNN (Gated Graph NN)" status="covered" link="/papers/ggnn-li-2015" >}}
+      Li et al.: reemplaza la iteración hasta punto fijo de Scarselli por **pasos fijos + una GRU** como función de actualización, entrenada con BPTT. **Por qué importó:** introdujo el gating a las GNN y es el ancestro directo del message passing moderno. Ver [Clase 27](/clases/clase-27).
     {{< /hito >}}
-    {{< hito year="2018" name="GAT (Graph Attention Network)" status="minimal" >}}
-      Veličković et al.: aplica atención a la propagación entre nodos vecinos — el modelo aprende qué vecinos importan más. **Por qué importó:** mostró que el patrón "atención" se transfería a grafos; estado del arte por varios años.
+    {{< hito year="2017" name="GCN" status="covered" link="/papers/gcn-kipf-2017" >}}
+      Kipf & Welling: *Graph Convolutional Network* — generaliza convolución a grafos vía propagación de mensajes con la matriz de adyacencia normalizada. **Por qué importó:** arquitectura simple y efectiva que abrió la era moderna de Graph Neural Networks; el paper más citado del campo. Cubierto en la [Clase 27](/clases/clase-27).
+    {{< /hito >}}
+    {{< hito year="2017" name="GraphSAGE" status="covered" link="/papers/graphsage-hamilton-2017" >}}
+      Hamilton et al.: muestrea vecinos en lugar de procesar todo el grafo, permitiendo entrenamiento inductive sobre grafos enormes. **Por qué importó:** primer GNN que escalaba a producción industrial (Pinterest, redes sociales). Ver [Clase 27](/clases/clase-27).
+    {{< /hito >}}
+    {{< hito year="2017" name="MPNN (Message Passing NN)" status="covered" link="/papers/mpnn-gilmer-2017" >}}
+      Gilmer et al.: el **framework unificador** que reescribe GGNN, GCN y compañía como casos de Message/Update/Readout, aplicado a química cuántica (QM9). **Por qué importó:** definió "message passing" como el vocabulario común de todas las GNN. Ver [Clase 27](/clases/clase-27).
+    {{< /hito >}}
+    {{< hito year="2018" name="R-GCN (Relational GCN)" status="covered" link="/papers/rgcn-schlichtkrull-2018" >}}
+      Schlichtkrull et al.: extiende GCN con **pesos por tipo de relación** para grafos de conocimiento (link prediction, entity classification). **Por qué importó:** llevó las GNN a los datos relacionales / knowledge graphs. Ver [Clase 27](/clases/clase-27).
+    {{< /hito >}}
+    {{< hito year="2018" name="GAT (Graph Attention Network)" status="covered" link="/papers/gat-velickovic-2018" >}}
+      Veličković et al.: aplica atención a la propagación entre nodos vecinos — el modelo aprende qué vecinos importan más. **Por qué importó:** mostró que el patrón "atención" se transfería a grafos; un Transformer es un GAT sobre grafo completo. Cubierto en la [Clase 27](/clases/clase-27).
+    {{< /hito >}}
+    {{< hito year="2019" name="GIN (How Powerful are GNNs?)" status="covered" link="/papers/gin-xu-2019" >}}
+      Xu et al.: caracteriza el **poder expresivo** de las GNN vía el test Weisfeiler-Lehman; GIN alcanza ese límite con un agregador inyectivo (suma + MLP). **Por qué importó:** dio la teoría de qué pueden y no pueden distinguir las GNN. Ver [Clase 27](/clases/clase-27) y el [fundamento de expresividad](/fundamentos/expresividad-gnn).
     {{< /hito >}}
     {{< hito year="2017" name="DeepAR" status="minimal" >}}
       Salinas et al. (Amazon): modelo autoregresivo basado en LSTM para forecasting probabilístico de muchas series temporales relacionadas, entrenado globalmente. **Por qué importó:** primer DL forecaster competitivo con métodos clásicos a escala industrial.

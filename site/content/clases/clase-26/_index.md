@@ -18,6 +18,7 @@ La clase se apoya en la [Clase 13 (Transfer learning)](/clases/clase-13) — MAM
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 59 diapositivas: intuicion, formalizacion, few-shot, MAML, MANN, metodos no-parametricos, aplicaciones" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: optimizacion bi-nivel, meta-gradiente de segundo orden, FOMAML/Reptile, Bregman en Prototypical, memoria LRUA" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="Episodios N-way K-shot, Prototypical y MAML en triple framework, Siamese y Matching Networks" icon="code" >}}
+  {{< card link="/clases/clase-27" title="Clase siguiente: Redes Neuronales de Grafos" subtitle="GNN, message passing, GCN/GAT" icon="arrow-right" >}}
   {{< card link="/clases/clase-25" title="Clase anterior: Recomendacion con imagenes y texto" subtitle="Sistemas recomendadores multimodales" icon="arrow-left" >}}
   {{< card link="/clases/clase-13" title="Base: Transfer learning" subtitle="Reutilizar conocimiento previo via fine-tuning" icon="academic-cap" >}}
 {{< /cards >}}
