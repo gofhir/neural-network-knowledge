@@ -162,6 +162,20 @@ Tres tensiones recorren toda la historia: (1) cómo construir **invariancia a tr
       [Liu et al. (MICCAI 2021)](/papers/meta-disentanglement-liu-2021) para segmentación con generalización de dominio multi-centro; MetaSeg (Vyas et al., MICCAI 2025 best paper) con INR meta-aprendido (Dice de U-Net, 90% menos parámetros); [fMRI denoising](/papers/fmri-denoising-heo-2025) (Heo et al.). **Por qué importó:** el few-shot/meta-learning pasó de benchmark académico a herramienta clínica para datos escasos y multi-institucionales.
     {{< /hito >}}
   {{< /era >}}
+  {{< era name="Era del Aprendizaje Autosupervisado" years="2015-2022" >}}
+    {{< hito year="2015-2016" name="Pretext tasks (contexto, color, inpainting)" status="covered" link="/papers/context-prediction-doersch-2015" >}}
+      Doersch et al. (posicionamiento relativo de parches), Zhang et al. ([colorización](/papers/colorization-zhang-2016)), Pathak et al. ([inpainting](/papers/context-encoders-pathak-2016)): primeras tareas pretexto que aprenden representaciones sin etiquetas. **Por qué importó:** demostraron que predecir una parte del input desde otra fuerza semántica útil. Cubierto en la [Clase 28](/clases/clase-28).
+    {{< /hito >}}
+    {{< hito year="2018" name="RotNet" status="covered" link="/papers/rotnet-gidaris-2018" >}}
+      Gidaris et al.: predecir la rotación (0/90/180/270°) como pretexto de 4 clases. **Por qué importó:** la simplicidad como virtud — una tarea trivial de plantear que exige reconocer objetos y su orientación canónica. Ver [Clase 28](/clases/clase-28).
+    {{< /hito >}}
+    {{< hito year="2020" name="SimCLR / MoCo" status="covered" link="/papers/simclr-chen-2020" >}}
+      Chen et al. ([SimCLR](/papers/simclr-chen-2020)) y He et al. ([MoCo](/papers/moco-he-2019)): aprendizaje contrastivo de instancias que iguala o supera al pre-entrenamiento supervisado de ImageNet en transfer. **Por qué importó:** el SSL contrastivo se volvió competitivo con el supervisado. Ver el [fundamento de aprendizaje contrastivo](/fundamentos/aprendizaje-contrastivo).
+    {{< /hito >}}
+    {{< hito year="2022" name="MAE (Masked Autoencoders)" status="covered" link="/papers/mae-he-2022" >}}
+      He et al.: enmascarar el 75% de los parches y reconstruirlos con un encoder ViT asimétrico. **Por qué importó:** llevó el masked language modeling de BERT a la visión, revivió los autoencoders y se volvió el pre-entrenamiento SSL dominante (base de DINOv2 y compañía). Cubierto en la [Clase 28](/clases/clase-28).
+    {{< /hito >}}
+  {{< /era >}}
   {{< era name="Era Transformer" years="2020-presente" >}}
     {{< hito year="2020" name="Vision Transformer (ViT)" status="deep" link="/fundamentos/vision-transformer" >}}
       Aplica un Transformer puro sobre parches de la imagen. Con suficiente data y escala, supera a CNNs sin sesgos inductivos visuales explícitos.
