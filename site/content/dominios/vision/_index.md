@@ -176,6 +176,23 @@ Tres tensiones recorren toda la historia: (1) cómo construir **invariancia a tr
       He et al.: enmascarar el 75% de los parches y reconstruirlos con un encoder ViT asimétrico. **Por qué importó:** llevó el masked language modeling de BERT a la visión, revivió los autoencoders y se volvió el pre-entrenamiento SSL dominante (base de DINOv2 y compañía). Cubierto en la [Clase 28](/clases/clase-28).
     {{< /hito >}}
   {{< /era >}}
+  {{< era name="Era Generativa" years="2013-2022" >}}
+    {{< hito year="2013" name="VAE (Variational Autoencoder)" status="covered" link="/papers/vae-kingma-2013" >}}
+      Kingma & Welling: reformulan el autoencoder como modelo generativo probabilístico (ELBO + reparameterization trick), con espacio latente continuo que permite interpolar. **Por qué importó:** primer modelo latente profundo entrenable end-to-end; su VAE es el compresor de Stable Diffusion. Cubierto en la [Clase 29](/clases/clase-29).
+    {{< /hito >}}
+    {{< hito year="2014" name="GAN (Generative Adversarial Nets)" status="covered" link="/papers/gan-goodfellow-2014" >}}
+      Goodfellow et al.: un generador y un discriminador compiten en un juego minimax. **Por qué importó:** revolucionó la generación de imágenes; calidad visual sin precedentes (a costa de inestabilidad y mode collapse). Ver [Clase 29](/clases/clase-29).
+    {{< /hito >}}
+    {{< hito year="2015-2019" name="DCGAN → StyleGAN" status="covered" link="/papers/stylegan-karras-2019" >}}
+      Radford et al. ([DCGAN](/papers/dcgan-radford-2015)) estabilizó las GAN con convoluciones; Karras et al. ([StyleGAN](/papers/stylegan-karras-2019)) añadió control de estilo jerárquico y caras hiperrealistas (FFHQ). **Por qué importó:** llevó las GAN a la cumbre de calidad y control. Ver [Clase 29](/clases/clase-29).
+    {{< /hito >}}
+    {{< hito year="2020" name="DDPM (Modelos de Difusión)" status="covered" link="/papers/ddpm-ho-2020" >}}
+      Ho et al.: convertir datos en ruido gradualmente y entrenar una U-Net para invertir el proceso prediciendo el ruido. **Por qué importó:** destronó a las GAN en calidad y cobertura; es la base de toda la generación moderna. Ver el [fundamento de modelos de difusión](/fundamentos/modelos-de-difusion).
+    {{< /hito >}}
+    {{< hito year="2022" name="Latent / Stable Diffusion" status="covered" link="/papers/latent-diffusion-rombach-2022" >}}
+      Rombach et al.: aplicar la difusión en el espacio latente comprimido de un autoencoder (VAE) + cross-attention con CLIP para condicionar por texto. **Por qué importó:** hizo viable la generación text-to-image de alta resolución — es Stable Diffusion, el generador más usado del mundo. Cubierto en la [Clase 29](/clases/clase-29).
+    {{< /hito >}}
+  {{< /era >}}
   {{< era name="Era Transformer" years="2020-presente" >}}
     {{< hito year="2020" name="Vision Transformer (ViT)" status="deep" link="/fundamentos/vision-transformer" >}}
       Aplica un Transformer puro sobre parches de la imagen. Con suficiente data y escala, supera a CNNs sin sesgos inductivos visuales explícitos.
