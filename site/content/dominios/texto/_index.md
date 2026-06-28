@@ -135,6 +135,9 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
     {{< hito year="2015" name="bAbI (Weston)" status="covered" link="/papers/babi-weston-2015" >}}
       Weston et al. (Facebook AI): 20 toy tasks sintéticas, cada una aislando una habilidad de razonamiento (supporting facts, coreferencia, deducción, conteo, path finding). **Por qué importó:** banco de pruebas diagnóstico que impulsó las Memory Networks y la agenda de reasoning; QA como proxy de "AI-complete".
     {{< /hito >}}
+    {{< hito year="2014-2017" name="Memory Networks (Weston → EntNet)" status="covered" link="/papers/e2e-memnn-sukhbaatar-2015" >}}
+      [Memory Networks](/papers/memory-networks-weston-2014) (Weston 2014) → [End-to-End MemNN](/papers/e2e-memnn-sukhbaatar-2015) (Sukhbaatar 2015, atención softmax sin supervisión de hops) → [Key-Value MemNN](/papers/key-value-memnn-miller-2016) (Miller 2016) → [Recurrent Entity Networks](/papers/entity-networks-henaff-2017) (Henaff 2017): memoria **explícita** de slots para razonamiento y QA. **Por qué importó:** precursor directo de la self-attention de los Transformers (lectura de memoria = query/key/value) y de RAG. Cubierto en la [Clase 30](/clases/clase-30).
+    {{< /hito >}}
     {{< hito year="2015" name="CNN/Daily Mail (Hermann)" status="deep" link="/papers/cnn-dailymail-hermann-2015" >}}
       Hermann et al. (DeepMind/Oxford): primer dataset masivo de reading comprehension, construido como tarea cloze con entidades anonimizadas; introduce el Attentive Reader. **Por qué importó:** hizo viable el deep learning para QA y detonó la oleada de datasets de MRC.
     {{< /hito >}}

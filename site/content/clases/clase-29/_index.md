@@ -18,6 +18,7 @@ La clase integra el curso: autoencoders y CNN, la [U-Net](/papers/unet-ronneberg
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 47 diapositivas: motivación, Autoencoders/VAE, GANs, difusión, Latent/Stable Diffusion, FID, industria" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: ELBO y reparameterization, minimax y Jensen-Shannon, DDPM (ε-prediction), score matching, cross-attention y guidance, FID" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="VAE, GAN y difusión DDPM desde cero en triple framework (PyTorch, TensorFlow, JAX)" icon="code" >}}
+  {{< card link="/clases/clase-30" title="Clase siguiente: Modelos con memoria externa" subtitle="Memory Networks, NTM, memoria explícita" icon="arrow-right" >}}
   {{< card link="/clases/clase-28" title="Clase anterior: Aprendizaje Autosupervisado" subtitle="SSL, contrastivo, MAE, UDA" icon="arrow-left" >}}
   {{< card link="/clases/clase-23" title="Base: VQA e Image Captioning (CLIP)" subtitle="CLIP, el text encoder de Stable Diffusion" icon="academic-cap" >}}
 {{< /cards >}}
