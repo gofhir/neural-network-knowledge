@@ -23,6 +23,12 @@ La clase se apoya en la [Clase 13 (Transfer learning)](/clases/clase-13) — MAM
   {{< card link="/clases/clase-13" title="Base: Transfer learning" subtitle="Reutilizar conocimiento previo via fine-tuning" icon="academic-cap" >}}
 {{< /cards >}}
 
+## Laboratorio
+
+{{< cards >}}
+  {{< card link="/laboratorios/lab-26" title="Lab 26 - Meta-aprendizaje: MAML y Prototypical Networks" subtitle="La contraparte practica: MAML (optimization-based) vs Prototypical (metric-based) sobre Omniglot y Mini-ImageNet, las 7 actividades resueltas" icon="academic-cap" >}}
+{{< /cards >}}
+
 ## Fundamentos relacionados
 
 {{< cards >}}

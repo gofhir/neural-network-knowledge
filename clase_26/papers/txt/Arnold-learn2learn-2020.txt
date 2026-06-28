@@ -1,0 +1,386 @@
+arXiv:2008.12284v2  [cs.LG]  28 Aug 2020
+learn2learn: A Library for Meta-Learning Research
+Sébastien M. R. Arnold ∗1 , Praateek Mahajan 2, Debajyoti Datta 3, Ian
+Bunner4, and Konstantinos Saitas Zarkias 5
+1 University of Southern California 2 Iterable, Inc. 3 University of Virginia 3 University of
+Waterloo 5 KTH Royal Institute of Technology and RISE - Research Instit utes of Sweden, SICSWebsite:
+http://learn2learn.net
+Software
+• Repository
+• Documentation
+• Tutorials
+Licence
+Authors of this paper retain
+copyright and release the work
+under a Creative Commons At-
+tribution 4.0 International Li-
+cense (
+CC-BY).
+Abstract
+Meta-learning researchers face two fundamental issues in t heir empirical work:
+prototyping and reproducibility. Researchers are prone to make mistakes when pro-
+totyping new algorithms and tasks because modern meta-lear ning methods rely on
+unconventional functionalities of machine learning frame works. In turn, reproducing
+existing results becomes a tedious endeavour – a situation e xacerbated by the lack
+of standardized implementations and benchmarks. As a resul t, researchers spend
+inordinate amounts of time on implementing software rather than understanding and
+developing new ideas.
+This manuscript introduces learn2learn, a library for meta-learning research
+focused on solving those prototyping and reproducibility i ssues. learn2learn pro-
+vides low-level routines common across a wide-range of meta -learning techniques
+(e.g. meta-descent, meta-reinforcement learning, few-sh ot learning), and builds stan-
+dardized interfaces to algorithms and benchmarks on top of t hem. In releasing
+learn2learn under a free and open source license, we hope to foster a commu -
+nity around standardized software for meta-learning resea rch.
+Introduction
+Meta-learning is the subﬁeld of machine learning that endow s computer programs with
+the ability of learning to learn. That is, the computer not on ly learns a behavior, but
+also how to adapt its behavior. To illustrate this diﬀerence , let us make an anology with
+the world of athleticism. If a learning program is akin to an a thlete, a meta-learning
+program corresponds to the athlete-coach pair: it simultan eously learns a skill and how
+to teach it best. Meta-learning is appealing whenever the at hlete is required to excel
+in multiple sports, as the coach can leverage shared aspects of each sport to accelerate
+mastery. Recent meta-learning methods emerged from this na tural ability to multitask –
+e.g. meta-descent in optimization, meta-reinforcement le arning in reinforcement learning,
+and few-shot learning when labelled data is limited – reachi ng state-of-the-art performance
+on vision, language, and robotic domains. (Sutton 1992; Dua n, Schulman, et al. 2016;
+Miller, Matsakis, and Viola 2000; Lee et al. 2019; Brown et al . 2020; Metz et al. 2019;
+Nagabandi et al. 2018)
+∗ Correspondance to seb.arnold@usc.edu
+Arnold et al., (2020). learn2learn: A Library for Meta-Learning Research. Preprint 1
+Unfortunately, modern meta-learning research is often slo wed down by prototyping and
+reproducibility challenges. Prototyping algorithms is an error-prone process since meta-
+learning algorithms rely on supported but exotic functiona lities of machine learning software.
+(e.g. gradient of optimization steps) Consequently, a slow prototyping phase reduces the
+number of ideas one can try and retain. It also directly impac ts reproducibility: researchers
+are more likely to make mistake with someone else’s idea than with their own. Combined,
+those pesky issues prevent meaningful comparisons across p ublications, ultimately reducing
+the impact of any publication in the ﬁeld.
+Why do we suﬀer prototyping and reproducibility issues?
+Although a complete answer is outside the scope of this manus cript, we blame the lack
+of specialized software as a major culprit. A software libra ry with specialized subroutines
+would reduce gaﬀes when prototyping, improving reproducib ility too. A widely-adopted
+library also promotes standardized implementation of exis ting methods and benchmarks,
+an issue in prior research; for example, the community lost t he original mini-ImageNet data
+splits from Vinyals et al. (2016), leaving subsequent work t o replicate them as best they
+could. In summary, there is a need for a specialized software library which would alleviate
+many of the issues currently plaguing meta-learning resear ch.
+We introduce learn2learn, a software library that directly addresses prototyping an d re-
+productibility issues in meta-learning research. learn2learn provides researchers with a
+uniﬁed and extensible interface to existing benchmarks, an d a set of well-tested subroutines
+frequently used to implement meta-learning algorithms. Th e library also packages numer-
+ous examples replicating published methods, which can easi ly be adapted for comparisons
+on new benchmarks. learn2learn is implemented in Python to maintain compatiblity
+with the greater machine learning ecosystem. It extends PyT orch (Paszke et al. 2019) and
+leverages its fast linear algebra and automatic diﬀerentia tion capabilites, while resorting
+to Cython (Behnel et al. 2011) when speed is required for data -handling. learn2learn
+is already used in our day-to-day research, and we hope its de velopment will continue to
+beneﬁt the wider meta-learning community.
+The remainder of this document overviews the prototyping an d reproducibility capabilities
+of learn2learn, including a review of related work.
+Prototyping
+Prototyping is essential in letting researchers quickly tr y new ideas. The faster the pro-
+totyping phase, the faster an idea can be retained (or discar ded) for further exploration.
+learn2learn provides tools to accelerate two aspects of the prototyping phase: algorithms
+and domains.
+Algorithms
+Implementing meta-learning algorithms can be tricky. For e xample, many methods rely
+Arnold et al., (2020). learn2learn: A Library for Meta-Learning Research. Preprint 2
+on computing gradients of algorithms – rather than gradient s of functions – which, while
+possible with modern machine learning frameworks (e.g. PyT orch, TensorFlow, JAX), is
+strenuous and prone to errors. (Finn, Abbeel, and Levine 201 7; Jacobsen et al. 2019;
+Xu, Hasselt, and Silver 2018) However, this doesn’t need be t he case: many diﬀerentiable
+algorithms can be implemented with minor changes when given the right abstractions. 1
+1 learned_upda te = l2l . optim . ParameterUpd a te (
+2 model . parameters () ,
+3 l2l . optim . KroneckerT r an s fo rm ( l2l . nn .KroneckerLin ea r )
+4 )
+5 clone = l2l . clone_module ( model ) # torch . clone () for nn . Modules
+6 updates = learned_upda te ( # similar API as torch . autograd . grad
+7 loss ( clone ( X ) , y ) ,
+8 clone . parameters () ,
+9 create_graph = True ,
+10 )
+11 # in - place , differentiab le update of clone parameters
+12 l2l . update_modul e ( clone , updates )
+13 # gradients w . r . t model 's and learned_upda te 's parameters
+14 loss ( clone ( X ) , y ) . backward ()
+Snippet 1: Demonstration of diﬀerentiable optimization routines. Li nes 1-4 instantiate a param-
+eterized update function, which computes the gradient of a l oss w.r.t. some module’s parameters
+(clone, line 8) and passes them through a gradient transform – a module mapping gradients to
+updates. (here a KroneckerLinear, line 3) Line 5 creates a diﬀerentiable copy of the model,
+and line 11 updates that copy in-place such that the update is itself diﬀerentiable. Finally, line
+13 backpropagates through the loss of the updated diﬀerenti able copy, thus computing gradients
+w.r.t. the "pre-update" model parameters and the KroneckerLinear parameters.
+To ease the implementation of such methods, learn2learn exposes low-level routines for
+diﬀerentiable optimization in learn2learn.optim. These routines are tightly built around
+PyTorch’s automatic diﬀerentiation engine, so as to mainta in compatibility and extensibil-
+ity. They can be used to express optimization algorithms suc h that their computational
+graph remains diﬀerentiable. Snippet 1 provides an example , which implements the 1-
+step learning loop of the linear Kronecker-factored optimi zer from Arnold, Iqbal, and Sha
+(2019). (Note how both model and optimizer parameters are me ta-learned; implement-
+ing the same functionality with vanilla PyTorch requires 10 x the lines of code.) We’ve
+used those general-purpose routines to implement algorith ms from the literatures of few-
+shot, meta-descent, and meta-reinforcement learning – inc luding MAML (Finn, Abbeel,
+and Levine 2017), Hypergradient descent (Baydin et al. 2017 ), or ProMP (Rothfuss et al.
+2018) among others.
+Domains
+Researchers have to design new domains – such as datasets, ta sks, or environments –
+to develop and test new abilities of their programs. We refer to this other aspect of
+1See for example Agrawal et al. (2019).
+Arnold et al., (2020). learn2learn: A Library for Meta-Learning Research. Preprint 3
+the research lifecycle as prototyping new domains . learn2learn can help prototype new
+domains for few-shot and meta-reinforcement learning.
+1 dataset = l2l . data . MetaDataset ( MyDataset () ) # PyTorch dataset
+2 transforms = [ # easy to define custom task transforms
+3 l2l . data . transforms . NWays ( dataset , n =5) ,
+4 l2l . data . transforms . KShots ( dataset , k =1) ,
+5 l2l . data . transforms . LoadData ( dataset ) ,
+6 lambda task : [( random_rota t io n ( x ) , y ) for x , y in task ]
+7 ]
+8 taskset = l2l . data . TaskDataset ( dataset ,
+9 transforms ,
+10 num_tasks =20000)
+11 random_task = taskset . sample () # sample one task
+12 for task in taskset : # iterate over all tasks
+13 X , y = task
+Snippet 2: The interface to TaskDataset and TaskTransform. Line 1 wraps an arbitrary
+PyTorch dataset with the MetaDataset class. Lines 2-7 deﬁne TaskTransforms: here, 5-ways
+1-shot classiﬁcation with a custom random-rotation task au gmentation applied to each (x, y) pair.
+Lines 8-10 instantiate the TaskDataset, from which tasks can be sampled (line 11) or enumerated
+(lines 12-13).
+For few-shot meta-learning, learn2learn provides a general TaskDataset class enabling
+sampling of smaller tasks in learn2learn.data. Those tasks are constructed through a
+series of TaskTransforms, which iteratively reﬁne the description of the data in the task.
+Writing a new task transform is as easy as writing a Python fun ction, but those functions
+can be made arbitrarily complex thanks to Python’s callable objects. See Snippet 2 for an
+example. With the combination of TaskDataset and TaskTransforms, researchers can
+quickly develop fast custom data and task sampling schemes, while retaining compatibility
+with any PyTorch dataset; this lets them quickly iterate ove r ideas with small datasets and
+scale up to larger experiments with the same codebase.
+1 def make_env () :
+2 env = l2l . gym . H a l f C h e e t a h F o r w a r d B a c k w a r d E n v()
+3 return cherry . envs . StateNormali ze r ( env )
+4
+5 # use 16 processes , compatible with gym API
+6 env = l2l . gym . AsyncVectorE nv ([ make_env for i in range (16) ])
+7 tasks = env . sample_tasks (20)
+8 env . set_task ( tasks [0]) # all processes run task 0
+Snippet 3: Utilities for meta-reinforcement learning environments. Lines 1-3 instantiate the half-
+cheetah environment, with tasks deﬁned as running forward o r backward. This environment is
+then wrapped by cherry, an external reinforcement learning library. Line 6 forks 16 asynchronous
+workers, each with its own copy of the half-cheetah environm ent. Finally, lines 7-8 sample 20 tasks
+and assign the ﬁrst one to all workers.
+For meta-reinforcement learning, learn2learn provides a high-level MetaEnv interface
+in learn2learn.gym which can be used to bootstrap the design of OpenAI Gym en-
+Arnold et al., (2020). learn2learn: A Library for Meta-Learning Research. Preprint 4
+vironments. (Brockman et al. 2016) Environments that adher e to this interface can
+take advantage of specially designed utilities included in learn2learn; for example, the
+AsyncVectorEnv wrapper parallelizes the collection of episodes across mul tiple processes.
+(c.f. Snippet 3) Such environments also retain the Gym API, m aking them compatible
+with all popular reinforcement learning libraries. (Dhari wal et al. 2017; Duan, Chen, et
+al. 2016; Liang et al. 2017) Naturally, they also become comp atible with the various
+meta-reinforcement learning algorithms implemented with in the library.
+The core prototyping tools toured in the above paragraphs op en the door to more advanced
+developments such as online, incremental, or lifelong meta -learning. While this manuscript
+can only present a bird’s-eye view of those tools, we invite t he reader to the library’s
+website and documentation for such advanced applications.
+Reproducibility
+The ﬁeld of meta-learning is advancing rapidly, but progres s is plagued by reproducibility
+issues. Those issues are often subtle and hard to spot. In met a-reinforcement learning for
+example, diﬀerent papers have used diﬀerent reward functio ns with the same environment,
+resulting in confusing comparisons: are the observed impro vements due to algorithmic
+advancements or to changes in the reward function? To combat those insiduous issues,
+learn2learn includes a set of high-quality implementations for various meta-learning algo-
+rithms as well as standardized benchmarks for few-shot and m eta-reinforcement learning.
+1 meta_sgd = l2l . algorithms . GBML (
+2 model ,
+3 l2l . optim . ModuleTrans fo rm ( l2l . nn .Scale ) ,
+4 )
+5 meta_curvatu re = l2l . algorithms . GBML (
+6 model ,
+7 l2l . optim . M e t a C u r v a t u r e T r a n s f o r m,
+8 )
+9 meta_kfo = l2l . algorithms . GBML (
+10 model ,
+11 l2l . optim . KroneckerT r an s fo rm ( l2l . nn .KroneckerLin ea r ) ,
+12 adapt_trans f or m = True ,
+13 )
+Snippet 4: Implementation of Meta-SGD (lines 1-4), Meta-Curvature (l ines 5-8), and Meta-KFO
+(lines 9-13) with the GBML wrapper. Each variant diﬀers in how the fast-adaptation gra dients are
+transformed, which is reﬂected through the transform and adapt_transform arguments.
+Implementations
+learn2learn provides high-level implementations for popular algorithms. These implemen-
+tations build on top of the low-level routines from the previ ous section, and are thoroughly
+tested to replicate published works. They typically wrap ar ound PyTorch modules to extend
+Arnold et al., (2020). learn2learn: A Library for Meta-Learning Research. Preprint 5
+them with speciﬁc meta-learning functionalities. For exam ple, the LearnableOptimizer
+retains the familiar PyTorch Optimizer interface and extends it to learn arbitrary meta-
+optimization updates; similarly, the GBML augments PyTorch Modules to support fast-
+adaptation routines for few-shot and meta-reinforcement l earning. GBML implementations
+of Meta-SGD, Meta-Curvature, Meta-KFO are available in Sni ppet 4. (Li et al. 2017;
+Park and Oliva 2019; Arnold, Iqbal, and Sha 2019)
+With those high-level implementations and the standardize d benchmark interface described
+below, we supply examples that exactly reproduce published experiments. Those examples
+serve three purposes. First, they validate the correctness of our implementation and a
+publication’s claims; second, they illustrate how to use th e library; third, they ﬁll the need
+for uniﬁed standardized reproductions. As a by-product, th ose examples can be used to
+bootstrap further experimentation and analysis around a me thod of interest. For example,
+we could easily complement ANIL’s (Raghu et al. 2019) origin al results on the Omniglot
+(Lake, Salakhutdinov, and Tenenbaum 2015) and mini-Imagen et (Vinyals et al. 2016)
+datasets with new results on CIFAR-FS (Bertinetto et al. 201 8) and FC100 (Oreshkin,
+Rodríguez López, and Lacoste 2018).
+1 from learn2learn . vision import benchmarks
+2 print ( benchmarks . list_tasksets () )
+3 # [ ' omniglot ', ' cifar - fs ', ' fc100 ', ' mini - imagenet ', ... ]
+4 tasksets = benchmarks . get_tasksets ( # standardized pipeline
+5 name = ' mini - imagenet ' ,
+6 train_sample s =10 ,
+7 train_ways =5)
+8 task = tasksets . train . sample () # tasksets . train is a task dataset
+Snippet 5: High-level API to standardized computer vision benchmarks . Line 2 prints the list
+of available tasksets. On lines 4-7, we instantiate the 5-wa ys 5-shots mini-ImageNet benchmark,
+which returns the tasksets namedtuple with train, validation, and test keys. Line 8
+samples a task from the train TaskDataset.
+Benchmarks
+We use the low-level domains API to implement standard bench marks in few-shot and
+meta-reinforcement learning settings. For few-shot learn ing, learn2learn provides
+classes to download and preprocess datasets commonly used b y the community in
+learn2learn.vision. In addition, it also includes task deﬁnitions with the prop er
+task-processing stages (image normalization, rotation, c ropping) for commonly reported
+settings such as 5-ways 1-shot, 5-ways 5-shots, and 20-ways 5-shots. An example of those
+task deﬁnitions is described in Snippet 5.
+The meta-reinforcement learning environments range from s imple 2D-particle navigation to
+robotics control. In particular, we include simple to use wr appers for the recently proposed
+MetaWorld, a set of 50 gripper manipulation tasks with varyi ng levels of diﬃculty. Those
+benchmark implementations should greatly simplify the rep lication and comparison of new
+Arnold et al., (2020). learn2learn: A Library for Meta-Learning Research. Preprint 6
+methods on well-studied settings. They, and other meta-rei nforcement learning utilities,
+are included in learn2learn.gym.
+Combined with the provided implementations, we hope learn2learn enables researchers
+to accelerate the process of correctly comparing their idea s against existing methods.
+Related Work
+Disparate implementations of individual algorithms set as ide, two recent libraries tackle
+similar challenges as learn2learn.
+The ﬁrst one, higher (Grefenstette et al. 2019), aims to facilitate the implemen tation of
+“generalized inner-loop meta-algorithms” – in other words , the implementation of diﬀeren-
+tiable optimization algorithms. higher treats a model deﬁnition (e.g. a neural network)
+as a symbolic computational graph, for which they use one set of parameters or another
+based on user-speciﬁed context. This “stateless” paramete rization is as expressive as the
+learn2learn.optim submodule – after all, both are implemented on top of PyTorch –
+but requires researchers to carefully understand when they are working with symbolic or
+declarative parts of their computation. Instead, learn2learn sticks with a stateful and
+declarative style, already familiar to the PyTorch researc h userbase. Moreover, higher
+completely forgoes reproducibility issues as its focus is o n the implementation of novel
+algorithms.
+The second one, Torchmeta (Deleu et al. 2019), intends to provide a uniﬁed interface
+to popular datasets, including classes to easily download a nd process them. Speciﬁcally,
+it focuses on standardized few-shot computer vision tasks, allowing researchers to easily
+swap one dataset for another. However, supporting new datas ets with Torchmeta requires
+implementing a bridging class, even if the dataset is alread y in standard PyTorch format.
+On the other hand, learn2learn’s TaskDataset explicitly avoids such bridging classes,
+and is designed to be compatible with any PyTorch dataset (in cluding text, speech, and
+others). Torchmeta also povides a thin algorithmic wrapper to demonstrate the u sage of
+their library with gradient-based meta-learning algorith ms; but, this wrapper is not compat-
+ible with the majority of PyTorch’s layers, nor custom modul es implemented by researchers.
+In comparison, learn2learn’s diﬀerentiable optimization submodule uniformly handle s all
+PyTorch Modules (including custom ones), making it a more applicable resea rch tool.
+Overall, learn2learn oﬀers a more general solution to the prototyping and reprodu ciblity
+issues encountered in day-to-day research. For example, at the time of this writing, neither
+of the above libraries supports meta-descent or meta-reinf orcement learning.
+Conclusion
+This manuscript introduces learn2learn, a library that tackles prototyping and repro-
+ducibility issues in modern meta-learning. learn2learn’s low-level routines facilitate rapid
+Arnold et al., (2020). learn2learn: A Library for Meta-Learning Research. Preprint 7
+prototyping of new algorithms and domains. The library buil ds on those low-level routines
+to provide high-level implementations and standardized be nchmarks API, which enable
+researchers to easily and faithfully compare diﬀerent meth ods under diﬀerent settings. No-
+tably, both low- and high-level utilities are engineered to be general: they are compatible
+with a wide range of meta-learning techniques in few-shot le arning, meta-reinforcement
+learning, or meta-optimization. Finally, learn2learn is released under the free and open
+source MIT licence, and the focus of continued development.
+Acknowledgements
+We thank Fei Sha for providing excellent research environme nt and guidance, and for
+the computational resources required to develop learn2learn. We also thank the var-
+ious users who – through their questions, comments, or contr ibutions – helped improve
+learn2learn.
+This work is partially supported by NSF IIS-1065243,1451412, 1513966/ 1632803/1833137,
+1208500, CCF-1139148,DARPA Award#: FA8750-18-2-0117, DA RPA-D3M - AwardUCB-
+00009528, Google Research Awards, an Alfred P. SloanResear ch Fellowship, gifts from
+Facebook and Netﬂix, and ARO#W911NF-12-1-0241 and W911NF- 15-1-0484.
+Arnold et al., (2020). learn2learn: A Library for Meta-Learning Research. Preprint 8
+References
+Agrawal, A., B. Amos, S. Barratt, S. Boyd, S. Diamond, and Z. K olter. 2019. “Dif-
+ferentiable Convex Optimization Layers.” In Advances in Neural Information Processing
+Systems.
+Arnold, Sébastien M R, Shariq Iqbal, and Fei Sha. 2019. “When MAML Can Adapt Fast
+and How to Assist When It Cannot,” October.
+Baydin, Atilim Gunes, Robert Cornish, David Martinez Rubio , Mark Schmidt, and Frank
+Wood. 2017. “Online Learning Rate Adaptation with Hypergra dient Descent,” March.
+Behnel, Stefan, Robert Bradshaw, Craig Citro, Lisandro Dal cin, Dag Sverre Seljebotn,
+and Kurt Smith. 2011. “Cython: The Best of Both Worlds.” Computing in Science &
+Engineering 13 (2). IEEE: 31–39.
+Bertinetto, Luca, Joao F Henriques, Philip Torr, and Andrea Vedaldi. 2018. “Meta-
+Learning with Diﬀerentiable Closed-Form Solvers.”
+Brockman, Greg, Vicki Cheung, Ludwig Pettersson, Jonas Sch neider, John Schulman, Jie
+Tang, and Wojciech Zaremba. 2016. “OpenAI Gym,” June.
+Brown, Tom B, Benjamin Mann, Nick Ryder, Melanie Subbiah, Ja red Kaplan, Prafulla
+Dhariwal, Arvind Neelakantan, et al. 2020. “Language Model s Are Few-Shot Learners,”
+May.
+Deleu, Tristan, Tobias Würﬂ, Mandana Samiei, Joseph Paul Co hen, and Yoshua Bengio.
+2019. “Torchmeta: A Meta-Learning Library for PyTorch,” Se ptember.
+Dhariwal, Prafulla, Christopher Hesse, Oleg Klimov, Alex N ichol, Matthias Plappert, Alec
+Radford, John Schulman, Szymon Sidor, Yuhuai Wu, and Peter Z hokhov. 2017. “OpenAI
+Baselines.” GitHub Repository .
+Duan, Yan, Xi Chen, Rein Houthooft, John Schulman, and Piete r Abbeel. 2016. “Bench-
+marking Deep Reinforcement Learning for Continuous Contro l,” April.
+Duan, Yan, John Schulman, Xi Chen, Peter L Bartlett, Ilya Sut skever, and Pieter Abbeel.
+2016. “RL 2: Fast Reinforcement Learning via Slow Reinforcement Learn ing,” November.
+Finn, Chelsea, Pieter Abbeel, and Sergey Levine. 2017. “Mod el-Agnostic Meta-Learning
+for Fast Adaptation of Deep Networks.” arXiv Preprint arXiv:1703. 03400 .
+Grefenstette, Edward, Brandon Amos, Denis Yarats, Phu Mon H tut, Artem Molchanov,
+Franziska Meier, Douwe Kiela, Kyunghyun Cho, and Soumith Ch intala. 2019. “Generalized
+Inner Loop Meta-Learning,” October.
+Jacobsen, Andrew, Matthew Schlegel, Cameron Linke, Thomas Degris, Adam White, and
+Martha White. 2019. “Meta-Descent for Online, Continual Pr ediction,” July.
+Lake, Brenden M, Ruslan Salakhutdinov, and Joshua B Tenenba um. 2015. “Human-Level
+Arnold et al., (2020). learn2learn: A Library for Meta-Learning Research. Preprint 9
+Concept Learning Through Probabilistic Program Induction .” Science 350 (6266): 1332–8.
+Lee, Kwonjoon, Subhransu Maji, Avinash Ravichandran, and S tefano Soatto. 2019. “Meta-
+Learning with Diﬀerentiable Convex Optimization,” April.
+Li, Zhenguo, Fengwei Zhou, Fei Chen, and Hang Li. 2017. “Meta -SGD: Learning to Learn
+Quickly for Few-Shot Learning,” July.
+Liang, Eric, Richard Liaw, Philipp Moritz, Robert Nishihar a, Roy Fox, Ken Goldberg,
+Joseph E Gonzalez, Michael I Jordan, and Ion Stoica. 2017. “R Llib: Abstractions for
+Distributed Reinforcement Learning,” December.
+Metz, Luke, Niru Maheswaranathan, Jonathon Shlens, Jascha Sohl-Dickstein, and Ekin D
+Cubuk. 2019. “Using Learned Optimizers to Make Models Robus t to Input Noise,” June.
+Miller, E G, N E Matsakis, and P A Viola. 2000. “Learning from O ne Example Through
+Shared Densities on Transforms.” In Proceedings IEEE Conference on Computer Vision
+and Pattern Recognition. CVPR 2000 (Cat. No.PR00662) , 1:464–71 vol.1.
+Nagabandi, Anusha, Ignasi Clavera, Simin Liu, Ronald S Fear ing, Pieter Abbeel, Sergey
+Levine, and Chelsea Finn. 2018. “Learning to Adapt in Dynami c, Real-World Environments
+Through Meta-Reinforcement Learning,” March.
+Oreshkin, Boris, Pau Rodríguez López, and Alexandre Lacost e. 2018. “TADAM: Task
+Dependent Adaptive Metric for Improved Few-Shot Learning. ” In Advances in Neural
+Information Processing Systems 31 , edited by S Bengio, H Wallach, H Larochelle, K
+Grauman, N Cesa-Bianchi, and R Garnett, 721–31. Curran Asso ciates, Inc.
+Park, Eunbyung, and Junier B Oliva. 2019. “Meta-Curvature, ” February.
+Paszke, Adam, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory
+Chanan, Trevor Killeen, et al. 2019. “PyTorch: An Imperativ e Style, High-Performance
+Deep Learning Library.” In Advances in Neural Information Processing Systems 32 , edited
+by H Wallach, H Larochelle, A Beygelzimer, F d’Alché-Buc, E F ox, and R Garnett, 8026–37.
+Curran Associates, Inc.
+Raghu, Aniruddh, Maithra Raghu, Samy Bengio, and Oriol Viny als. 2019. “Rapid Learning
+or Feature Reuse? Towards Understanding the Eﬀectiveness o f MAML,” September.
+Rothfuss, Jonas, Dennis Lee, Ignasi Clavera, Tamim Asfour, and Pieter Abbeel. 2018.
+“ProMP: Proximal Meta-Policy Search.”
+Sutton, Richard S. 1992. “Adapting Bias by Gradient Descent : An Incremental Version of
+Delta-Bar-Delta,” June.
+Vinyals, Oriol, Charles Blundell, Timothy Lillicrap, Kora y Kavukcuoglu, and Daan Wierstra.
+2016. “Matching Networks for One Shot Learning.” In Advances in Neural Information
+Processing Systems 29 , edited by D D Lee, M Sugiyama, U V Luxburg, I Guyon, and R
+Garnett, 3630–8. Curran Associates, Inc.
+Xu, Zhongwen, Hado van Hasselt, and David Silver. 2018. “Met a-Gradient Reinforcement
+Learning,” May.
+Arnold et al., (2020). learn2learn: A Library for Meta-Learning Research. Preprint 10

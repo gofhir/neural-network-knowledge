@@ -25,4 +25,8 @@ Exploracion en profundidad de los laboratorios del diplomado: librerias, concept
   {{< card link="lab-19" title="Lab 19 - Entrenamiento, Deployment y MLOps con BentoML" subtitle="Caso Space Z + servidor BentoML + benchmark latencia/concurrencia + compresión JPEG (throughput 1.2 req/s saturado por JSON)" icon="cube-transparent" >}}
   {{< card link="lab-21" title="Lab 21 - Scene Text Recognition: ABCNet end-to-end" subtitle="Disección de la salida (beziers + recs + charset) + OCR de marcas en alemán (transfer zero-shot) + minería geoespacial sobre Street View" icon="photograph" >}}
   {{< card link="lab-22" title="Lab 22 - Summarization: Extractivo (BertSum) y Abstractivo (T5)" subtitle="Selección de oraciones vs generación, trigram blocking, decodificación, ROUGE real sobre CNN/DailyMail" icon="document-text" >}}
+  {{< card link="lab-23" title="Lab 23 - VQA e Image Captioning con BLIP" subtitle="Vision-language: preguntas visuales y descripción de imágenes con BLIP" icon="photograph" >}}
+  {{< card link="lab-24" title="Lab 24 - Question Answering: Extractivo (BERT) y Generativo (T5/BART)" subtitle="QA extractivo vs generativo en español, BETO/SQuAD-es vs T5/SQAC" icon="document-text" >}}
+  {{< card link="lab-25" title="Lab 25 - Recomendación multimodal con imágenes y texto" subtitle="Content-based multimodal estilo Pinterest: AlexNet fc7 + BERT, proxy task, nDCG" icon="academic-cap" >}}
+  {{< card link="lab-26" title="Lab 26 - Meta-aprendizaje: MAML y Prototypical Networks" subtitle="Optimization-based vs metric-based sobre Omniglot y Mini-ImageNet, ejes WAYS/SHOTS, las 7 actividades" icon="academic-cap" >}}
 {{< /cards >}}
