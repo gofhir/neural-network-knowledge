@@ -18,6 +18,7 @@ La clase se apoya en el [Mecanismo de atención (Clase 15)](/clases/clase-15) y 
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 49 diapositivas: notación de grafos, message passing en 4 etapas, receptive field, objetivos, GGNN/GCN/GraphSAGE y aplicaciones" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: forma matricial, GCN desde convoluciones espectrales (Laplaciano/Chebyshev), GRU de GGNN, atención de GAT, expresividad WL/FOC2, over-smoothing" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="Message passing, GCN y GAT desde cero en triple framework (PyTorch, TensorFlow, JAX)" icon="code" >}}
+  {{< card link="/laboratorios/lab-27" title="Laboratorio 27" subtitle="GNN con PyTorch Geometric: clasificación de nodos (Cora MLP vs GCN +24pts) y grafos (MUTAG, Morris +10.5pts), Cluster-GCN y 6 actividades" icon="code" >}}
   {{< card link="/clases/clase-28" title="Clase siguiente: Aprendizaje Autosupervisado" subtitle="SSL, pretext tasks, contrastivo, MAE, UDA" icon="arrow-right" >}}
   {{< card link="/clases/clase-26" title="Clase anterior: Meta-aprendizaje" subtitle="Aprender a aprender, few-shot, MAML" icon="arrow-left" >}}
   {{< card link="/clases/clase-15" title="Base: Mecanismo de atencion" subtitle="La atención que GAT lleva a los grafos" icon="academic-cap" >}}

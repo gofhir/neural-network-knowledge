@@ -83,6 +83,7 @@ Ambas partes usan la librería [learn2learn](/papers/learn2learn-arnold-2020) y 
   {{< card link="/clases/clase-26/profundizacion" title="Profundización" subtitle="Math: optimización bi-nivel, meta-gradiente de 2º orden, FOMAML/Reptile, Bregman" icon="beaker" >}}
   {{< card link="/dominios/vision" title="Dominio: Visión" subtitle="Era Meta-aprendizaje y Few-shot (2015-2025)" icon="globe-alt" >}}
   {{< card link="/laboratorios/lab-25" title="Lab 25 - Recomendación multimodal (anterior)" subtitle="Content-based multimodal con imágenes y texto" icon="academic-cap" >}}
+  {{< card link="/laboratorios/lab-27" title="Lab 27 - Redes Neuronales de Grafos (siguiente)" subtitle="GNN con PyTorch Geometric: clasificación de nodos y grafos" icon="arrow-right" >}}
 {{< /cards >}}
 
 ---
