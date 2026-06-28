@@ -17,8 +17,8 @@ Tres tensiones específicas vertebran el campo: (1) **exploración vs explotaci�
 
 {{< timeline >}}
   {{< era name="Era de RL clásico" years="1989-2010" >}}
-    {{< hito year="1989" name="Q-learning" status="minimal" >}}
-      Watkins: algoritmo *off-policy* que aprende la función $Q(s, a)$ — valor esperado de tomar acción $a$ en estado $s$ y seguir óptimamente — vía actualizaciones temporales de diferencia. **Por qué importó:** primer algoritmo de RL con prueba de convergencia bajo condiciones razonables; base de DQN dos décadas después.
+    {{< hito year="1989-1992" name="Q-learning" status="covered" link="/papers/q-learning-watkins-1992" >}}
+      Watkins: algoritmo *off-policy* que aprende la función $Q(s, a)$ — valor esperado de tomar acción $a$ en estado $s$ y seguir óptimamente — vía actualizaciones temporales de diferencia. **Por qué importó:** primer algoritmo de RL con prueba de convergencia (Watkins & Dayan 1992) bajo condiciones razonables; base de DQN dos décadas después. Cubierto en la [Clase 31](/clases/clase-31).
     {{< /hito >}}
     {{< hito year="1992" name="REINFORCE / Policy Gradients" status="minimal" >}}
       Williams: método de gradiente sobre la política directamente, sin estimar valor. La política $\pi_\theta$ se actualiza en la dirección que aumenta la recompensa esperada. **Por qué importó:** alternativa fundamental a Q-learning; base de PPO, RLHF y casi todos los métodos modernos.
@@ -28,19 +28,19 @@ Tres tensiones específicas vertebran el campo: (1) **exploración vs explotaci�
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de Deep RL temprano" years="2013-2016" >}}
-    {{< hito year="2013/2015" name="DQN" status="minimal" >}}
-      Mnih et al. (DeepMind): combinaron Q-learning con redes neuronales convolucionales para jugar Atari directamente desde píxeles. Truco clave: *experience replay* + target network para estabilizar el entrenamiento. NIPS workshop 2013, Nature paper 2015. **Por qué importó:** primera aplicación exitosa de deep learning a RL; nivel humano en 49 juegos sin diseño manual de features.
+    {{< hito year="2013/2015" name="DQN" status="covered" link="/papers/dqn-nature-mnih-2015" >}}
+      Mnih et al. (DeepMind): combinaron Q-learning con redes neuronales convolucionales para jugar Atari directamente desde píxeles. Truco clave: *experience replay* + target network para estabilizar el entrenamiento. [NIPS workshop 2013](/papers/dqn-atari-mnih-2013), [Nature paper 2015](/papers/dqn-nature-mnih-2015). **Por qué importó:** primera aplicación exitosa de deep learning a RL; nivel humano en 49 juegos sin diseño manual de features. Sus mejoras —[Double DQN](/papers/double-dqn-van-hasselt-2015), [Dueling](/papers/dueling-dqn-wang-2015), [Prioritized Replay](/papers/per-schaul-2015)— forman Rainbow. Cubierto en la [Clase 31](/clases/clase-31).
     {{< /hito >}}
     {{< hito year="2015" name="DDPG" status="minimal" >}}
       Lillicrap et al. (DeepMind): extiende DQN a acciones continuas vía actor-critic determinista. **Por qué importó:** habilitó RL sobre control continuo (robótica simulada, MuJoCo) — paso necesario antes de pasar a robots reales.
     {{< /hito >}}
-    {{< hito year="2016" name="A3C" status="minimal" >}}
-      Mnih et al.: *Asynchronous Advantage Actor-Critic* — múltiples actores paralelos en CPU, sin replay buffer. Más rápido y eficiente que DQN en muchos entornos. **Por qué importó:** mostró que RL podía paralelizarse a escala; base conceptual de PPO un año después.
+    {{< hito year="2016" name="A3C" status="covered" link="/papers/a3c-mnih-2016" >}}
+      Mnih et al.: *Asynchronous Advantage Actor-Critic* — múltiples actores paralelos en CPU, sin replay buffer. Más rápido y eficiente que DQN en muchos entornos. **Por qué importó:** mostró que RL podía paralelizarse a escala; base conceptual de PPO un año después. Cubierto en la [Clase 31](/clases/clase-31).
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era AlphaGo" years="2016-2019" >}}
-    {{< hito year="2016" name="AlphaGo" status="minimal" >}}
-      Silver et al. (DeepMind): combinación de policy + value networks entrenadas con supervised learning sobre partidas humanas + RL por self-play, decodificadas en tiempo real con Monte Carlo Tree Search. Derrotó al campeón mundial Lee Sedol 4-1. **Por qué importó:** Go había sido el caso paradigmático "imposible para IA en 10 años"; AlphaGo lo resolvió primero.
+    {{< hito year="2016" name="AlphaGo" status="covered" link="/papers/alphago-silver-2016" >}}
+      Silver et al. (DeepMind): combinación de policy + value networks entrenadas con supervised learning sobre partidas humanas + RL por self-play, decodificadas en tiempo real con Monte Carlo Tree Search. Derrotó al campeón mundial Lee Sedol 4-1. **Por qué importó:** Go había sido el caso paradigmático "imposible para IA en 10 años"; AlphaGo lo resolvió primero. Cubierto en la [Clase 31](/clases/clase-31).
     {{< /hito >}}
     {{< hito year="2017" name="AlphaZero" status="minimal" >}}
       Silver et al.: aprende Go, ajedrez y shogi desde cero — solo las reglas del juego, sin partidas humanas. Self-play puro + MCTS. Superó a Stockfish (mejor motor de ajedrez) tras 24h de entrenamiento. **Por qué importó:** demostró que la supervisión humana era prescindible cuando el entorno permite self-play.
@@ -53,8 +53,8 @@ Tres tensiones específicas vertebran el campo: (1) **exploración vs explotaci�
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era PPO + RLHF" years="2017-2023" >}}
-    {{< hito year="2017" name="PPO" status="minimal" >}}
-      Schulman et al. (OpenAI): *Proximal Policy Optimization* — clip del ratio de probabilidad para evitar updates demasiado grandes que colapsen la política. Más simple y robusto que TRPO. **Por qué importó:** se volvió el algoritmo estándar de policy optimization, base de RLHF, OpenAI Five (Dota 2), y muchas pipelines de robótica.
+    {{< hito year="2017" name="PPO" status="covered" link="/papers/ppo-schulman-2017" >}}
+      Schulman et al. (OpenAI): *Proximal Policy Optimization* — clip del ratio de probabilidad para evitar updates demasiado grandes que colapsen la política. Más simple y robusto que TRPO. **Por qué importó:** se volvió el algoritmo estándar de policy optimization, base de RLHF, OpenAI Five (Dota 2), y muchas pipelines de robótica. Cubierto en la [Clase 31](/clases/clase-31).
     {{< /hito >}}
     {{< hito year="2022" name="InstructGPT / RLHF" status="covered" link="/fundamentos/sft" >}}
       Ouyang et al. (OpenAI): GPT-3 fine-tuneado con SFT (datos de demostración) + RLHF (modelo de recompensa entrenado sobre preferencias humanas, optimizado con PPO). Marcó la diferencia entre GPT-3 y ChatGPT.
