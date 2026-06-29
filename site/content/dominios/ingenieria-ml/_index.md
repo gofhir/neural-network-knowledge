@@ -147,6 +147,10 @@ Pinecone, Weaviate, Qdrant compiten en vector storage. **Por que importo:** el f
 **Por que importo:** primera generacion de tools especializados en observabilidad de **agentes LLM** — trazas de tool calls, prompts, alucinaciones. Extension natural de monitoring clasico (C9).
     {{< /hito >}}
 
+    {{< hito year="2017-2022" name="Aprendizaje continuo (respuesta algorítmica al drift)" status="covered" link="/fundamentos/aprendizaje-continuo" >}}
+Cuando un modelo en producción se degrada por *concept drift*, el reentrenamiento desde cero es caro y puede no tener acceso a los datos antiguos. El **aprendizaje continuo** —[EWC](/papers/ewc-kirkpatrick-2017) (regularización), [GEM](/papers/gem-lopez-paz-2017)/[iCaRL](/papers/icarl-rebuffi-2017) (replay), [L2P](/papers/l2p-wang-2022) (prompts)— es la respuesta algorítmica: incorporar datos nuevos sin **olvido catastrófico**. **Por qué importó:** complementa el monitoring y el reentrenamiento del MLOps clásico con métodos que actualizan el modelo de forma incremental. Cubierto en la [Clase 32](/clases/clase-32).
+    {{< /hito >}}
+
   {{< /era >}}
 
 {{< /timeline >}}

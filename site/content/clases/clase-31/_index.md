@@ -18,6 +18,7 @@ La clase conecta con el [RLHF (Clase 20)](/clases/clase-20) —que usa PPO para 
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las diapositivas: motivación, paradigma RL (MDP, política), Q-Learning, Deep Q-Learning (DQN)" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: MDP y retorno, ecuaciones de Bellman, Q-Learning, DQN (pérdida, replay, target), policy gradient/PPO, AlphaGo" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="Q-Learning tabular y DQN desde cero en triple framework (PyTorch, TensorFlow, JAX)" icon="code" >}}
+  {{< card link="/clases/clase-32" title="Clase siguiente: Olvido Catastrófico" subtitle="Aprendizaje continuo, EWC, replay" icon="arrow-right" >}}
   {{< card link="/clases/clase-30" title="Clase anterior: Modelos con memoria externa" subtitle="Memory Networks, NTM, memoria explícita" icon="arrow-left" >}}
   {{< card link="/clases/clase-20" title="Relacionada: BERT/GPT/ChatGPT (RLHF)" subtitle="PPO para alinear LLMs con preferencias humanas" icon="academic-cap" >}}
 {{< /cards >}}
