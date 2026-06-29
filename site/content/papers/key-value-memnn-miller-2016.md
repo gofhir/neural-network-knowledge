@@ -101,6 +101,8 @@ La [Clase 30](/clases/clase-30) (modelos con memoria externa) ubica KV-MemNN en 
 
 Para situar el paper conviene leerlo junto a sus vecinos del curso. El fundamento transversal de [redes de memoria](/fundamentos/redes-de-memoria) explica el patrón general controlador + memoria direccionable por contenido del que esta arquitectura es un caso. Y el ancestro inmediato, la [End-to-End Memory Network de Sukhbaatar et al. (2015)](/papers/e2e-memnn-sukhbaatar-2015), es literalmente el caso particular que se recupera al fijar clave = valor: leer ambos papers en orden hace visible qué agrega la separación clave-valor —flexibilidad de codificación y transformaciones no triviales entre lo que buscas y lo que devuelves.
 
+El [Laboratorio 30](/laboratorios/lab-30) implementa este modelo de cero sobre WikiMovies y lo sondea con experimentos propios: la visualización de la atención muestra el refinamiento difuso→picudo de los 2 hops, y un análisis de errores revela que buena parte del "31% de error" es en realidad la limitación del *hashing* y del ground-truth single-answer que se enumeran arriba, no un fallo de capacidad del modelo.
+
 ## Notas y enlaces
 
 - Preprint: arXiv:1606.03126v2 (10 oct 2016), [arxiv.org/abs/1606.03126](https://arxiv.org/abs/1606.03126).

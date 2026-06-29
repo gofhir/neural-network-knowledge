@@ -18,6 +18,7 @@ La clase es, en el fondo, la prehistoria de dos ideas centrales del deep learnin
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 21 diapositivas: memoria implícita vs explícita, bAbI, Memory Networks, End-to-End MemNN, Key-Value MemNN, Entity Networks" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: lectura por atención suave, MemN2N formal, key-value addressing, celda de EntNet, NTM (content/location), DNC" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="End-to-End MemNN y memoria diferenciable (NTM) desde cero en triple framework" icon="code" >}}
+  {{< card link="/laboratorios/lab-30" title="Laboratorio: Key-Value Memory Networks" subtitle="Implementar KV-MemNN sobre WikiMovies QA, con 5 experimentos propios y las 4 actividades resueltas" icon="beaker" >}}
   {{< card link="/clases/clase-31" title="Clase siguiente: Aprendizaje Reforzado" subtitle="Q-Learning, DQN, policy gradient" icon="arrow-right" >}}
   {{< card link="/clases/clase-29" title="Clase anterior: Modelos Generativos en Visión" subtitle="VAE, GAN, difusión, Stable Diffusion" icon="arrow-left" >}}
   {{< card link="/clases/clase-15" title="Base: Mecanismo de atención" subtitle="La lectura de memoria por atención suave" icon="academic-cap" >}}

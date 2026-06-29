@@ -131,4 +131,6 @@ El hilo conductor que conviene retener es uno solo: **separar el conocimiento de
 - [Differentiable Neural Computer (Graves et al., 2016)](/papers/dnc-graves-2016) — asignación dinámica, enlaces temporales, razonamiento sobre grafos.
 - [bAbI (Weston et al., 2015)](/papers/babi-weston-2015) — las 20 tareas de razonamiento que estandarizaron el benchmark.
 
+**Laboratorio:** [Lab 30 — Key-Value Memory Networks sobre WikiMovies](/laboratorios/lab-30) implementa KV-MemNN de cero (KB key/value desde texto, blocking, 2 hops) y lo analiza con 5 experimentos propios.
+
 **Fundamentos relacionados:** [Redes con Memoria Aumentada](/fundamentos/memory-augmented-networks) · [Self-Attention](/fundamentos/self-attention) · [Clase 30](/clases/clase-30)

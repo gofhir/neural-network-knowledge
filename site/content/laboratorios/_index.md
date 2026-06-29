@@ -29,4 +29,5 @@ Exploracion en profundidad de los laboratorios del diplomado: librerias, concept
   {{< card link="lab-24" title="Lab 24 - Question Answering: Extractivo (BERT) y Generativo (T5/BART)" subtitle="QA extractivo vs generativo en español, BETO/SQuAD-es vs T5/SQAC" icon="document-text" >}}
   {{< card link="lab-25" title="Lab 25 - Recomendación multimodal con imágenes y texto" subtitle="Content-based multimodal estilo Pinterest: AlexNet fc7 + BERT, proxy task, nDCG" icon="academic-cap" >}}
   {{< card link="lab-26" title="Lab 26 - Meta-aprendizaje: MAML y Prototypical Networks" subtitle="Optimization-based vs metric-based sobre Omniglot y Mini-ImageNet, ejes WAYS/SHOTS, las 7 actividades" icon="academic-cap" >}}
+  {{< card link="lab-30" title="Lab 30 - Modelos con memoria externa: Key-Value Memory Networks" subtitle="KV-MemNN sobre WikiMovies QA: KB key/value desde texto, blocking, 2 hops de atención, 5 experimentos propios y las 4 actividades" icon="cube-transparent" >}}
 {{< /cards >}}
