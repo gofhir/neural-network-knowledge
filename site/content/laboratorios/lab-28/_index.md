@@ -67,6 +67,7 @@ Tres regímenes evaluados en test (25k reseñas), con los checkpoints oficiales:
   {{< card link="/clases/clase-28/profundizacion" title="Profundización" subtitle="Math del SSL: InfoNCE, consistencia, sharpening" icon="beaker" >}}
   {{< card link="/fundamentos/aprendizaje-contrastivo" title="Aprendizaje Contrastivo" subtitle="SimCLR/MoCo: invarianza a aumentaciones en el espacio de embeddings" icon="book-open" >}}
   {{< card link="/laboratorios/lab-27" title="Lab 27 - Redes Neuronales de Grafos (anterior)" subtitle="GNN con PyTorch Geometric" icon="arrow-left" >}}
+  {{< card link="/laboratorios/lab-29" title="Lab 29 - Modelos Generativos en Visión (siguiente)" subtitle="Stable Diffusion con diffusers: parámetros y modos" icon="arrow-right" >}}
 {{< /cards >}}
 
 ---

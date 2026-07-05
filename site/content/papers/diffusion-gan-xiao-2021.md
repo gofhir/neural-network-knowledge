@@ -103,6 +103,7 @@ Este paper es el **andamiaje conceptual** de la [Clase 29](/clases/clase-29) (Mo
 
 ## Notas y enlaces
 
+- El [Laboratorio 29](/laboratorios/lab-29) responde en su cuestionario el *generative learning trilemma* que introduce este paper, ilustrándolo con experimentos propios sobre `num_inference_steps` y noise schedulers en Stable Diffusion.
 - Preprint: [arXiv:2112.07804](https://arxiv.org/abs/2112.07804) (v2, abril 2022).
 - Sitio y código: [nvlabs.github.io/denoising-diffusion-gan](https://nvlabs.github.io/denoising-diffusion-gan).
 - Venue: ICLR 2022 (conference paper).

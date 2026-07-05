@@ -187,4 +187,6 @@ Los puntos a retener:
 - [Tackling the Generative Learning Trilemma with Denoising Diffusion GANs (Xiao et al., 2021)](/papers/diffusion-gan-xiao-2021) — el trilema velocidad/calidad/diversidad y el muestreo en pocos pasos.
 - [U-Net (Ronneberger et al., 2015)](/papers/unet-ronneberger-2015) — la arquitectura encoder-decoder que sirve de denoiser $\epsilon_\theta$.
 
+**Laboratorio:** [Lab 29 — Stable Diffusion con diffusers](/laboratorios/lab-29) manipula en la práctica los pasos de denoising, los schedulers y la guidance scale, y explora Img2Img/Inpainting/ControlNet.
+
 **Fundamentos relacionados:** [Modelos Generativos](/fundamentos/modelos-generativos) · [Clase 29 — Modelos Generativos en Visión](/clases/clase-29)

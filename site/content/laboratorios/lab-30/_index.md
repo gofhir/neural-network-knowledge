@@ -79,7 +79,7 @@ Esto desacopla "cómo encuentro la información" de "qué información devuelvo"
   {{< card link="/clases/clase-30" title="Clase 30 - Teoría" subtitle="Memoria implícita vs explícita, Memory Networks, E2E MemNN, KV-MemNN, Entity Networks, NTM/DNC" icon="academic-cap" >}}
   {{< card link="/clases/clase-30/profundizacion" title="Profundización" subtitle="Math: lectura por atención suave, MemN2N formal, key-value addressing" icon="beaker" >}}
   {{< card link="/dominios/texto" title="Dominio: Texto / NLP" subtitle="Del QA con memory networks a los LLM con RAG" icon="globe-alt" >}}
-  {{< card link="/laboratorios/lab-28" title="Lab 28 - Aprendizaje Autosupervisado: UDA (anterior)" subtitle="Semi-supervisión por consistencia sobre IMDB" icon="arrow-left" >}}
+  {{< card link="/laboratorios/lab-29" title="Lab 29 - Modelos Generativos en Visión (anterior)" subtitle="Stable Diffusion con diffusers" icon="arrow-left" >}}
 {{< /cards >}}
 
 ---
