@@ -33,4 +33,5 @@ Exploracion en profundidad de los laboratorios del diplomado: librerias, concept
   {{< card link="lab-28" title="Lab 28 - Aprendizaje Autosupervisado: UDA" subtitle="Semi-supervisión por consistencia sobre IMDB con 20 etiquetas: back-translation, TSA, los tres regímenes y las actividades" icon="adjustments" >}}
   {{< card link="lab-29" title="Lab 29 - Modelos Generativos en Visión: Stable Diffusion" subtitle="Manipular SDXL/SD1.5 con diffusers: pasos, schedulers, guidance, Img2Img, Inpainting, ControlNet + cuestionario (trilemma, difusión latente)" icon="photograph" >}}
   {{< card link="lab-30" title="Lab 30 - Modelos con memoria externa: Key-Value Memory Networks" subtitle="KV-MemNN sobre WikiMovies QA: KB key/value desde texto, blocking, 2 hops de atención, 5 experimentos propios y las 4 actividades" icon="cube-transparent" >}}
+  {{< card link="lab-31" title="Lab 31 - Aprendizaje Reforzado: DQN sobre CartPole" subtitle="Deep Q-Network desde cero con experience replay y ε-greedy: resuelve CartPole en 85 episodios, 4 ablations propias (velocidades/replay/target/hiperparámetros) y las 2 preguntas de la tarea" icon="variable" >}}
 {{< /cards >}}
