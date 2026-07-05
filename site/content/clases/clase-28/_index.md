@@ -18,6 +18,7 @@ La clase integra todo el curso: [autoencoders](/fundamentos/aprendizaje-autosupe
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las 42 diapositivas: motivación, pretext tasks (predicción/transformaciones/multimodal), contrastive learning, MAE, UDA" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: autoencoders y PCA, InfoNCE/NT-Xent, SimCLR vs MoCo (EMA), MAE, KL de consistencia (UDA), rotación" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="SimCLR, MAE y UDA desde cero en triple framework (PyTorch, TensorFlow, JAX)" icon="code" >}}
+  {{< card link="/laboratorios/lab-28" title="Laboratorio: UDA (semi-supervisado)" subtitle="UDA sobre IMDB con 20 etiquetas: consistency loss, TSA, back-translation, los tres regímenes y las actividades" icon="beaker" >}}
   {{< card link="/clases/clase-29" title="Clase siguiente: Modelos Generativos en Visión" subtitle="VAE, GAN, difusión, Stable Diffusion" icon="arrow-right" >}}
   {{< card link="/clases/clase-27" title="Clase anterior: Redes Neuronales de Grafos" subtitle="GNN, message passing, GCN/GAT" icon="arrow-left" >}}
   {{< card link="/clases/clase-20" title="Base: ELMo, BERT, GPT, ChatGPT" subtitle="SSL en lenguaje: MLM y next-token prediction" icon="academic-cap" >}}

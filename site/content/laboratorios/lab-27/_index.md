@@ -92,7 +92,7 @@ Notebook ejecutado en GPU (torch 2.11 + CUDA 12.8). Los números clave:
   {{< card link="/clases/clase-27/profundizacion" title="Profundización" subtitle="Math: forma matricial, GCN espectral (Laplaciano/Chebyshev), GAT, WL/FOC2, over-smoothing" icon="beaker" >}}
   {{< card link="/dominios/estructurados" title="Dominio: Datos estructurados" subtitle="GNN sobre grafos, la familia relacional" icon="globe-alt" >}}
   {{< card link="/laboratorios/lab-26" title="Lab 26 - Meta-aprendizaje (anterior)" subtitle="MAML y Prototypical Networks few-shot" icon="academic-cap" >}}
-  {{< card link="/laboratorios/lab-30" title="Lab 30 - Modelos con memoria externa (siguiente)" subtitle="Key-Value Memory Networks sobre WikiMovies QA" icon="arrow-right" >}}
+  {{< card link="/laboratorios/lab-28" title="Lab 28 - Aprendizaje Autosupervisado: UDA (siguiente)" subtitle="Semi-supervisión por consistencia sobre IMDB con 20 etiquetas" icon="arrow-right" >}}
 {{< /cards >}}
 
 ---
