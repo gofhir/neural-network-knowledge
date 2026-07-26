@@ -31,16 +31,19 @@ Tres tensiones definen el campo: (1) cómo **modelar movimiento sin desperdiciar
     {{< hito year="2014" name="Karpathy CVPR (slow/fast fusion)" status="minimal" >}}
       Karpathy et al. (Google/Stanford): CNNs aplicadas a video con varias estrategias de fusión temporal (early, late, slow, single-frame). **Por qué importó:** primer estudio sistemático de cómo extender CNN-2D a video; resultado descorazonador (igual a single-frame), motivó two-stream.
     {{< /hito >}}
-    {{< hito year="2014" name="Two-Stream" status="minimal" >}}
-      Simonyan & Zisserman (Oxford): dos CNNs paralelas — una sobre RGB (apariencia), otra sobre flujo óptico (movimiento) — fusionadas en la decisión final. **Por qué importó:** superó a iDT y fijó el patrón "modelar movimiento explícitamente" durante 4 años.
+    {{< hito year="2014" name="Two-Stream" status="covered" link="/papers/two-stream-simonyan-2014" >}}
+      Simonyan & Zisserman (Oxford): dos CNNs paralelas — una sobre RGB (apariencia), otra sobre flujo óptico (movimiento) — fusionadas en la decisión final. **Por qué importó:** superó a iDT y fijó el patrón "modelar movimiento explícitamente" durante 4 años. Cubierto en la [Clase 36](/clases/clase-36).
     {{< /hito >}}
-    {{< hito year="2015" name="C3D" status="minimal" >}}
-      Tran et al. (FAIR): convoluciones 3D (3×3×3) aprendidas extremo a extremo sobre clips de 16 frames. **Por qué importó:** primer modelo 3D-CNN entrenable sobre video sin recurrir a flujo óptico precomputado.
+    {{< hito year="2015" name="LRCN (CNN + LSTM)" status="covered" link="/papers/lrcn-donahue-2015" >}}
+      Donahue et al. (Berkeley): una CNN extrae features por frame y una LSTM los procesa como secuencia temporal. **Por qué importó:** es el "2D CNN + RNN" —captura dependencias largas respetando el orden, aunque el RNN no se paralelice. Cubierto en la [Clase 36](/clases/clase-36).
+    {{< /hito >}}
+    {{< hito year="2015" name="C3D" status="covered" link="/papers/c3d-tran-2015" >}}
+      Tran et al. (FAIR): convoluciones 3D (3×3×3) aprendidas extremo a extremo sobre clips de 16 frames. **Por qué importó:** primer modelo 3D-CNN entrenable sobre video sin recurrir a flujo óptico precomputado. Cubierto en la [Clase 36](/clases/clase-36).
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de 3D-CNN profundas" years="2017-2019" >}}
-    {{< hito year="2017" name="I3D" status="minimal" >}}
-      Carreira & Zisserman (DeepMind): *Inflated 3D ConvNet* — toma una CNN-2D preentrenada en ImageNet (Inception-V1, kernels 3×3) y "infla" sus filtros 2D a 3D (un kernel 3×3 se vuelve 3×3×3 replicando los pesos en el eje temporal), transfiriendo la representación visual a video. Entrenado sobre el nuevo Kinetics-400. **Por qué importó:** el primer modelo que destronó claramente a iDT y two-stream en todos los benchmarks; backbone estándar 2017-2019.
+    {{< hito year="2017" name="I3D" status="covered" link="/papers/i3d-carreira-2017" >}}
+      Carreira & Zisserman (DeepMind): *Inflated 3D ConvNet* — toma una CNN-2D preentrenada en ImageNet (Inception-V1, kernels 3×3) y "infla" sus filtros 2D a 3D (un kernel 3×3 se vuelve 3×3×3 replicando los pesos en el eje temporal), transfiriendo la representación visual a video. Entrenado sobre el nuevo [Kinetics-400](/papers/kinetics-kay-2017). **Por qué importó:** el primer modelo que destronó claramente a iDT y two-stream en todos los benchmarks; backbone estándar 2017-2019. Cubierto en la [Clase 36](/clases/clase-36).
     {{< /hito >}}
     {{< hito year="2018" name="R(2+1)D" status="minimal" >}}
       Tran et al. (FAIR): factoriza convolución 3D en una espacial 2D seguida de una temporal 1D. **Por qué importó:** mejor accuracy con menos parámetros que 3D pura; demostró que separar espacio y tiempo era pedagógicamente útil para el modelo.

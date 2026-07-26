@@ -17,6 +17,7 @@ Primera clase del módulo de **Audio y Video**: los **fundamentos de procesamien
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: serie de Fourier y ortogonalidad, DFT/FFT y complejidad, teorema de muestreo y aliasing, STFT e incertidumbre de Gabor, pipeline MFCC" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="DFT/serie de Fourier y STFT/espectrograma/MFCC desde cero en triple framework" icon="code" >}}
   {{< card link="/laboratorios/lab-35" title="Laboratorio: FFT, STFT y MFCC" subtitle="FFT, series de Fourier animadas y análisis tiempo-frecuencia sobre audio real con librosa" icon="variable" >}}
+  {{< card link="/clases/clase-36" title="Clase siguiente: Introducción al Análisis de Video" subtitle="Movimiento, action recognition, flujo óptico, arquitecturas de video" icon="arrow-right" >}}
   {{< card link="/clases/clase-34" title="Clase anterior: Razonamiento" subtitle="Causalidad, Chain-of-Thought, test-time compute" icon="arrow-left" >}}
 {{< /cards >}}
 
