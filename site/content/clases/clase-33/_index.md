@@ -17,6 +17,7 @@ Continuación directa de la [Clase 31 (Aprendizaje Reforzado)](/clases/clase-31)
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: IRL (LP de Ng-Russell, feature expectations, MaxEnt), cota O(T²ε) del BC y no-regret de DAgger, GAIL (occupancy matching), generalización" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="Behavioral Cloning y DAgger desde cero en triple framework (PyTorch, TensorFlow, JAX)" icon="code" >}}
   {{< card link="/laboratorios/lab-33" title="Laboratorio: DAgger sobre Breakout" subtitle="Imitación de un experto DQN en Atari Breakout con Dataset Aggregation (Gymnasium)" icon="variable" >}}
+  {{< card link="/clases/clase-34" title="Clase siguiente: Razonamiento" subtitle="Causalidad, Chain-of-Thought, test-time compute, DeepSeek-R1" icon="arrow-right" >}}
   {{< card link="/clases/clase-32" title="Clase anterior: Olvido Catastrófico" subtitle="Aprendizaje continuo, EWC, replay" icon="arrow-left" >}}
   {{< card link="/clases/clase-31" title="Relacionada: Aprendizaje Reforzado" subtitle="MDP, Q-Learning, DQN — la base sobre la que se construye esta clase" icon="arrow-left" >}}
 {{< /cards >}}

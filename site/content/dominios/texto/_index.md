@@ -188,6 +188,12 @@ Esto fuerza tres decisiones arquitectónicas que vertebran toda la historia del 
     {{< hito year="2023" name="DPO" status="deep" link="/fundamentos/dpo" >}}
       Direct Preference Optimization: alineamiento sin RL, equivalente teórico a RLHF pero más simple y estable.
     {{< /hito >}}
+    {{< hito year="2021-2023" name="Chain-of-Thought y prompting para razonar" status="deep" link="/fundamentos/chain-of-thought" >}}
+      Del [scratchpad](/papers/scratchpad-nye-2021) (Nye 2021) al [Chain-of-Thought](/papers/chain-of-thought-wei-2022) (Wei 2022), la [self-consistency](/papers/self-consistency-wang-2022) (Wang 2022) y el [Tree-of-Thoughts](/papers/tree-of-thoughts-yao-2023) (Yao 2023): inducir razonamiento paso a paso solo con el prompt, sin tocar los pesos. **Por qué importó:** habilidad emergente que destrabó tareas multi-paso (GSM8K, BBH) y abrió la puerta al cómputo en tiempo de inferencia. Cubierto en la [Clase 34](/clases/clase-34).
+    {{< /hito >}}
+    {{< hito year="2024-2025" name="Modelos de razonamiento (test-time compute)" status="deep" link="/fundamentos/test-time-compute" >}}
+      o1 (OpenAI) y [DeepSeek-R1](/papers/deepseek-r1-2025) (2025): internalizar el razonamiento largo con **RL de recompensa verificable** (GRPO); el "aha-moment". El debate [Yue et al. 2025](/papers/rl-reasoning-yue-2025): ¿el RL expande el razonamiento o solo reordena lo que el modelo base ya tenía? **Por qué importó:** el eje de escalado del cómputo pasa del entrenamiento a la inferencia. Cubierto en la [Clase 34](/clases/clase-34).
+    {{< /hito >}}
     {{< hito year="2023-2025" name="LLMs frontier" status="covered" link="/fundamentos/foundation-models" >}}
       GPT-4/5, Claude, Gemini, LLaMA: razonamiento extendido, herramientas, contexto largo, multimodalidad.
     {{< /hito >}}
