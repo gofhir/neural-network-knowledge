@@ -16,9 +16,20 @@ Dos sub-problemas con tensiones opuestas vertebran el campo: **ASR / comprensió
 ## Línea de tiempo
 
 {{< timeline >}}
+  {{< era name="Fundamentos de procesamiento de señales" years="1822-1980" >}}
+    {{< hito year="1946" name="Incertidumbre tiempo-frecuencia (Gabor)" status="covered" link="/papers/time-frequency-gabor-1946" >}}
+      Dennis Gabor: el plano tiempo-frecuencia dividido en celdas mínimas (logones) y el **principio de incertidumbre para señales** $\Delta t \cdot \Delta f \ge \tfrac12$. **Por qué importó:** la raíz teórica de la STFT, el espectrograma y las wavelets; explica el trade-off de la ventana. Cubierto en la [Clase 35](/clases/clase-35).
+    {{< /hito >}}
+    {{< hito year="1949" name="Teorema de muestreo (Nyquist-Shannon)" status="covered" link="/papers/sampling-shannon-1949" >}}
+      Claude Shannon (sobre Nyquist 1928): una señal de banda $W$ se reconstruye exactamente muestreando a $2W$/s. **Por qué importó:** la ley que gobierna toda digitalización de audio (los 44,1 kHz del CD) y el aliasing. Cubierto en la [Clase 35](/clases/clase-35).
+    {{< /hito >}}
+    {{< hito year="1965" name="FFT (Cooley-Tukey)" status="covered" link="/papers/fft-cooley-tukey-1965" >}}
+      El algoritmo que reduce la DFT de $O(N^2)$ a $O(N\log N)$. **Por qué importó:** hizo práctico todo el análisis espectral —espectrogramas, filtros, MFCC—; es lo que corre bajo `np.fft`. Cubierto en la [Clase 35](/clases/clase-35).
+    {{< /hito >}}
+  {{< /era >}}
   {{< era name="Era acústica clásica" years="1980-2010" >}}
-    {{< hito year="1980" name="MFCC" status="minimal" >}}
-      Davis & Mermelstein: *Mel-Frequency Cepstral Coefficients*, una representación que imita la sensibilidad logarítmica del oído humano a la frecuencia. **Por qué importó:** la entrada estándar de toda ASR clásica durante 30 años.
+    {{< hito year="1980" name="MFCC" status="covered" link="/papers/mfcc-davis-mermelstein-1980" >}}
+      Davis & Mermelstein: *Mel-Frequency Cepstral Coefficients*, una representación que imita la sensibilidad logarítmica del oído humano a la frecuencia (banco de filtros Mel + log + DCT). **Por qué importó:** la entrada estándar de toda ASR clásica durante 30 años. Cubierto en la [Clase 35](/clases/clase-35).
     {{< /hito >}}
     {{< hito year="1980s-1990s" name="HMM-GMM" status="minimal" >}}
       Modelos ocultos de Markov con emisiones gaussianas para modelar fonemas. Cada estado oculto del HMM corresponde a un sub-fonema; la mezcla gaussiana modela la distribución de MFCCs en cada estado. **Por qué importó:** estado del arte hasta 2011 — Siri 1.0 los usaba.

@@ -17,6 +17,7 @@ Clase panorámica sobre la frontera más discutida de la IA: el **razonamiento**
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: jerarquía causal, CoT/self-consistency/ToT, Pass@k y leyes de cobertura, GRPO, la crítica de Yue, la inteligencia de Chollet" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="Chain-of-Thought y Self-Consistency desde cero + un mini-verificador, en triple framework" icon="code" >}}
   {{< card link="/laboratorios/lab-34" title="Laboratorio: Razonamiento aplicado" subtitle="Tool use, PEFT/LoRA, optimización de prompts (DSPy/GEPA) y multimodal" icon="variable" >}}
+  {{< card link="/clases/clase-35" title="Clase siguiente: Introducción al Análisis de Audio" subtitle="Fourier, FFT, sampling, STFT, MFCC" icon="arrow-right" >}}
   {{< card link="/clases/clase-33" title="Clase anterior: Imitación e IRL" subtitle="Aprendizaje por imitación, IRL, generalización en RL" icon="arrow-left" >}}
   {{< card link="/clases/clase-30" title="Relacionada: Modelos con memoria externa" subtitle="NTM, DNC — dar estructura a la red para razonar" icon="academic-cap" >}}
   {{< card link="/clases/clase-20" title="Relacionada: BERT/GPT/ChatGPT (RLHF)" subtitle="In-context learning, RLHF, la base de los LLMs" icon="academic-cap" >}}
