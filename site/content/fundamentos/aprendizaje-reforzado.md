@@ -191,4 +191,4 @@ El recorrido conceptual es acumulativo. Todo arranca con el **bucle agente-ambie
 - [PPO (Schulman et al., 2017)](/papers/ppo-schulman-2017) — el objetivo recortado, el policy gradient más usado y base del RLHF.
 - [AlphaGo (Silver et al., 2016)](/papers/alphago-silver-2016) — deep RL + MCTS + self-play para vencer al campeón de Go.
 
-**Recursos relacionados:** [RLHF](/fundamentos/rlhf) · [Dominio: Robótica](/dominios/robotica) · [Clase 31: Aprendizaje Reforzado](/clases/clase-31)
+**Recursos relacionados:** [RLHF](/fundamentos/rlhf) · [Dominio: Robótica](/dominios/robotica) · [Clase 31: Aprendizaje Reforzado](/clases/clase-31) · [Clase 33: Imitación e IRL](/clases/clase-33) · Fundamentos: [Aprendizaje Reforzado Inverso](/fundamentos/aprendizaje-reforzado-inverso) · [Aprendizaje por Imitación](/fundamentos/aprendizaje-por-imitacion) · [Generalización en RL](/fundamentos/generalizacion-en-rl)

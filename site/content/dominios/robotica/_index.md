@@ -42,14 +42,31 @@ Tres tensiones específicas vertebran el campo: (1) **exploración vs explotaci�
     {{< hito year="2016" name="AlphaGo" status="covered" link="/papers/alphago-silver-2016" >}}
       Silver et al. (DeepMind): combinación de policy + value networks entrenadas con supervised learning sobre partidas humanas + RL por self-play, decodificadas en tiempo real con Monte Carlo Tree Search. Derrotó al campeón mundial Lee Sedol 4-1. **Por qué importó:** Go había sido el caso paradigmático "imposible para IA en 10 años"; AlphaGo lo resolvió primero. Cubierto en la [Clase 31](/clases/clase-31).
     {{< /hito >}}
-    {{< hito year="2017" name="AlphaZero" status="minimal" >}}
-      Silver et al.: aprende Go, ajedrez y shogi desde cero — solo las reglas del juego, sin partidas humanas. Self-play puro + MCTS. Superó a Stockfish (mejor motor de ajedrez) tras 24h de entrenamiento. **Por qué importó:** demostró que la supervisión humana era prescindible cuando el entorno permite self-play.
+    {{< hito year="2017" name="AlphaGo Zero" status="covered" link="/papers/alphago-zero-silver-2017" >}}
+      Silver et al. (DeepMind): aprende Go **desde cero, sin ninguna partida humana** — solo las reglas, self-play puro con una red única (policy+value) y MCTS. Superó 100-0 a la versión de AlphaGo que sí partía de imitación humana. **Por qué importó:** el argumento central de la [Clase 33](/clases/clase-33) sobre RL vs. imitación —el RL puro supera el techo humano, la imitación no. (Su generalización a ajedrez/shogi, *AlphaZero*, llegó en 2018.) Cubierto en la [Clase 33](/clases/clase-33).
     {{< /hito >}}
     {{< hito year="2019" name="AlphaStar" status="minimal" >}}
       Vinyals et al. (DeepMind): nivel grandmaster en StarCraft II — juego de información incompleta, tiempo real, espacio de acciones masivo. Combinó IL desde partidas humanas, league play y multi-agent RL. **Por qué importó:** mostró que las técnicas escalaban más allá de juegos perfectos como Go o ajedrez.
     {{< /hito >}}
     {{< hito year="2019" name="MuZero" status="minimal" >}}
       Schrittwieser et al.: variante de AlphaZero que **aprende su propio modelo del entorno** en lugar de usar las reglas explícitas. Iguala AlphaZero en Go/ajedrez/shogi, y supera a DQN en Atari. **Por qué importó:** unificó model-based y model-free RL; abrió la puerta a aplicar la receta a entornos sin reglas formales.
+    {{< /hito >}}
+  {{< /era >}}
+  {{< era name="Era de imitación e IRL" years="2000-2022" >}}
+    {{< hito year="2000" name="Inverse RL" status="covered" link="/papers/irl-ng-russell-2000" >}}
+      Ng &amp; Russell: en vez de dar la recompensa y buscar la política, **inferir la recompensa** desde el comportamiento de un experto. Formulación como programa lineal con margen y regularización. **Por qué importó:** paper fundacional del IRL; semilla de MaxEnt IRL, GAIL y —conceptualmente— del RLHF. Cubierto en la [Clase 33](/clases/clase-33).
+    {{< /hito >}}
+    {{< hito year="2004-2008" name="Apprenticeship Learning" status="covered" link="/papers/apprenticeship-abbeel-ng-2004" >}}
+      Abbeel &amp; Ng: igualar las *feature expectations* del experto garantiza igualar su desempeño sin recuperar la recompensa verdadera. Aplicado a [conducir](/papers/apprenticeship-abbeel-ng-2004) y a [estacionar](/papers/apprenticeship-parking-abbeel-2008) un auto robótico. **Por qué importó:** llevó el IRL de la teoría al control real. Cubierto en la [Clase 33](/clases/clase-33).
+    {{< /hito >}}
+    {{< hito year="2011" name="DAgger" status="covered" link="/papers/dagger-ross-2011" >}}
+      Ross et al.: el behavioral cloning falla por *distribution shift* ($\mathcal{O}(T^2\epsilon)$); DAgger consulta al experto sobre los estados que visita el aprendiz y baja la cota a $\mathcal{O}(T\epsilon)$. **Por qué importó:** el algoritmo de imitación más usado; base del [laboratorio de la Clase 33](/laboratorios/lab-33). Cubierto en la [Clase 33](/clases/clase-33).
+    {{< /hito >}}
+    {{< hito year="2016" name="GAIL" status="covered" link="/papers/gail-ho-ermon-2016" >}}
+      Ho &amp; Ermon: imitación como *occupancy matching* con la maquinaria de una GAN (discriminador = recompensa, política = generador). **Por qué importó:** unificó IRL, imitación y modelos generativos; evitó el bucle costoso del IRL clásico. Cubierto en la [Clase 33](/clases/clase-33).
+    {{< /hito >}}
+    {{< hito year="2022" name="Gato (generalist)" status="covered" link="/papers/gato-reed-2022" >}}
+      Reed et al. (DeepMind): un único Transformer que resuelve 604 tareas por **imitación masiva** multimodal. **Por qué importó:** mostró que la imitación a escala funciona "bastante bien" —aunque con el techo del maestro que la [Clase 33](/clases/clase-33) discute. Cubierto en la [Clase 33](/clases/clase-33).
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era PPO + RLHF" years="2017-2023" >}}

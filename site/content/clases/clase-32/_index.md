@@ -19,6 +19,7 @@ La clase cierra el bloque relacional conectando con la [destilación](/clases/cl
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: ACC/BWT/FWT, EWC y Fisher, Synaptic Intelligence, distillation/iCaRL, GEM como QP, máscaras, los 3 escenarios" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="EWC y Experience Replay desde cero en triple framework (PyTorch, TensorFlow, JAX)" icon="code" >}}
   {{< card link="/laboratorios/lab-32" title="Laboratorio 32" subtitle="Permuted MNIST: mide el olvido y compara Naive vs Rehearsal vs EWC. Curva de λ y las 4 actividades" icon="beaker" >}}
+  {{< card link="/clases/clase-33" title="Clase siguiente: Imitación e IRL" subtitle="Aprendizaje por imitación, IRL, generalización en RL" icon="arrow-right" >}}
   {{< card link="/clases/clase-31" title="Clase anterior: Aprendizaje Reforzado" subtitle="Q-Learning, DQN, policy gradient" icon="arrow-left" >}}
   {{< card link="/clases/clase-26" title="Relacionada: Meta-aprendizaje" subtitle="Aprender a aprender, pocos datos por tarea" icon="academic-cap" >}}
 {{< /cards >}}
