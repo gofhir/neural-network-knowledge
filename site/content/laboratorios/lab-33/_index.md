@@ -59,6 +59,7 @@ El hilo conductor es un solo número que hay que subir: el **score en Breakout**
   {{< card link="/clases/clase-33/profundizacion" title="Profundización" subtitle="Math: cota O(T²ε) del BC, no-regret de DAgger, GAIL, IRL de Ng-Russell y MaxEnt" icon="beaker" >}}
   {{< card link="/clases/clase-33/practica" title="Práctica de clase" subtitle="Behavioral Cloning y DAgger desde cero en triple framework" icon="code" >}}
   {{< card link="/laboratorios/lab-31" title="Lab 31 - Aprendizaje Reforzado (relacionado)" subtitle="DQN sobre CartPole — el algoritmo que aquí actúa de experto" icon="arrow-left" >}}
+  {{< card link="/laboratorios/lab-34" title="Lab 34 - Razonamiento (siguiente)" subtitle="Tool use, LoRA y optimización de prompt en LLMs — la siguiente clase del Curso 3" icon="arrow-right" >}}
 {{< /cards >}}
 
 ---
