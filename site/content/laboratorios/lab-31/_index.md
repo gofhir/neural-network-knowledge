@@ -98,6 +98,7 @@ El notebook cierra remitiendo a tres repositorios "para implementaciones eficien
   {{< card link="/dominios/robotica" title="Dominio: Robótica / RL" subtitle="Línea de tiempo: de Q-learning y TD-Gammon a DQN, AlphaGo y RLHF" icon="globe-alt" >}}
   {{< card link="/laboratorios/lab-30" title="Lab 30 - Modelos con memoria externa (anterior)" subtitle="Key-Value Memory Networks sobre WikiMovies QA" icon="arrow-left" >}}
   {{< card link="/laboratorios/lab-32" title="Lab 32 - Olvido Catastrófico (siguiente)" subtitle="Aprendizaje incremental: Naive vs Rehearsal vs EWC sobre Permuted MNIST. El último lab del curso" icon="arrow-right" >}}
+  {{< card link="/laboratorios/lab-33" title="Lab 33 - Imitación y DAGGER (relacionado)" subtitle="Un DQN como el de aquí actúa de experto a imitar en Breakout — imitación vs RL" icon="variable" >}}
 {{< /cards >}}
 
 ---
