@@ -17,6 +17,7 @@ Segunda parte del módulo de Audio y Video, ahora sobre **video**. La visión po
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: restricción del flujo óptico, invarianza al orden del 2D CNN, LRCN (CNN+LSTM), two-stream, convolución 3D, inflado I3D, consenso TSN" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="Clasificación de video con 2D CNN + fusión temporal, y modelado del tiempo (CNN+LSTM / Conv3D) en triple framework" icon="code" >}}
   {{< card link="/laboratorios/lab-36" title="Laboratorio: Video Understanding" subtitle="Clasificación de acciones sobre UCF11 con backbone ResNet y muestreo de frames" icon="variable" >}}
+  {{< card link="/clases/clase-37" title="Clase siguiente: Datasets y Herramientas para Audio" subtitle="El ciclo de vida del dato de audio: formatos, transforms, augmentation, datasets" icon="arrow-right" >}}
   {{< card link="/clases/clase-35" title="Clase anterior: Análisis de Audio" subtitle="Fourier, FFT, sampling, STFT, MFCC" icon="arrow-left" >}}
   {{< card link="/clases/clase-11" title="Relacionada: Redes Recurrentes" subtitle="RNN/LSTM — la base del 2D CNN + RNN para video" icon="academic-cap" >}}
 {{< /cards >}}

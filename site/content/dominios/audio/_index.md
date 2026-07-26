@@ -67,16 +67,16 @@ Dos sub-problemas con tensiones opuestas vertebran el campo: **ASR / comprensió
     {{< hito year="2019" name="wav2vec" status="minimal" >}}
       Schneider et al. (FAIR): pretraining no supervisado de representaciones de audio prediciendo el futuro de la señal. **Por qué importó:** primer "BERT para audio" — fine-tuning con pocos datos etiquetados igualó a modelos supervisados con miles de horas.
     {{< /hito >}}
-    {{< hito year="2020" name="wav2vec 2.0" status="minimal" >}}
-      Baevski et al. (FAIR): cuantizar representaciones latentes y predecirlas con masking estilo BERT. **Por qué importó:** estableció el paradigma de pretraining masivo + fine-tuning ligero, base de Whisper y MMS.
+    {{< hito year="2020" name="wav2vec 2.0" status="covered" link="/papers/wav2vec2-baevski-2020" >}}
+      Baevski et al. (FAIR): cuantizar representaciones latentes y predecirlas con masking estilo BERT (pérdida contrastiva). **Por qué importó:** estableció el paradigma de pretraining masivo + fine-tuning ligero (10 min etiquetados bastan), base de Whisper y MMS. Cubierto en la [Clase 37](/clases/clase-37).
     {{< /hito >}}
     {{< hito year="2021" name="HuBERT" status="minimal" >}}
       Hsu et al. (FAIR): mejora wav2vec 2.0 con clustering iterativo de targets discretos. **Por qué importó:** mejor rendimiento en transferencia a tareas de TTS, identificación de hablante y emoción.
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de foundation models" years="2022-presente" >}}
-    {{< hito year="2022" name="Whisper" status="minimal" >}}
-      Radford et al. (OpenAI): Transformer encoder-decoder entrenado sobre 680,000 horas de audio multilingüe pareado con texto raspado de internet. **Por qué importó:** ASR robusto a ruido, acentos y multilingüe sin fine-tuning, ya estándar industrial. Multilingüe desde v1 (~99 idiomas); v3 (nov 2023) refina rendimiento y agrega cantonés (100 idiomas totales).
+    {{< hito year="2022" name="Whisper" status="covered" link="/papers/whisper-radford-2022" >}}
+      Radford et al. (OpenAI): Transformer encoder-decoder entrenado sobre 680,000 horas de audio multilingüe pareado con texto raspado de internet (weak supervision a gran escala). **Por qué importó:** ASR robusto a ruido, acentos y multilingüe sin fine-tuning, ya estándar industrial. Multilingüe desde v1 (~99 idiomas); v3 (nov 2023) refina rendimiento y agrega cantonés (100 idiomas totales). Cubierto en la [Clase 37](/clases/clase-37).
     {{< /hito >}}
     {{< hito year="2022" name="AudioLM" status="minimal" >}}
       Borsos et al. (Google): genera audio coherente continuando un prompt de pocos segundos, modelando audio como secuencia de tokens cuantizados. **Por qué importó:** mostró que la "generación pura" de audio (música, ambiente, voz) era viable con la receta autoregresiva tipo GPT.

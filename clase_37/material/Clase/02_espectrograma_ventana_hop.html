@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Transformación a tensor: ventana, hop y n_mels — IA Lab UC</title>
+<style>
+  :root{ --navy:#173F8A; --blue:#0176DE; --orange:#FFA412; --gray:#56616B; --ink:#1B2A3A; --sig:#1B75BB; }
+  *{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:#fff}
+  .wrap{max-width:960px;margin:0 auto;padding:22px}
+  h1{font-size:22px;color:var(--navy);margin:0 0 2px}
+  .sub{color:var(--gray);margin:0 0 16px;font-size:15px}
+  .ctrls{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13px;color:var(--gray);margin-bottom:4px}
+  .ctrl b{color:var(--ink)} input[type=range]{width:100%}
+  .step{font-size:14px;color:var(--gray);margin:10px 0 5px}
+  canvas{width:100%;height:96px;display:block;background:#f4f6f8;border-radius:8px}
+  .scrub{display:flex;align-items:center;gap:10px;margin:10px 0 4px;font-size:13px;color:var(--gray)}
+  .scrub input{flex:1}
+  .gridrow{display:flex;gap:8px;align-items:stretch}
+  .ylab{display:flex;flex-direction:column;justify-content:space-between;font-size:11px;color:#9aa4ad;padding:2px 0}
+  #grid{flex:1;display:grid;gap:2px}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+  .card{background:#f4f6f8;border-radius:8px;padding:10px 12px}
+  .card.acc{background:#eaf1fb}
+  .card .k{font-size:12px;color:var(--gray)} .card.acc .k{color:var(--navy)}
+  .card .v{font-size:20px;font-weight:bold} .card.acc .v{color:var(--navy)}
+  .foot{margin-top:14px;font-size:12px;color:var(--gray);border-top:1px solid #eee;padding-top:8px}
+  .tcenter{text-align:center;font-size:11px;color:#9aa4ad;margin-top:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>De audio a tensor: ventana, hop y n_mels</h1>
+  <p class="sub">Cada ventana de la señal produce una columna de la matriz de salida. Esa matriz de celdas <b>es</b>, literalmente, una imagen.</p>
+
+  <div class="ctrls">
+    <div class="ctrl"><label>win_length <b id="wO">256</b></label><input type="range" id="win" min="64" max="640" step="32" value="256"></div>
+    <div class="ctrl"><label>hop_length <b id="hO">96</b></label><input type="range" id="hop" min="48" max="256" step="16" value="96"></div>
+    <div class="ctrl"><label>n_mels (bandas) <b id="mO">16</b></label><input type="range" id="mel" min="6" max="24" step="1" value="16"></div>
+  </div>
+
+  <div class="step">1. La señal cruda (1D). La <b style="color:var(--sig)">ventana</b> mira solo un trozo y avanza de a <code>hop</code>:</div>
+  <canvas id="wav" width="1320" height="150"></canvas>
+
+  <div class="scrub"><span>ventana #</span><input type="range" id="fr" min="0" max="20" step="1" value="0"><span>cada ventana → <b style="color:var(--ink)">una columna</b></span></div>
+
+  <div class="step">2. El resultado: una matriz de celdas. Filas = <b>frecuencia (n_mels)</b>, columnas = <b>tiempo (frames)</b>:</div>
+  <div class="gridrow">
+    <div class="ylab"><span>alta</span><span>frec.</span><span>baja</span></div>
+    <div id="grid"></div>
+  </div>
+  <div class="tcenter">tiempo →</div>
+
+  <div class="cards">
+    <div class="card"><div class="k">Resolución en tiempo (win/fs)</div><div class="v" id="rt">64 ms</div></div>
+    <div class="card"><div class="k">Resolución en frecuencia (fs/win)</div><div class="v" id="rf">16 Hz</div></div>
+    <div class="card acc"><div class="k">Tensor de salida (n_mels × frames)</div><div class="v" id="dm">16 × 22</div></div>
+  </div>
+  <p class="foot">IA Lab UC · Educación Profesional — Clase 2 · Bloque 5 (De archivo a tensor). Ventana grande → bandas nítidas pero menos columnas; ventana chica → al revés.</p>
+</div>
+<script>
+(function(){
+  var fs=4000,N=2400,x=new Float32Array(N);
+  for(var n=0;n<N;n++){var t=n/fs;x[n]=Math.sin(2*Math.PI*480*t)+Math.sin(2*Math.PI*560*t);}
+  function clk(c){for(var i=-3;i<=3;i++){var k=c+i;if(k>=0&&k<N)x[k]+=6*Math.exp(-Math.abs(i)/1.2);}}
+  clk(720);clk(1680);
+  var win=document.getElementById('win'),hop=document.getElementById('hop'),mel=document.getElementById('mel'),fr=document.getElementById('fr');
+  var wav=document.getElementById('wav'),wx=wav.getContext('2d'),grid=document.getElementById('grid');
+  function hann(W){var w=new Float32Array(W);for(var i=0;i<W;i++)w[i]=0.5-0.5*Math.cos(2*Math.PI*i/(W-1));return w;}
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function col(v){if(v<0.5){var t=v/0.5;return 'rgb('+Math.round(lerp(238,1,t))+','+Math.round(lerp(243,118,t))+','+Math.round(lerp(250,222,t))+')';}var t=(v-0.5)/0.5;return 'rgb('+Math.round(lerp(1,15,t))+','+Math.round(lerp(118,38,t))+','+Math.round(lerp(222,100,t))+')';}
+  var spec=[],nf=0,nm=16;
+  function compute(){
+    var W=+win.value,H=+hop.value;nm=+mel.value;var w=hann(W);spec=[];
+    for(var p=0;p+W<=N;p+=H){var c=new Float32Array(nm);
+      for(var k=0;k<nm;k++){var f=(k+0.5)*(fs/2)/nm,re=0,im=0,a=2*Math.PI*f/fs;
+        for(var i=0;i<W;i++){var s=x[p+i]*w[i],ph=a*(p+i);re+=s*Math.cos(ph);im-=s*Math.sin(ph);}
+        c[k]=Math.sqrt(re*re+im*im);}
+      spec.push(c);}
+    nf=spec.length;var mx=1e-9;
+    for(var i2=0;i2<nf;i2++)for(var k2=0;k2<nm;k2++)if(spec[i2][k2]>mx)mx=spec[i2][k2];
+    for(i2=0;i2<nf;i2++)for(k2=0;k2<nm;k2++)spec[i2][k2]=Math.pow(spec[i2][k2]/mx,0.6);
+    fr.max=nf-1;if(+fr.value>nf-1)fr.value=nf-1;
+    document.getElementById('wO').textContent=W;document.getElementById('hO').textContent=H;document.getElementById('mO').textContent=nm;
+    document.getElementById('rt').textContent=Math.round(1000*W/fs)+' ms';
+    document.getElementById('rf').textContent=Math.round(fs/W)+' Hz';
+    document.getElementById('dm').textContent=nm+' × '+nf;
+    grid.style.gridTemplateColumns='repeat('+nf+',1fr)';grid.style.gridTemplateRows='repeat('+nm+',14px)';grid.innerHTML='';
+    var sel=+fr.value;
+    for(var row=nm-1;row>=0;row--)for(var c2=0;c2<nf;c2++){var d=document.createElement('div');
+      d.style.background=col(spec[c2][row]);d.style.borderRadius='2px';
+      if(c2===sel){d.style.outline='2px solid #FFA412';d.style.outlineOffset='-1px';}grid.appendChild(d);}
+    drawWav();
+  }
+  function drawWav(){var W=+win.value,H=+hop.value,sel=+fr.value,p=sel*H,Wpx=wav.width,Hpx=wav.height,mid=Hpx/2;
+    wx.clearRect(0,0,Wpx,Hpx);wx.fillStyle='rgba(27,117,187,0.16)';wx.fillRect(p/N*Wpx,0,W/N*Wpx,Hpx);
+    wx.strokeStyle='#1B75BB';wx.lineWidth=2;wx.strokeRect(p/N*Wpx,3,W/N*Wpx,Hpx-6);
+    wx.strokeStyle='#56616B';wx.lineWidth=1.5;wx.beginPath();
+    for(var i=0;i<Wpx;i++){var idx=Math.floor(i/Wpx*N),y=mid-x[idx]*16;i?wx.lineTo(i,y):wx.moveTo(i,y);}wx.stroke();}
+  win.oninput=compute;hop.oninput=compute;mel.oninput=compute;
+  fr.oninput=function(){drawWav();var sel=+fr.value,cells=grid.children;for(var i=0;i<cells.length;i++){cells[i].style.outline=(i%nf===sel)?'2px solid #FFA412':'none';}};
+  compute();
+})();
+</script>
+</body>
+</html>
