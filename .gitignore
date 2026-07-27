@@ -14,6 +14,9 @@ Thumbs.db
 # Claude
 .claude/
 
+# Playwright MCP (temporal logs)
+.playwright-mcp/
+
 # Python
 __pycache__/
 *.pyc
