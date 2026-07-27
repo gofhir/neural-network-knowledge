@@ -63,6 +63,7 @@ La lógica es una **escalera de intervención**: intenta resolver la tarea sin t
   {{< card link="/clases/clase-34/profundizacion" title="Profundización" subtitle="Math: GRPO, self-consistency, escalera de causalidad de Pearl" icon="beaker" >}}
   {{< card link="/clases/clase-34/practica" title="Práctica de clase" subtitle="Self-Consistency y GRPO en triple framework" icon="code" >}}
   {{< card link="/laboratorios/lab-33" title="Lab 33 - Imitación y DAGGER (anterior)" subtitle="El lab previo del Curso 3" icon="arrow-left" >}}
+  {{< card link="/laboratorios/lab-35" title="Lab 35 - Análisis de Audio (siguiente)" subtitle="Fundamentos DSP: FFT, STFT, MFCC. Abre el módulo de Audio" icon="arrow-right" >}}
 {{< /cards >}}
 
 ---
