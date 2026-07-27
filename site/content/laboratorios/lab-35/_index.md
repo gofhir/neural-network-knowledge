@@ -65,6 +65,7 @@ El hilo conductor es una **escalera de transformaciones**, donde cada nivel arre
   {{< card link="/clases/clase-35/practica" title="Práctica de clase" subtitle="DFT, STFT y MFCC en triple framework" icon="code" >}}
   {{< card link="/dominios/audio" title="Dominio: Audio" subtitle="Línea de tiempo del análisis de audio y sus hitos" icon="globe-alt" >}}
   {{< card link="/laboratorios/lab-34" title="Lab 34 - Razonamiento (anterior)" subtitle="Tool use, LoRA y optimización de prompt en LLMs" icon="arrow-left" >}}
+  {{< card link="/laboratorios/lab-36" title="Lab 36 - Análisis de Video (siguiente)" subtitle="Clasificación de acciones: ResNet-34 + temporal pooling sobre UCF11" icon="arrow-right" >}}
 {{< /cards >}}
 
 ---
