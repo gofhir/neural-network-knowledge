@@ -225,6 +225,10 @@ Las apuestas activas en video: **coherencia física genuina** (más allá de Sor
 - [ViT (Dosovitskiy 2021)](/papers/vit-dosovitskiy-2021) — la base directa de TimeSformer y ViViT.
 - [Attention is All You Need (Vaswani 2017)](/papers/attention-is-all-you-need-vaswani-2017) — la arquitectura Transformer que vertebra la era 4-5.
 
+**Laboratorios:**
+- [Lab 36 - Introducción al Análisis de Video](/laboratorios/lab-36) — el baseline honesto: ResNet-34 + average temporal pooling sobre UCF11. Reducir de 8 a 4 frames no perjudica (85,9 % contra 84,6 %), lo que prueba que el modelo no usa el orden temporal.
+- [Lab 38 - Action Recognition con I3D](/laboratorios/lab-38) — I3D pre-entrenado en Kinetics-400 en inferencia pura. Un bug de preproceso del tutorial oficial de TF Hub invierte una predicción, y el video invertido en el tiempo no cambia la respuesta: el sesgo de apariencia de Kinetics, medido.
+
 **Dominios relacionados:**
 - [Visión](/dominios/vision) — donde nacieron las CNN y ViT, transferidos a video.
 - [Multimodal](/dominios/multimodal) — donde video se combina con texto (text-to-video) en frontier LLMs.
