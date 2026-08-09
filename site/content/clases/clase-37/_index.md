@@ -16,7 +16,7 @@ Segunda clase de audio: **de la teoría al dato**. Si la [Clase 35](/clases/clas
   {{< card link="teoria" title="Teoria" subtitle="Recorrido de las diapositivas: el audio en el disco, la tercera modalidad, data augmentation, datasets" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Math: tamaño y tensor, SNR, SpecAugment, la pérdida contrastiva de wav2vec 2.0, la escala de weak supervision de Whisper" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="Del WAV al tensor (Mel + SNR + SpecAugment) y el batching de largo variable (collate_fn) en triple framework" icon="code" >}}
-  {{< card link="/laboratorios/lab-37" title="Laboratorio: clasificación de géneros" subtitle="De los WAV al modelo sobre GTZAN con torchaudio; augmentation y embeddings wav2vec 2.0" icon="variable" >}}
+  {{< card link="/laboratorios/lab-37" title="Laboratorio: clasificación de géneros" subtitle="De los WAV al modelo sobre GTZAN con torchaudio; MFCC vs wav2vec 2.0, el diagnóstico de saturación de la GRU y transcripción CTC en español e inglés" icon="variable" >}}
   {{< card link="/clases/clase-35" title="Relacionada: Análisis de Audio" subtitle="La teoría de señales (Fourier, sampling, STFT, MFCC)" icon="academic-cap" >}}
   {{< card link="/clases/clase-38" title="Clase siguiente: CNN para reconocimiento en video" subtitle="Modelos pre-entrenados: la escalera de arquitecturas de video y el inflado de I3D" icon="arrow-right" >}}
   {{< card link="/clases/clase-36" title="Clase anterior: Análisis de Video" subtitle="La otra modalidad del módulo Audio y Video" icon="arrow-left" >}}

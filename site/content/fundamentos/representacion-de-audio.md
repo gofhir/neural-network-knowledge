@@ -109,4 +109,5 @@ Para software clínico que procesa voz o sonido, cada decisión de representaci�
 ## Referencias
 
 - Fundamentos relacionados: [Digitalización de audio](/fundamentos/digitalizacion-de-audio) · [Representación tiempo-frecuencia](/fundamentos/representacion-tiempo-frecuencia) · [MFCC y escala Mel](/fundamentos/mfcc-y-escala-mel) · [Datasets de audio](/fundamentos/datasets-de-audio) · [Data augmentation de audio](/fundamentos/data-augmentation-de-audio).
+- Aplicación práctica: el [Laboratorio 37](/laboratorios/lab-37/01-el-dato-de-audio) recorre este material con código —el header de 44 bytes, la convención `(canales, muestras)`, el resampleo irreversible— y mide una consecuencia que este fundamento no anticipa: **la escala de los MFCC sin normalizar satura una GRU desde la inicialización** (preactivación ~15, gradiente de orden $10^{-13}$), lo que en la práctica decide si el modelo puede aprender.
 - Dominio: [Audio / Voz](/dominios/audio).

@@ -83,4 +83,5 @@ En audio clínico, donde los datasets son casi siempre pequeños, la augmentatio
 
 - Park, D. et al. (2019). *SpecAugment: A Simple Data Augmentation Method for ASR*. Interspeech. — [análisis](/papers/specaugment-park-2019)
 - Fundamentos relacionados: [Data augmentation](/fundamentos/data-augmentation) · [Representación de audio](/fundamentos/representacion-de-audio) · [Datasets de audio](/fundamentos/datasets-de-audio).
+- Aplicación práctica: el [Laboratorio 37](/laboratorios/lab-37/02-data-augmentation) verifica el SNR contra su definición, oye la "phasiness" de copiar las fases en vez de regenerarlas, y documenta **una regla que falta en la lista habitual**: aplicar la augmentación al 100% de las muestras de train deja de ser augmentación y se vuelve un cambio de dominio — medido en **11,7 puntos** de diferencia entre test limpio y test con ruido.
 - Dominio: [Audio / Voz](/dominios/audio).
