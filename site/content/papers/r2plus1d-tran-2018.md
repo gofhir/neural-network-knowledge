@@ -88,7 +88,7 @@ La derivación es de una línea. La conv 3D tiene $P_{3D} = N_{i-1}\, t\, d^2\, 
 
 $$P_{(2+1)D} = \underbrace{N_{i-1}\, d^2\, M_i}_{\text{espacial}} + \underbrace{M_i\, t\, N_i}_{\text{temporal}} = M_i\,(d^2 N_{i-1} + t N_i)$$
 
-Igualando $P_{(2+1)D} = P_{3D}$ y despejando sale exactamente la fórmula. **Ese es el corazón metodológico del paper**: sin esa elección, cualquier mejora sobre R3D sería atribuible a más capacidad; con ella, R3D y R(2+1)D-18 tienen 33.4M y 33.3M parámetros y aproximadamente los mismos FLOPs. Lo contraintuitivo es que **el subespacio intermedio es más ancho que la salida**. Con $N_{i-1} = N_i = N$, $t = 3$, $d = 3$:
+Igualando $P_{(2+1)D} = P_{3D}$ y despejando sale la fórmula. **Ese es el corazón metodológico del paper**: sin esa elección, cualquier mejora sobre R3D sería atribuible a más capacidad; con ella, R3D y R(2+1)D-18 tienen 33.4M y 33.3M parámetros y casi los mismos FLOPs. Lo contraintuitivo es que **el subespacio intermedio es más ancho que la salida**. Con $N_{i-1} = N_i = N$, $t = 3$, $d = 3$:
 
 $$M_i = \frac{3 \cdot 9 \cdot N^2}{N(9 + 3)} = \frac{27N}{12} = 2.25\,N$$
 
@@ -108,9 +108,9 @@ Si solo tuviera menor error de *test*, la explicación natural sería **regulari
 
 ## Resultados
 
-**Kinetics.** R(2+1)D-18 supera a MCx, rMCx y R3D por **2.1–3.4%** con 8 cuadros y por **3.1–4.7%** con 16; y a las ResNets 2D por **4.7–6.1%** y **6.3–9.8%**. Contra FLOPs domina la frontera, con **3–3.8%** sobre R3D **al mismo costo computacional**. Nota de protocolo: **video top-1** promedia 10 clips con recortes centrales espaciados uniformemente (100 en Sports-1M, donde los videos pasan de 5 minutos) y la brecha con **clip top-1** es de 10–12 puntos, así que cruzar ambas métricas entre papers es un error clásico.
+**Kinetics.** R(2+1)D-18 supera a MCx, rMCx y R3D por **2.1–3.4%** con 8 cuadros y por **3.1–4.7%** con 16; y a las ResNets 2D por **4.7–6.1%** y **6.3–9.8%**. Contra FLOPs domina la frontera, con **3–3.8%** sobre R3D **al mismo costo computacional**. Nota de protocolo: **video top-1** promedia 10 clips (100 en Sports-1M) y la brecha con **clip top-1** es de 10–12 puntos, así que cruzar ambas métricas entre papers es un error clásico.
 
-**Longitud del clip.** Variando $L \in \{8, 16, 24, 32, 40, 48\}$, la exactitud a nivel de clip **sigue creciendo**, pero la de video **hace pico en 32 cuadros**. Como el pooling global no tiene parámetros, todos estos modelos tienen el mismo conteo:
+**Longitud del clip.** Variando $L \in \{8, 16, 24, 32, 40, 48\}$, la exactitud de clip **sigue creciendo**, pero la de video **hace pico en 32 cuadros**. Como el pooling global no tiene parámetros, todos estos modelos tienen el mismo conteo:
 
 | Train (cuadros) | Finetune | Test (cuadros) | Tiempo entren. (h) | Clip@1 | Video@1 |
 |---|---|---|---|---|---|
@@ -119,7 +119,7 @@ Si solo tuviera menor error de *test*, la explicación natural sería **regulari
 | 32 | — | 32 | 59.8 | 60.1 | 69.4 |
 | 8 | 32 | 32 | 20.5 | 59.8 | 68.0 |
 
-(Tiempos con 64 GPUs en paralelo.) **Alargar el clip solo en test es contraproducente**: evaluar con 32 cuadros el modelo entrenado con 8 baja 1.2% en clip y **5.8% en video**; entrenar con clips largos produce modelos cualitativamente distintos, con filtros que aprenden patrones de mayor plazo. El atajo eficiente es hacer fine-tuning del modelo de 32 cuadros inicializándolo con el de 8: llega a 59.8% contra 60.1% de entrenar desde cero, en **20.5 h en lugar de 59.8 h**, porque el modelo de 8 cuadros es 7.3× más rápido en FLOPs. En inferencia, 20 recortes quedan ~0.5% bajo 100 y son 5× más rápidos.
+(Tiempos con 64 GPUs en paralelo.) **Alargar el clip solo en test es contraproducente**: evaluar con 32 cuadros el modelo entrenado con 8 baja 1.2% en clip y **5.8% en video**; entrenar con clips largos produce modelos cualitativamente distintos, con filtros de mayor plazo. El atajo es hacer fine-tuning del modelo de 32 cuadros inicializándolo con el de 8: llega a 59.8% contra 60.1% de entrenar desde cero, en **20.5 h en lugar de 59.8 h**, porque el de 8 cuadros es 7.3× más rápido en FLOPs. En inferencia, 20 recortes quedan ~0.5% bajo 100 y son 5× más rápidos.
 
 **Sports-1M (R(2+1)D-34).**
 
@@ -134,7 +134,7 @@ Si solo tuviera menor error de *test*, la explicación natural sería **regulari
 | R(2+1)D-RGB-32f | **57.0** | 73.0 | 91.5 |
 | R(2+1)D-Two-Stream-32f | — | **73.3** | **91.9** |
 
-R(2+1)D-RGB supera a **C3D por 10.9%** y a **P3D por 9.1%** en clip@1, y al 2D ResNet por 10.5%, pese a que ResNet-152 y P3D tienen 152 capas contra las 34 de R(2+1)D. Contra su propio baseline R3D-34 con 8 cuadros RGB la ventaja es de **2.3%** (56.1 vs 53.8), lo que aísla el aporte de la descomposición controlando arquitectura y datos.
+R(2+1)D-RGB supera a **C3D por 10.9%** y a **P3D por 9.1%** en clip@1, y al 2D ResNet por 10.5%, pese a que ResNet-152 y P3D tienen 152 capas contra las 34 de R(2+1)D. Contra su propio baseline R3D-34 con 8 cuadros RGB la ventaja es de **2.3%** (56.1 vs 53.8): eso aísla el aporte de la descomposición controlando arquitectura y datos.
 
 **Comparación con I3D en Kinetics.**
 
@@ -151,7 +151,7 @@ R(2+1)D-RGB supera a **C3D por 10.9%** y a **P3D por 9.1%** en clip@1, y al 2D R
 | R(2+1)D-Flow | Sports-1M | 68.5 | 88.1 |
 | R(2+1)D-Two-Stream | Sports-1M | 75.4 | 91.9 |
 
-Las tres comparaciones que permite la tabla son distintas, y conviene ser explícito con los asteriscos. **Sin pre-entrenamiento, R(2+1)D gana claro**: 72.0 vs 67.5 en RGB, **+4.5%**, la comparación más limpia del paper. **Pre-entrenado en Sports-1M supera a I3D pre-entrenado en ImageNet** por +2.2% en RGB (74.3 vs 72.1) y +3.2% en flujo (68.5 vs 65.3), pero acá las **fuentes de pre-entrenamiento son distintas** y el asterisco corta en las dos direcciones: Sports-1M aporta 1.1M videos mucho más afines al dominio que las imágenes de ImageNet, aunque con etiquetas más ruidosas y restringidas a deportes. **En two-stream I3D sigue adelante por 0.3%** (75.7 vs 75.4), y el propio paper señala la causa: R(2+1)D usa flujo óptico de **Farnebäck** por eficiencia mientras I3D usa **TV-L1**, más preciso y un orden de magnitud más lento, así que parte de la diferencia final es de **preprocesamiento, no de arquitectura**.
+Las tres comparaciones que permite la tabla son distintas, y hay que ser explícito con los asteriscos. **Sin pre-entrenamiento, R(2+1)D gana claro**: 72.0 vs 67.5 en RGB, **+4.5%**, la comparación más limpia del paper. **Pre-entrenado en Sports-1M supera a I3D pre-entrenado en ImageNet** por +2.2% en RGB (74.3 vs 72.1) y +3.2% en flujo (68.5 vs 65.3), pero acá las **fuentes de pre-entrenamiento son distintas** y el asterisco corta en las dos direcciones: Sports-1M aporta 1.1M videos más afines al dominio que ImageNet, aunque con etiquetas más ruidosas y restringidas a deportes. **En two-stream I3D sigue adelante por 0.3%** (75.7 vs 75.4), y el propio paper señala la causa: R(2+1)D usa flujo óptico de **Farnebäck** por eficiencia mientras I3D usa **TV-L1**, más preciso y un orden de magnitud más lento. Parte de la diferencia final es de **preprocesamiento, no de arquitectura**.
 
 **Transferencia** (promedio de los 3 splits estándar):
 
@@ -166,35 +166,35 @@ Las tres comparaciones que permite la tabla son distintas, y conviene ser explí
 | R(2+1)D-Flow | Kinetics | 95.5 | 76.4 |
 | R(2+1)D-Two-Stream | Kinetics | 97.3 | 78.7 |
 
-R(2+1)D supera a todos los métodos de la comparación excepto I3D, que además usa ImageNet. Y aparece un hallazgo lateral muy reutilizable: **Kinetics es mejor fuente de pre-entrenamiento que Sports-1M** por márgenes grandes, +3.2 puntos en UCF-101 (96.8 vs 93.6 en RGB) y **+7.9 en HMDB-51** (74.5 vs 66.6), pese a ser 3.6× más chico. La lectura honesta: **R(2+1)D es la mejor arquitectura de video entrenada desde cero de 2018, y su ventaja sobre I3D no está establecida cuando I3D puede usar ImageNet y buen flujo óptico**. Lo que sí queda establecido es que la dependencia de ImageNet, que en 2017 parecía indispensable, dejó de serlo.
+R(2+1)D supera a todos los métodos de la comparación excepto I3D, que además usa ImageNet. Y aparece un hallazgo lateral reutilizable: **Kinetics es mejor fuente de pre-entrenamiento que Sports-1M** por +3.2 puntos en UCF-101 (96.8 vs 93.6 en RGB) y **+7.9 en HMDB-51** (74.5 vs 66.6), pese a ser 3.6× más chico. La lectura honesta: **R(2+1)D es la mejor arquitectura de video entrenada desde cero de 2018, y su ventaja sobre I3D no está establecida cuando I3D puede usar ImageNet y buen flujo óptico**. Lo que sí queda establecido es que la dependencia de ImageNet, indispensable en apariencia en 2017, dejó de serlo.
 
 ---
 
 ## Limitaciones
 
-- **El costo de entrenamiento sigue siendo alto**, y no es un problema exclusivo de I3D: entrenar R(2+1)D-18 con clips de 32 cuadros en Kinetics toma **59.8 horas con 64 GPUs en paralelo**, del orden de 3800 GPU-horas para un modelo de 18 capas.
-- **El mejor resultado depende del flujo óptico precomputado**, un paso costoso fuera de la red que contradice la promesa end-to-end. Y el balance es pobre: con pre-entrenamiento Sports-1M, RGB solo da 74.3 contra 75.4 de two-stream, o sea **1.1 punto** por duplicar el cómputo.
-- **La ventana temporal es corta.** La exactitud a nivel de video hace pico en **32 cuadros**, poco más de un segundo a 25 fps; más allá, la agregación es un promedio de clips independientes sin modelo del orden entre ellos.
-- **No tener pre-entrenamiento en ImageNet es una desventaja estructural.** La factorización no ofrece nada análogo al *boring-video fixed point* de I3D: se podría inicializar la parte espacial $1\times d\times d$ desde una red 2D, pero el ancho intermedio $M_i = 2.25\,N_i$ no coincide con los canales de ninguna ResNet de imagen.
-- **Alcance del estudio.** Un solo tipo de red (ResNet) y un uso **homogéneo** de la descomposición en todas las capas: no exploran combinarla con la asignación no uniforme de capacidad temporal que sus propias secciones MC/rMC insinúan.
+- **El costo de entrenamiento sigue siendo alto**, y no es exclusivo de I3D: entrenar R(2+1)D-18 con clips de 32 cuadros en Kinetics toma **59.8 horas con 64 GPUs en paralelo**, del orden de 3800 GPU-horas para 18 capas.
+- **El mejor resultado depende del flujo óptico precomputado**, costoso y fuera de la red. Y el balance es pobre: con pre-entrenamiento Sports-1M, RGB solo da 74.3 contra 75.4 de two-stream, o sea **1.1 punto** por duplicar el cómputo.
+- **La ventana temporal es corta.** La exactitud de video hace pico en **32 cuadros**, poco más de un segundo a 25 fps; más allá, la agregación es un promedio de clips independientes sin modelo del orden entre ellos.
+- **No tener pre-entrenamiento en ImageNet es una desventaja estructural.** No hay nada análogo al *boring-video fixed point* de I3D: se podría inicializar la parte espacial $1\times d\times d$ desde una red 2D, pero el ancho intermedio $M_i = 2.25\,N_i$ no coincide con los canales de ninguna ResNet de imagen.
+- **Alcance.** Un solo tipo de red (ResNet) y un uso **homogéneo** de la descomposición: no exploran combinarla con la asignación no uniforme de capacidad temporal que sus propias secciones MC/rMC insinúan.
 
 ---
 
 ## Por qué importa hoy
 
-R(2+1)D se volvió el **backbone de video por defecto** de los años siguientes por una razón pragmática: es un ResNet, y la factorización se implementa con dos `Conv3d` de kernels degenerados, sin operadores nuevos. Está en `torchvision.models.video.r2plus1d_18` con pesos de Kinetics-400, junto a `r3d_18` y `mc3_18`: tres arquitecturas de este paper llegaron a la librería estándar de PyTorch, algo poco común para un paper de ablaciones. Su lugar en la historia de las ideas es compartido con [S3D](/papers/s3d-xie-2018): dos papers del mismo año, desde tradiciones distintas (ResNet contra Inception), que **consolidaron la separabilidad espacio-temporal** como principio de diseño del [reconocimiento de acciones](/fundamentos/reconocimiento-de-acciones). Después de 2018 prácticamente ningún modelo de video usa convoluciones 3D densas sin factorizar.
+R(2+1)D se volvió el **backbone de video por defecto** por una razón pragmática: es un ResNet, y la factorización se implementa con dos `Conv3d` de kernels degenerados, sin operadores nuevos. Está en `torchvision.models.video.r2plus1d_18` con pesos de Kinetics-400, junto a `r3d_18` y `mc3_18`: tres arquitecturas de este paper llegaron a la librería estándar de PyTorch, algo poco común para un paper de ablaciones. Su lugar en la historia lo comparte con [S3D](/papers/s3d-xie-2018): dos papers del mismo año, desde tradiciones distintas (ResNet contra Inception), que **consolidaron la separabilidad espacio-temporal** como principio de diseño del [reconocimiento de acciones](/fundamentos/reconocimiento-de-acciones). Después de 2018 prácticamente ningún modelo de video usa convoluciones 3D densas sin factorizar.
 
-La cadena del propio Du Tran es explícita: [C3D](/papers/c3d-tran-2015) (2015) instala las features espacio-temporales aprendidas → **R(2+1)D** (2018) factoriza el operador y muestra que el problema era de optimización → **CSN** (*Channel-Separated Convolutional Networks*, ICCV 2019) separa además el eje de canales, con exactitud comparable a costos mucho menores → **IG-65M** (Ghadiyaram, Tran, Mahajan, CVPR 2019) usa R(2+1)D como backbone para pre-entrenamiento débilmente supervisado sobre 65 millones de videos de Instagram, la respuesta definitiva a la falta de ImageNet: si el problema era el pre-entrenamiento a escala, se construye uno de video. En paralelo, [SlowFast](/papers/slowfast-feichtenhofer-2019) recogió el otro hilo, el de *dónde* poner la capacidad temporal.
+La cadena del propio Du Tran es explícita: [C3D](/papers/c3d-tran-2015) (2015) instala las features espacio-temporales aprendidas → **R(2+1)D** (2018) factoriza el operador → **CSN** (*Channel-Separated Convolutional Networks*, ICCV 2019) separa además el eje de canales, con exactitud comparable a costos mucho menores → **IG-65M** (Ghadiyaram, Tran, Mahajan, CVPR 2019) usa R(2+1)D como backbone para pre-entrenamiento débilmente supervisado sobre 65 millones de videos de Instagram: si el problema era el pre-entrenamiento a escala, se construye uno de video. En paralelo, [SlowFast](/papers/slowfast-feichtenhofer-2019) recogió el otro hilo, el de *dónde* poner la capacidad temporal.
 
-El puente a los video transformers es literal. **TimeSformer** (Bertasius, Wang, **Torresani**, ICML 2021), que comparte co-autor con este paper, propone *divided space-time attention*: atender primero en el espacio y luego en el tiempo, en operaciones separadas dentro de cada bloque. Es la misma factorización trasladada de la convolución a la atención, con idéntica justificación —mismo presupuesto, mejor optimizable, más barato que la versión conjunta—, y **ViViT** explora la misma familia con su *factorised encoder*. La lección de que **factorizar el operador espacio-temporal es casi siempre mejor que aplicarlo de forma conjunta** sobrevivió al cambio completo de arquitectura.
+El puente a los video transformers es literal. **TimeSformer** (Bertasius, Wang, **Torresani**, ICML 2021), que comparte co-autor con este paper, propone *divided space-time attention*: atender primero en el espacio y luego en el tiempo, en operaciones separadas dentro de cada bloque. Es la misma factorización trasladada de la convolución a la atención, con idéntica justificación —mismo presupuesto, mejor optimizable, más barato que la versión conjunta—, y **ViViT** explora esa familia con su *factorised encoder*. La lección de que **factorizar el operador espacio-temporal es casi siempre mejor que aplicarlo de forma conjunta** sobrevivió al cambio completo de arquitectura.
 
 ---
 
 ## Notas y enlaces
 
 - La [Clase 38](/clases/clase-38) recorre la escalera CNN2D + temporal pooling → CNN2D + RNN → Two-Stream → [C3D](/papers/c3d-tran-2015) → [I3D](/papers/i3d-carreira-2017); la [teoría](/clases/clase-38/teoria) da el recorrido y la [profundización](/clases/clase-38/profundizacion) desarrolla la matemática de los operadores espacio-temporales.
-- La [práctica de la clase](/clases/clase-38/practica) implementa el bloque (2+1)D con la fórmula de $M_i$ y verifica numéricamente el empate de parámetros contra la conv 3D equivalente: es el ejercicio que vuelve concreto el $2.25N$ del subespacio intermedio.
-- Contraste obligado: [I3D](/papers/i3d-carreira-2017) ataca el lado de los **datos y la inicialización** vía [inflado de convoluciones](/fundamentos/inflado-de-convoluciones); R(2+1)D ataca el lado del **operador y la optimización**. El veredicto de la historia es que se combinaron.
-- [S3D](/papers/s3d-xie-2018) llega a la conclusión inversa sobre dónde poner la conv 3D y [SlowFast](/papers/slowfast-feichtenhofer-2019) sigue esa línea: vale leer los tres juntos como lección sobre no extrapolar ablaciones entre backbones.
-- [Kinetics](/papers/kinetics-kay-2017) y [Sports-1M](/papers/large-scale-video-karpathy-2014) habilitan el entrenamiento desde cero; el backbone es [ResNet](/papers/resnet-he-2015) vanilla y el marco de decisiones de diseño está en [arquitectura de redes](/fundamentos/arquitectura-redes). La [Clase 36](/clases/clase-36) introdujo el baseline de bag-of-frames, que aquí reaparece como f-R2D.
-- Para video clínico —endoscopía, ecocardiografía, análisis de marcha— tres cosas se trasladan casi sin cambios: entrenar con clips cortos y hacer fine-tuning con clips largos recupera casi toda la exactitud a un tercio del cómputo; la afinidad y limpieza del dataset fuente pesan más que su tamaño bruto; y la distinción entre exactitud a nivel de clip y de video (57% contra 73%) cambia por completo la lectura de la utilidad diagnóstica de un modelo.
+- La [práctica de la clase](/clases/clase-38/practica) implementa el bloque (2+1)D con la fórmula de $M_i$ y verifica numéricamente el empate de parámetros contra la conv 3D equivalente: es el ejercicio que vuelve concreto el $2.25N$.
+- Contraste obligado: [I3D](/papers/i3d-carreira-2017) ataca los **datos y la inicialización** vía [inflado de convoluciones](/fundamentos/inflado-de-convoluciones); R(2+1)D ataca el **operador y la optimización**. El veredicto de la historia es que se combinaron.
+- [S3D](/papers/s3d-xie-2018) concluye lo inverso sobre dónde poner la conv 3D y [SlowFast](/papers/slowfast-feichtenhofer-2019) sigue esa línea: leerlos juntos es la mejor lección sobre no extrapolar ablaciones entre backbones.
+- [Kinetics](/papers/kinetics-kay-2017) y [Sports-1M](/papers/large-scale-video-karpathy-2014) habilitan el entrenamiento desde cero; el backbone es [ResNet](/papers/resnet-he-2015) vanilla y el marco de diseño está en [arquitectura de redes](/fundamentos/arquitectura-redes). La [Clase 36](/clases/clase-36) introdujo el baseline de bag-of-frames, que aquí reaparece como f-R2D.
+- Para video clínico —endoscopía, ecocardiografía, análisis de marcha— se trasladan tres cosas: entrenar con clips cortos y ajustar con clips largos recupera casi toda la exactitud a un tercio del cómputo; la afinidad y limpieza del dataset fuente pesan más que su tamaño; y la distinción clip vs video (57% contra 73%) cambia por completo la lectura de la utilidad diagnóstica.
