@@ -11,7 +11,7 @@ math: true
     venue="ICCV 2019 / arXiv:1812.03982"
     arxiv="1812.03982"
     pdf="/papers/slowfast-feichtenhofer-2019.pdf" >}}
-Tratar $x$ e $y$ **simétricamente** está justificado porque las imágenes naturales son casi **isótropas**; en $I(x,y,t)$ la premisa se rompe, porque el movimiento es la contraparte espacio-temporal de la orientación y **no todas las orientaciones espacio-temporales son igualmente probables**. Tratar espacio y tiempo por igual —lo que hacen los kernels cúbicos $N\times N\times N$ del inflado de C3D e [I3D](/papers/i3d-carreira-2017)— es un error de diseño. La alternativa: dos *pathways* sobre **el mismo clip crudo a dos velocidades**. La vía **Slow** ($\tau=16$) ve 4 fotogramas de 64 con toda la capacidad de canales: semántica espacial. La vía **Fast** (stride $\tau/\alpha=2$) ve 32 fotogramas con una fracción $\beta=1/8$ de los canales: movimiento fino. Se unen por cuatro **conexiones laterales** Fast → Slow, y la Fast cuesta ~**20% del cómputo** y ~**1.6% de los parámetros**. Todas las cifras son **desde cero, sin ImageNet**: **79.8% top-1** en Kinetics-400 (16×8 R101+NL) a 234 GFLOPs × 30 vistas contra 77.7% del SOTA previo a 359, y 4×16 R50 logra **75.6%** con **36.1 GFLOPs**, empatando a Two-Stream I3D con **6× menos cómputo por vista** y sin flujo. En AVA sube a **28.2 mAP** y gana el challenge 2019. El eslogan: *el eje temporal es una dimensión especial*.
+Tratar $x$ e $y$ **simétricamente** está justificado porque las imágenes naturales son casi **isótropas**; en $I(x,y,t)$ la premisa se rompe, porque el movimiento es la contraparte espacio-temporal de la orientación y **no todas las orientaciones espacio-temporales son igualmente probables**. Tratar espacio y tiempo por igual —lo que hacen los kernels cúbicos $N\times N\times N$ del inflado de C3D e [I3D](/papers/i3d-carreira-2017)— es un error de diseño. La alternativa: dos *pathways* sobre **el mismo clip crudo a dos velocidades**. La vía **Slow** ($\tau=16$) ve 4 fotogramas de 64 con toda la capacidad de canales: semántica. La vía **Fast** (stride $\tau/\alpha=2$) ve 32 fotogramas con una fracción $\beta=1/8$ de los canales: movimiento fino. Se unen por cuatro **conexiones laterales** Fast → Slow, y la Fast cuesta ~**20% del cómputo** y ~**1.6% de los parámetros**. Todas las cifras son **desde cero, sin ImageNet**: **79.8% top-1** en Kinetics-400 (16×8 R101+NL) a 234 GFLOPs × 30 vistas contra 77.7% del SOTA previo a 359, y 4×16 R50 logra **75.6%** con **36.1 GFLOPs**, empatando a Two-Stream I3D con **6× menos cómputo por vista** y sin flujo. En AVA sube a **28.2 mAP** y gana el challenge 2019. El eslogan: *el eje temporal es una dimensión especial*.
 {{< /paper-card >}}
 
 ---
@@ -20,7 +20,7 @@ Tratar $x$ e $y$ **simétricamente** está justificado porque las imágenes natu
 
 El argumento es de estadística de la señal. La simetría entre $x$ e $y$ se sostiene porque todas las orientaciones espaciales son igualmente probables; en video el análogo de la orientación es el **movimiento**, y ahí la distribución está sesgada, porque la mayor parte del mundo está en reposo en un instante dado. El paper cita el **problema de la apertura**: un borde aislado se percibe moviéndose perpendicular a sí mismo, percepto racional solo bajo un prior de movimiento lento. La conclusión es factorizar. El sustento en [reconocimiento de acciones](/fundamentos/reconocimiento-de-acciones): **la semántica categórica evoluciona lentamente** —unas manos que se agitan siguen siendo "manos"— mientras que **el movimiento evoluciona mucho más rápido que la identidad de su sujeto**.
 
-La motivación biológica conviene leerla con precisión: el paper se declara **parcialmente inspirado** en las células ganglionares de la retina de primates y admite que *"la analogía es tosca y prematura"*.
+La motivación biológica: el paper se declara **parcialmente inspirado** en las células ganglionares de la retina de primates, y admite que *"la analogía es tosca y prematura"* — nunca se valida.
 
 | Célula | Proporción | Frec. temporal | Sensibilidad |
 | --- | --- | --- | --- |
@@ -31,7 +31,7 @@ La motivación biológica conviene leerla con precisión: el paper se declara **
 
 > Frente al [Two-Stream clásico](/papers/two-stream-simonyan-2014), la separación deja de ser por **modalidad** (RGB contra flujo precomputado) y pasa a ser por **resolución temporal**: misma modalidad, distinto framerate y distinto presupuesto de canales. La especialización no se impone, se induce — y la segunda corriente sale casi gratis, porque al dedicarse solo al movimiento no necesita capacidad para apariencia.
 
-Eso resuelve la primera desventaja que la [Clase 38](/clases/clase-38) atribuye al Two-Stream: "necesita calcular el flujo óptico de cada video", paso no diferenciable que el paper llama "metodológicamente insatisfactorio" por ser una representación **diseñada a mano**.
+Eso elimina la primera desventaja que la [Clase 38](/clases/clase-38) atribuye al Two-Stream: "necesita calcular el flujo óptico de cada video", paso no diferenciable que el paper llama "metodológicamente insatisfactorio" por ser una representación **diseñada a mano**.
 
 ---
 
@@ -39,7 +39,7 @@ Eso resuelve la primera desventaja que la [Clase 38](/clases/clase-38) atribuye 
 
 Su rasgo definitorio es el **stride temporal grande $\tau$**: 1 de cada $\tau$ fotogramas. Con $\tau=16$ a 30 fps son ~2 por segundo — ve $T=4$ fotogramas de un clip crudo de **64** (~2.13 s). Y **no hace ningún downsampling temporal**, ni pooling ni stride en el tiempo: con cuatro fotogramas comprimir más *"sería perjudicial cuando el stride de entrada es grande"*.
 
-En compensación concentra **toda la capacidad de canales**: una [ResNet](/papers/resnet-he-2015) 3D con el ancho estándar de ResNet-50 (64 → 256 → 512 → 1024 → 2048). Con 32.4M de parámetros y 27.3 GFLOPs alcanza sola **72.6% top-1** en [Kinetics-400](/papers/kinetics-kay-2017), un baseline fuerte que vuelve más significativa la ganancia de la segunda vía.
+En compensación concentra **toda la capacidad de canales**: una [ResNet](/papers/resnet-he-2015) 3D con el ancho estándar de ResNet-50 (64 → 256 → 512 → 1024 → 2048). Con 32.4M de parámetros y 27.3 GFLOPs alcanza sola **72.6% top-1** en [Kinetics-400](/papers/kinetics-kay-2017), un baseline fuerte que hace más significativa la ganancia de la segunda vía.
 
 ---
 
@@ -65,7 +65,7 @@ Sin fusión intermedia las dos vías se ignoran. El paper las une con **conexion
 | (ii) Time-strided sampling: 1 de cada $\alpha$, descarta 7/8 del tiempo | $\{T,S^2,\beta C\}$ | $\to 4\times56^2\times8$ |
 | (iii) Time-strided convolution: **aprende** la agregación | conv 3D $5\times1^2$, stride $\alpha$ | $\to 4\times56^2\times16$ |
 
-Ablation en Kinetics-400 con SlowFast 4×16 R-50:
+Ablation con SlowFast 4×16 R-50:
 
 | Variante | top-1 | top-5 | GFLOPs |
 | --- | --- | --- | --- |
@@ -73,11 +73,10 @@ Ablation en Kinetics-400 con SlowFast 4×16 R-50:
 | Fast-only | 51.7 | 78.5 | 6.4 |
 | **Sin** laterales (concatena salidas finales) | 73.5 | 90.3 | 34.2 |
 | Time-to-channel, suma | 74.5 | 91.3 | 34.2 |
-| Time-to-channel, concatenación | 74.3 | 91.0 | 39.8 |
 | Time-strided sampling | 75.4 | 91.8 | 34.9 |
 | **Time-strided convolution** (defecto) | **75.6** | **92.1** | 36.1 |
 
-**Sin laterales en la jerarquía la idea no funciona**: concatenar solo las salidas finales da 73.5%, +0.9 sobre Slow-only. **T-conv gana** (+3.0 puntos por +8.8 GFLOPs), pero **time-strided sampling queda a 0.2 puntos** aunque descarte 7 de cada 8 fotogramas — lo importante ocurre *dentro* de la vía Fast; la lateral solo inyecta señal. Tras res5 se hace global average pooling por vía y se concatena al clasificador.
+**Sin laterales en la jerarquía la idea no funciona**: concatenar solo las salidas finales da 73.5%, +0.9 sobre Slow-only. **T-conv gana** (+3.0 puntos por +8.8 GFLOPs), pero **time-strided sampling queda a 0.2 puntos** pese a descartar 7 de cada 8 fotogramas: lo importante ocurre *dentro* de la vía Fast, y la lateral solo inyecta señal. Tras res5 se hace global average pooling por vía y se concatena al clasificador.
 
 ---
 
@@ -106,7 +105,7 @@ El hallazgo contraintuitivo: **la vía Slow es esencialmente 2D en las capas tem
 
 ## Resultados y ablations
 
-Kinetics-400, con GFLOPs por vista × número de vistas:
+Kinetics-400 (GFLOPs por vista × vistas):
 
 | Modelo | Flujo | Pretrain | top-1 | top-5 | GFLOPs × vistas |
 | --- | --- | --- | --- | --- | --- |
@@ -138,7 +137,7 @@ Otras formas de debilitarla:
 | **RGB** ($\beta=1/8$, defecto) | **75.6** | **92.1** | 36.1 |
 | RGB media resolución ($112^2$), $\beta=1/4$ | 74.7 | 91.8 | 34.4 |
 | **Escala de grises** | 75.5 | 91.9 | 34.1 |
-| Time difference (actual − anterior) | 74.5 | 91.6 | 34.2 |
+| Time difference | 74.5 | 91.6 | 34.2 |
 | **[Flujo óptico](/fundamentos/flujo-optico)** | 73.8 | 91.3 | 35.1 |
 
 Todas superan el 72.6% de Slow-only: la vía Fast representa movimiento, no apariencia. La **escala de grises está a 0.1 puntos del RGB** y ahorra ~5% de FLOPs, así que la vía rápida **no necesita color** (consistente con las células M). Y **el flujo óptico es la peor de las cinco**: no lo evitamos porque sea caro, sino porque **el RGB a alta tasa temporal representa mejor el movimiento que el flujo precomputado**, que al estar diseñado a mano descarta información aprovechable.
@@ -151,7 +150,7 @@ El control decisivo, sobre la misma 3D ResNet-50:
 | Receta de Nonlocal, desde cero | — | 69.4 | 88.6 |
 | **Receta de los autores**, desde cero | — | **73.5** | 90.8 |
 
-La receta antigua desde cero pierde **4.0 puntos**; la de SlowFast **iguala** a ImageNet con SGD sincronizado de batch 1024 sobre 128 GPUs, warm-up lineal de 8k iteraciones para tolerar $\eta=1.6$, cosine schedule y 256 epochs. **La brecha de "entrenar desde cero" era de optimización, no de datos**, y con ImageNet la diferencia fue de **±0.3%**.
+La receta antigua desde cero pierde **4.0 puntos**; la de SlowFast **iguala** a ImageNet con SGD sincronizado de batch 1024 sobre 128 GPUs, warm-up lineal de 8k iteraciones para tolerar $\eta=1.6$ y 256 epochs. **La brecha de "entrenar desde cero" era de optimización, no de datos**, y con ImageNet la diferencia fue de **±0.3%**.
 
 > La ironía que cierra el arco de la clase: el argumento central de [I3D](/papers/i3d-carreira-2017) es que heredar ImageNet vía el inflado era **indispensable** para las redes 3D profundas, y dos años después SlowFast entrena **desde inicialización aleatoria** y alcanza el estado del arte. No cambió la arquitectura, cambió la **madurez de Kinetics como "ImageNet del video"** (~240k videos contra los ~10k de UCF-101 y HMDB-51) y una receta de optimización inexistente en 2017. El inflado resolvía una escasez de datos; no era una verdad permanente.
 
@@ -166,14 +165,13 @@ La receta antigua desde cero pierde **4.0 puntos**; la de SlowFast **iguala** a 
 - **El costo absoluto sigue alto:** el mejor modelo cuesta $234\times30 = 7020$ GFLOPs por video, y el "económico" 4×16 R50, 1083. Feichtenhofer atacaría esto con **X3D** (CVPR 2020).
 - **El protocolo de 30 vistas optimiza leaderboard, no despliegue.** Reportarlo explícitamente es un aporte metodológico valioso —ese costo "había sido largamente ignorado"—, pero producción usaría menos vistas, con una pérdida que el paper no cuantifica.
 - **La ventana temporal es de segundos, no de minutos:** 64 fotogramas por defecto (~2.13 s), 128 en $16\times8$, y el largo alcance se recupera promediando 10 clips, agregación sin memoria ni orden. La desventaja de "no capturar relaciones temporales largas" queda **mejorada, no resuelta**.
-- **La analogía biológica no se valida.** El paper mismo la califica de tosca y prematura, y su único contacto empírico (el color) es débil.
 - **La fusión es unidireccional y de topología fija:** la bidireccional se despacha como "resultados similares", no se exploran más de dos vías ni $\alpha$/$\beta$ por stage, y casi todos los ablations viven en una sola configuración (4×16 R-50).
 
 ---
 
 ## Por qué importa hoy
 
-SlowFast se volvió el **baseline obligado en detección de acciones**, sobre todo en AVA: ganar el challenge 2019 con ese margen obligó durante años a que todo trabajo de localización espacio-temporal reportara frente a él, y el patrón "SlowFast + Faster R-CNN con RoI 3D y RoIAlign" quedó como referencia de facto. **PySlowFast** fue tan importante como el paper: FAIR liberó un framework completo de investigación en video (entrenamiento distribuido, evaluación multi-vista, zoo de modelos) que bajó la barrera de entrada y luego albergó X3D y MViT. Y resolvió la dependencia del flujo óptico **eliminando el problema**: después de SlowFast, calcular TV-L1 sobre 240k videos dejó de ser parte del pipeline estándar.
+SlowFast se volvió el **baseline obligado en detección de acciones**, sobre todo en AVA: ganar el challenge 2019 con ese margen obligó durante años a que todo trabajo de localización espacio-temporal reportara frente a él, y el patrón "SlowFast + Faster R-CNN con RoI 3D y RoIAlign" quedó como referencia de facto. **PySlowFast** importó tanto como el paper: FAIR liberó un framework completo de investigación en video (entrenamiento distribuido, evaluación multi-vista, zoo de modelos) que bajó la barrera de entrada y luego albergó X3D y MViT. Y resolvió la dependencia del flujo **eliminando el problema**: calcular TV-L1 sobre 240k videos dejó de ser parte del pipeline estándar.
 
 Sobre los **video transformers**: el mismo grupo publicó **MViT (Multiscale Vision Transformers, ICCV 2021)**, con dos autores compartidos, y el estado del arte migró de las ConvNets a la atención. Lo que sobrevive de SlowFast ahí no son las dos vías, sino **las jerarquías multiescala**: MViT rechaza el diseño del [Vision Transformer](/fundamentos/vision-transformer) de resolución y ancho constantes y construye una pirámide donde la resolución espacio-temporal se reduce mientras los canales se expanden con la profundidad — el principio de "resolución alta con pocos canales / resolución baja con muchos", reorganizado del eje temporal al de profundidad. SlowFast se lee retrospectivamente como el argumento de que **resolución temporal y capacidad de canales son recursos intercambiables**.
 
@@ -182,5 +180,5 @@ Sobre los **video transformers**: el mismo grupo publicó **MViT (Multiscale Vis
 ## Notas y enlaces
 
 - **En el curso:** la [Clase 38](/clases/clase-38) recorre CNN2D → CNN2D+RNN → [Two-Stream](/papers/two-stream-simonyan-2014) → C3D → [I3D](/papers/i3d-carreira-2017) con las desventajas de cada familia, y SlowFast ataca las de las dos últimas. La [teoría](/clases/clase-38/teoria) lo sitúa en esa genealogía; la [profundización](/clases/clase-38/profundizacion), en la matemática del inflado.
-- **Linaje:** [Two-Stream (2014)](/papers/two-stream-simonyan-2014) plantea la separación original y [Two-Stream Fusion (2016)](/papers/two-stream-fusion-feichtenhofer-2016), del mismo primer autor, aporta las conexiones laterales; [I3D (2017)](/papers/i3d-carreira-2017) y [Kinetics (2017)](/papers/kinetics-kay-2017) establecen el paradigma que SlowFast relativiza; [R(2+1)D (2018)](/papers/r2plus1d-tran-2018) y [S3D (2018)](/papers/s3d-xie-2018) atacan la misma simetría cúbica, pero factorizando espacio/tiempo dentro de cada capa. Ver también [ResNet](/papers/resnet-he-2015) y la [Clase 36](/clases/clase-36), que da los datasets y el marco de evaluación del video.
-- **Código:** [github.com/facebookresearch/SlowFast](https://github.com/facebookresearch/SlowFast) (PySlowFast). Datasets: Kinetics-400/600, Charades y AVA.
+- **Linaje:** [Two-Stream (2014)](/papers/two-stream-simonyan-2014) plantea la separación original y [Two-Stream Fusion (2016)](/papers/two-stream-fusion-feichtenhofer-2016), del mismo primer autor, aporta las conexiones laterales; [I3D (2017)](/papers/i3d-carreira-2017) y [Kinetics (2017)](/papers/kinetics-kay-2017) fijan el paradigma que SlowFast relativiza; [R(2+1)D (2018)](/papers/r2plus1d-tran-2018) y [S3D (2018)](/papers/s3d-xie-2018) atacan la misma simetría cúbica factorizando dentro de cada capa. Ver también [ResNet](/papers/resnet-he-2015) y la [Clase 36](/clases/clase-36), con los datasets y el marco de evaluación del video.
+- **Código:** [PySlowFast](https://github.com/facebookresearch/SlowFast). Datasets: Kinetics-400/600, Charades y AVA.

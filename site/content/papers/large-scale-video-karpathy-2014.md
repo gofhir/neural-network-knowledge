@@ -138,7 +138,7 @@ En Hit@5, 77,7 → 80,2 ($\Delta = 2{,}5$); en Clip Hit@1, 41,1 → 41,9 ($\Delt
 
 ## Transferencia a UCF-101
 
-Los autores prueban tres puntos de corte sobre Slow Fusion, la mejor red en Sports-1M. [UCF-101](/papers/ucf101-soomro-2012) son 13.320 videos en 101 categorías, con 50 clips por video promediados sobre los 3 folds sugeridos.
+Los autores prueban tres puntos de corte sobre Slow Fusion, la mejor red en Sports-1M. [UCF-101](/papers/ucf101-soomro-2012) son 13.320 videos en 101 categorías, promediando sobre los 3 folds sugeridos.
 
 | Modelo | 3-fold Accuracy |
 |---|---|
@@ -149,7 +149,7 @@ Los autores prueban tres puntos de corte sobre Slow Fusion, la mejor red en Spor
 | **Fine-tune top 3 layers** | **65,4%** |
 | Fine-tune all layers | 62,2% |
 
-**La U invertida es el hallazgo**, y el resultado más reutilizable del paper para [transfer learning](/fundamentos/transfer-learning). Congelar demasiado no es óptimo porque "*los features de alto nivel son quizás demasiado específicos de deportes*"; descongelar todo tampoco, "*probablemente debido a overfitting*" (13.320 videos contra decenas de millones de parámetros). El óptimo es reentrenar las dos capas fully connected con dropout muy agresivo, "*tan poco como 10% de probabilidad de mantener cada unidad activa*". Y **la ganancia de "top" a "top 3" viene casi enteramente de las categorías no deportivas**: *Sports* apenas baja de 0,80 a 0,79 mAP mientras *Playing Musical Instruments* salta de 0,46 a 0,65. (Un detalle al citar: el abstract dice "63,3% up from 43,9%" mientras la Tabla 3 dice "65,4%, up from 41,3%".)
+**La U invertida es el hallazgo**, y el resultado más reutilizable del paper para [transfer learning](/fundamentos/transfer-learning). Congelar demasiado no es óptimo porque "*los features de alto nivel son quizás demasiado específicos de deportes*"; descongelar todo tampoco, "*probablemente debido a overfitting*". El óptimo es reentrenar las dos capas fully connected con dropout muy agresivo, "*tan poco como 10% de probabilidad de mantener cada unidad activa*". Y **la ganancia de "top" a "top 3" viene casi enteramente de las categorías no deportivas**: *Sports* apenas baja de 0,80 a 0,79 mAP mientras *Playing Musical Instruments* salta de 0,46 a 0,65. (Ojo al citar: el abstract dice "63,3% up from 43,9%" y la Tabla 3 dice "65,4%, up from 41,3%".)
 
 **La comparación que el paper no hace.** Gana contra los baselines que tiene a mano, pero **no compara contra el estado del arte artesanal de la época**: Feichtenhofer et al. (CVPR 2016) tabulan "IDT + higher dimensional FV" (Peng et al., 2014) en **87,9%** en UCF-101 —cifra externa a este paper, que no debe atribuírsele, pero que lo contextualiza—. Más de 20 puntos a favor de lo artesanal: en 2014 el deep learning ya había arrasado en imágenes y en video **todavía perdía por goleada**. Y lo que iDT tenía y la CNN no era exactamente modelado explícito y compensado del movimiento, el remedio que el propio paper señala y deja pendiente.
 
@@ -185,7 +185,7 @@ El [Laboratorio 36](/laboratorios/lab-36) reprodujo el fenómeno a escala de cur
 | Flujo óptico explícito | no | sí (TV-L1) |
 | UCF-101 (3 splits) | **65,4%** | **98,0%** |
 
-Los 32,6 puntos entre esas filas son la historia de la Clase 38, y el orden de las palancas es instructivo: pre-entrenamiento de imagen, profundidad, extensión temporal, movimiento explícito y calidad del dataset. Este paper tiene solo el volumen de datos, y el volumen solo no alcanzó.
+Los 32,6 puntos entre esas filas son la historia de la Clase 38, y las palancas que los explican son pre-entrenamiento de imagen, profundidad, extensión temporal, movimiento explícito y calidad del dataset. Este paper tiene solo volumen de datos, y el volumen solo no alcanzó.
 
 **Por qué Sports-1M no fue el ImageNet del video.** Es el legado más instructivo, precisamente porque es un fracaso parcial: tenía la escala y le faltaba todo lo demás.
 
@@ -196,9 +196,9 @@ Los 32,6 puntos entre esas filas son la historia de la Clase 38, y el orden de l
 | Recorte temporal | videos de 5 min 36 s con marcadores y entrevistas | clips de ~10 s recortados en la acción |
 | Discriminatividad temporal | baja: la escena estática casi basta | alta por diseño |
 
-I3D atribuye su ventaja sobre C3D a la calidad de Kinetics, **aunque C3D se entrenó con más videos** (Sports-1M más un dataset interno): **un ImageNet de video necesita curación y recorte temporal, no solo volumen**. La contribución fundacional queda igual en pie, porque fue el primer dataset de video a escala web y el corpus de pre-entrenamiento de C3D.
+I3D atribuye su ventaja sobre C3D a la calidad de Kinetics **aunque C3D se entrenó con más videos**: **un ImageNet de video necesita curación y recorte temporal, no solo volumen**. La contribución fundacional queda en pie igual, porque fue el primer dataset de video a escala web y el corpus de pre-entrenamiento de C3D.
 
-La lección de fondo: **un resultado negativo bien medido es más productivo que un resultado positivo marginal**. Los autores podrían haber titulado "las CNN funcionan en video"; en vez de eso escribieron que la mejora sobre el modelo de un solo fotograma era "sorprendentemente modesta", y esa frase organizó los cinco años siguientes del [reconocimiento de acciones](/fundamentos/reconocimiento-de-acciones).
+La lección de fondo: **un resultado negativo bien medido es más productivo que un resultado positivo marginal**. Los autores escribieron que la mejora sobre el modelo de un solo fotograma era "sorprendentemente modesta", y esa frase organizó los cinco años siguientes del [reconocimiento de acciones](/fundamentos/reconocimiento-de-acciones).
 
 ---
 
