@@ -19,6 +19,7 @@ Segunda parte del módulo de Audio y Video, ahora sobre **video**. La visión po
   {{< card link="/laboratorios/lab-36" title="Laboratorio: Video Understanding" subtitle="Clasificación de acciones sobre UCF11 con backbone ResNet y muestreo de frames" icon="variable" >}}
   {{< card link="/clases/clase-37" title="Clase siguiente: Datasets y Herramientas para Audio" subtitle="El ciclo de vida del dato de audio: formatos, transforms, augmentation, datasets" icon="arrow-right" >}}
   {{< card link="/clases/clase-35" title="Clase anterior: Análisis de Audio" subtitle="Fourier, FFT, sampling, STFT, MFCC" icon="arrow-left" >}}
+  {{< card link="/clases/clase-38" title="Relacionada: CNN para reconocimiento en video" subtitle="La misma escalera de arquitecturas vista desde el pre-entrenamiento: el inflado de I3D en detalle" icon="academic-cap" >}}
   {{< card link="/clases/clase-11" title="Relacionada: Redes Recurrentes" subtitle="RNN/LSTM — la base del 2D CNN + RNN para video" icon="academic-cap" >}}
 {{< /cards >}}
 

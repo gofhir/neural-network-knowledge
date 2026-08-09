@@ -27,9 +27,12 @@ Tres tensiones definen el campo: (1) cómo **modelar movimiento sin desperdiciar
       Wang & Schmid: refinamiento con compensación de movimiento de cámara y Fisher Vectors. **Por qué importó:** seguía superando o igualando a las primeras CNNs de video durante 2014-2015 — el handcrafted no se rindió fácil.
     {{< /hito >}}
   {{< /era >}}
-  {{< era name="Era two-stream y 3D-CNN tempranas" years="2014-2015" >}}
-    {{< hito year="2014" name="Karpathy CVPR (slow/fast fusion)" status="minimal" >}}
-      Karpathy et al. (Google/Stanford): CNNs aplicadas a video con varias estrategias de fusión temporal (early, late, slow, single-frame). **Por qué importó:** primer estudio sistemático de cómo extender CNN-2D a video; resultado descorazonador (igual a single-frame), motivó two-stream.
+  {{< era name="Era two-stream y 3D-CNN tempranas" years="2010-2016" >}}
+    {{< hito year="2010" name="3D CNN de Ji et al." status="covered" link="/papers/3d-cnn-ji-2013" >}}
+      Ji, Xu, Yang y Yu (NEC Labs): la primera convolución 3D para reconocimiento de acciones, **dos años antes de AlexNet**. Tres capas convolucionales sobre entradas de 60×40 píxeles y 7 frames, con una capa "hardwired" de gradientes y flujo óptico precalculados a mano. **Por qué importó:** demuestra que la idea de la convolución espacio-temporal no era nueva —lo que faltaba era escala de datos y de dónde heredar pesos. Cubierto en la [Clase 38](/clases/clase-38).
+    {{< /hito >}}
+    {{< hito year="2014" name="Karpathy CVPR (slow/fast fusion)" status="covered" link="/papers/large-scale-video-karpathy-2014" >}}
+      Karpathy et al. (Google/Stanford): CNNs aplicadas a video con varias estrategias de fusión temporal (single-frame, early, late, slow) más una arquitectura multiresolución fovea+contexto, sobre el nuevo dataset **Sports-1M** (1M de videos, 487 clases). **Por qué importó:** primer estudio sistemático de cómo extender CNN-2D a video; el resultado descorazonador —single-frame quedaba a 1-2 puntos de las variantes con movimiento— motivó el two-stream y las convoluciones 3D. Es el origen del eslabón "CNN2D + agrupación temporal". Cubierto en la [Clase 38](/clases/clase-38).
     {{< /hito >}}
     {{< hito year="2014" name="Two-Stream" status="covered" link="/papers/two-stream-simonyan-2014" >}}
       Simonyan & Zisserman (Oxford): dos CNNs paralelas — una sobre RGB (apariencia), otra sobre flujo óptico (movimiento) — fusionadas en la decisión final. **Por qué importó:** superó a iDT y fijó el patrón "modelar movimiento explícitamente" durante 4 años. Cubierto en la [Clase 36](/clases/clase-36).
@@ -38,18 +41,24 @@ Tres tensiones definen el campo: (1) cómo **modelar movimiento sin desperdiciar
       Donahue et al. (Berkeley): una CNN extrae features por frame y una LSTM los procesa como secuencia temporal. **Por qué importó:** es el "2D CNN + RNN" —captura dependencias largas respetando el orden, aunque el RNN no se paralelice. Cubierto en la [Clase 36](/clases/clase-36).
     {{< /hito >}}
     {{< hito year="2015" name="C3D" status="covered" link="/papers/c3d-tran-2015" >}}
-      Tran et al. (FAIR): convoluciones 3D (3×3×3) aprendidas extremo a extremo sobre clips de 16 frames. **Por qué importó:** primer modelo 3D-CNN entrenable sobre video sin recurrir a flujo óptico precomputado. Cubierto en la [Clase 36](/clases/clase-36).
+      Tran et al. (FAIR): convoluciones 3D (3×3×3) aprendidas extremo a extremo sobre clips de 16 frames. **Por qué importó:** primer modelo 3D-CNN entrenable sobre video sin recurrir a flujo óptico precomputado. Su límite estructural —no poder heredar pesos de ImageNet— es el problema que define la [Clase 38](/clases/clase-38). Cubierto en la [Clase 36](/clases/clase-36) y la [Clase 38](/clases/clase-38).
+    {{< /hito >}}
+    {{< hito year="2016" name="Two-Stream Fusion" status="covered" link="/papers/two-stream-fusion-feichtenhofer-2016" >}}
+      Feichtenhofer, Pinz y Zisserman: en lugar de promediar los softmax al final, estudia **dónde y cómo** fusionar las dos corrientes, y encuentra que la fusión por convolución en una capa profunda gana. **Por qué importó:** hace que la red aprenda la correspondencia entre *qué* se mueve y *dónde* se mueve, algo imposible con fusión tardía; es la familia "(d) 3D-Fused" de la comparativa canónica de I3D. Cubierto en la [Clase 38](/clases/clase-38).
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de 3D-CNN profundas" years="2017-2019" >}}
     {{< hito year="2017" name="I3D" status="covered" link="/papers/i3d-carreira-2017" >}}
-      Carreira & Zisserman (DeepMind): *Inflated 3D ConvNet* — toma una CNN-2D preentrenada en ImageNet (Inception-V1, kernels 3×3) y "infla" sus filtros 2D a 3D (un kernel 3×3 se vuelve 3×3×3 replicando los pesos en el eje temporal), transfiriendo la representación visual a video. Entrenado sobre el nuevo [Kinetics-400](/papers/kinetics-kay-2017). **Por qué importó:** el primer modelo que destronó claramente a iDT y two-stream en todos los benchmarks; backbone estándar 2017-2019. Cubierto en la [Clase 36](/clases/clase-36).
+      Carreira & Zisserman (DeepMind): *Inflated 3D ConvNet* — toma una CNN-2D preentrenada en ImageNet (Inception-V1, kernels 3×3) y "infla" sus filtros 2D a 3D (un kernel 3×3 se vuelve 3×3×3 replicando los pesos en el eje temporal), transfiriendo la representación visual a video. Entrenado sobre el nuevo [Kinetics-400](/papers/kinetics-kay-2017). **Por qué importó:** el primer modelo que destronó claramente a iDT y two-stream en todos los benchmarks; backbone estándar 2017-2019. La mecánica del inflado se deriva en el fundamento [Inflado de Convoluciones](/fundamentos/inflado-de-convoluciones). Cubierto en la [Clase 36](/clases/clase-36) y en detalle en la [Clase 38](/clases/clase-38).
     {{< /hito >}}
-    {{< hito year="2018" name="R(2+1)D" status="minimal" >}}
-      Tran et al. (FAIR): factoriza convolución 3D en una espacial 2D seguida de una temporal 1D. **Por qué importó:** mejor accuracy con menos parámetros que 3D pura; demostró que separar espacio y tiempo era pedagógicamente útil para el modelo.
+    {{< hito year="2018" name="R(2+1)D" status="covered" link="/papers/r2plus1d-tran-2018" >}}
+      Tran et al. (FAIR): factoriza la convolución 3D en una espacial 2D seguida de una temporal 1D, eligiendo los canales intermedios para **igualar** el conteo de parámetros del bloque 3D y hacer justa la comparación. **Por qué importó:** el propio autor de C3D revisando su trabajo; muestra que el beneficio de factorizar es de **optimización** (baja el error de entrenamiento, no solo el de test), no de regularización. Cubierto en la [Clase 38](/clases/clase-38).
     {{< /hito >}}
-    {{< hito year="2019" name="SlowFast" status="minimal" >}}
-      Feichtenhofer et al. (FAIR): dos vías paralelas — una "slow" a baja frecuencia para apariencia, una "fast" a alta frecuencia para movimiento. Inspirado en M/P pathways del sistema visual. **Por qué importó:** estado del arte en Kinetics y AVA; influyó la división persistente "spatial vs temporal" en arquitecturas posteriores.
+    {{< hito year="2018" name="S3D / S3D-G" status="covered" link="/papers/s3d-xie-2018" >}}
+      Xie et al. (Google): audita qué capas de I3D necesitan realmente ser 3D y encuentra que las bajas **no** (diseño *top-heavy*), además de separar los kernels en espacial + temporal y agregar gating de auto-atención. **Por qué importó:** responde de frente a las tres desventajas de I3D (parámetros, costo, latencia) y consolidó la separabilidad como práctica estándar. Cubierto en la [Clase 38](/clases/clase-38).
+    {{< /hito >}}
+    {{< hito year="2019" name="SlowFast" status="covered" link="/papers/slowfast-feichtenhofer-2019" >}}
+      Feichtenhofer et al. (FAIR): dos vías paralelas — una "slow" a baja frecuencia y muchos canales para apariencia, una "fast" a alta frecuencia y pocos canales para movimiento — conectadas lateralmente. Inspirado en los pathways M/P del sistema visual. **Por qué importó:** elimina la dependencia del **flujo óptico precomputado** al redefinir las dos corrientes por framerate en lugar de por modalidad, y entrena **desde cero** —lo que relativiza el argumento de I3D de que heredar ImageNet era indispensable. Estado del arte en Kinetics y AVA. Cubierto en la [Clase 38](/clases/clase-38).
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de Video Transformers" years="2021-2022" >}}

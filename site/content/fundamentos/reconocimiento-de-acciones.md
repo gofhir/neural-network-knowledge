@@ -85,5 +85,6 @@ El reconocimiento de acciones tiene aplicaciones clínicas directas. En **cirug�
 
 ## Referencias
 
-- Fundamentos relacionados: [Análisis de Video](/fundamentos/analisis-de-video) · [Flujo óptico](/fundamentos/flujo-optico) · [Redes recurrentes](/fundamentos/redes-recurrentes) · [Redes convolucionales](/fundamentos/redes-convolucionales).
+- Fundamentos relacionados: [Análisis de Video](/fundamentos/analisis-de-video) · [Flujo óptico](/fundamentos/flujo-optico) · [Redes recurrentes](/fundamentos/redes-recurrentes) · [Redes convolucionales](/fundamentos/redes-convolucionales) · [Inflado de Convoluciones](/fundamentos/inflado-de-convoluciones).
+- Clases: [Clase 36 - Introducción al Análisis de Video](/clases/clase-36) · [Clase 38 - CNN para reconocimiento en video](/clases/clase-38) (modelos pre-entrenados y el linaje posterior a I3D: [S3D](/papers/s3d-xie-2018), [R(2+1)D](/papers/r2plus1d-tran-2018), [SlowFast](/papers/slowfast-feichtenhofer-2019)).
 - Dominio: [Video](/dominios/video).
