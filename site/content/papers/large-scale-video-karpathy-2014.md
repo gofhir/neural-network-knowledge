@@ -43,7 +43,7 @@ La taxonomía es una jerarquía curada a mano que se vuelve **fine-grained en la
 
 Las anotaciones se producen automáticamente "*analizando los metadatos de texto que rodean a los videos*", y hay **dos niveles de ruido**: a **nivel de video** la etiqueta puede no corresponder al contenido, y a **nivel de fotograma** el video varía enormemente cuadro a cuadro —un video *soccer* contiene marcador, entrevistas y público, así que con clips de medio segundo al azar una fracción no trivial de los ejemplos es un locutor en un estudio etiquetado "fútbol"—. El paper **no reporta una tasa de ruido medida** (conviene no inventarla al citarlo) y concluye que las redes "*parecen aprender bien a pesar del ruido significativo de etiqueta*".
 
-Lo que no dice y se volvió evidente después: Sports-1M mide sobre todo **reconocimiento de escena deportiva**, no de acción. Es el dataset donde un modelo de un solo fotograma debería rendir bien, así que **parte del hallazgo central es una propiedad del dataset, no de las arquitecturas**.
+Lo que no dice y se volvió evidente después: Sports-1M mide sobre todo **escena deportiva**, no acción, y es justo el dataset donde un modelo de un solo fotograma debería rendir bien. **Parte del hallazgo central es una propiedad del dataset, no de las arquitecturas.**
 
 ---
 
@@ -81,7 +81,7 @@ La que gana: fusiona el tiempo lentamente **extendiendo la conectividad temporal
 | conv2 | 2 | 2 | 2 |
 | conv3 | 2 | 2 | 1 |
 
-Con convolución *valid*: $(10-4)/2+1 = 4$, luego $(4-2)/2+1 = 2$, luego $1$. **La tercera capa convolucional ve los 10 fotogramas de entrada** y las columnas comparten parámetros: conv1 ve movimiento local fino (~0,13 s) y conv3 la dinámica completa del clip (~0,33 s). Es un [C3D](/papers/c3d-tran-2015) en miniatura, un año antes de C3D y tres antes de [I3D](/papers/i3d-carreira-2017).
+Con convolución *valid*: $(10-4)/2+1 = 4$, luego $(4-2)/2+1 = 2$, luego $1$. **La tercera capa convolucional ve los 10 fotogramas de entrada** y las columnas comparten parámetros: conv1 ve movimiento local fino (~0,13 s) y conv3 la dinámica completa del clip (~0,33 s). Es un [C3D](/papers/c3d-tran-2015) en miniatura, tres años antes de [I3D](/papers/i3d-carreira-2017).
 
 ---
 
@@ -120,7 +120,7 @@ Test set de 200.000 videos y 4.000.000 de clips; Hit@$k$ = fracción de muestras
 - **La variación entre arquitecturas CNN es "sorprendentemente insignificante"**: 3,2 puntos entre la peor y la mejor variante con movimiento.
 - **Early Fusion (57,7) queda por debajo de Single Frame**: el colapso temporal inmediato destruye más apariencia de la que aporta en movimiento.
 - **Late Fusion empata exactamente a Single Frame en Video Hit@1** (59,3): comparar dos instantes al doble de cómputo no compra nada medible en top-1.
-- **Clip Hit@1 (~41%) vs. Video Hit@1 (~60%):** esos ~19 puntos son la ganancia de promediar 20 clips, y cuantifican el ruido a nivel de fotograma.
+- **Clip Hit@1 (~41%) vs. Video Hit@1 (~60%):** esos ~19 puntos son la ganancia de promediar 20 clips y cuantifican el ruido de fotograma.
 
 ### Por qué Single Frame quedó tan cerca
 
@@ -128,11 +128,11 @@ $$\text{Single Frame} = 59{,}3\% \;\longrightarrow\; \text{Slow Fusion} = 60{,}9
 
 En Hit@5, 77,7 → 80,2 ($\Delta = 2{,}5$); en Clip Hit@1, 41,1 → 41,9 ($\Delta = 0{,}8$). Concediéndole el multiresolución al modelo estático (60,0%), la brecha queda en **0,9 puntos**: toda la información de movimiento del clip, con la mejor de las cuatro estrategias y un mes de cómputo sobre un millón de videos, compra menos de dos puntos. El paper concluye que "*un modelo de un solo fotograma ya exhibe desempeño muy fuerte, lo que sugiere que las señales de movimiento local pueden no ser críticamente importantes, incluso para un dataset dinámico como Sports*".
 
-**(1) El movimiento local no importa para esta tarea.** La semántica de un video deportivo está mayoritariamente en la apariencia, y los beneficios resultan "*sorprendentemente robustos a los detalles de la conectividad de las arquitecturas en el tiempo*".
+**(1) El movimiento local no importa para esta tarea.** La semántica de un video deportivo está en la apariencia, y los beneficios son "*sorprendentemente robustos a los detalles de la conectividad de las arquitecturas en el tiempo*".
 
-**(2) El movimiento de cámara contamina la señal.** Es la teoría que los autores prefieren: haría falta "*extraer features en el sistema de coordenadas local de un punto rastreado*", como las *dense trajectories* de Wang et al., porque el movimiento en el plano de imagen superpone el del actor y el del observador. La evidencia por clase lo confirma: la diferencia de average precision entre Slow Fusion y Single-Frame es positiva en *Juggling Club* (+0,12), *Pole Climbing* (+0,10) y *Mountain Unicycling* (+0,08) —actividades cíclicas o de equilibrio— y negativa en *Short Track Motor Racing* (−0,07) o *Wrestling* (−0,06), porque "*las redes conscientes del movimiento son más propensas a rendir peor cuando hay movimiento de cámara presente*".
+**(2) El movimiento de cámara contamina la señal.** Es la teoría que los autores prefieren: haría falta "*extraer features en el sistema de coordenadas local de un punto rastreado*", como las *dense trajectories* de Wang et al., porque el movimiento en el plano de imagen superpone el del actor y el del observador. La evidencia por clase lo confirma: la diferencia de average precision entre Slow Fusion y Single-Frame es positiva en *Juggling Club* (+0,12), *Pole Climbing* (+0,10) y *Mountain Unicycling* (+0,08) —actividades cíclicas o de equilibrio— y negativa en *Short Track Motor Racing* (−0,07) o *Wrestling* (−0,06): "*las redes conscientes del movimiento son más propensas a rendir peor cuando hay movimiento de cámara presente*".
 
-**(3) La agregación a nivel de video es demasiado pobre.** Si $p_i$ es la predicción del clip $i$, $\frac{1}{N}\sum_i p_i$ es invariante a cualquier permutación: un modelo así **no puede, en principio, distinguir una acción de su reverso temporal**. Es una consecuencia formal, y de ahí la propuesta de "*explorar redes recurrentes*" —el segundo eslabón de la [Clase 38](/clases/clase-38/teoria), anunciado tres años antes—.
+**(3) La agregación a nivel de video es demasiado pobre.** Si $p_i$ es la predicción del clip $i$, $\frac{1}{N}\sum_i p_i$ es invariante a cualquier permutación: el modelo **no puede, en principio, distinguir una acción de su reverso temporal**. De ahí la propuesta de "*explorar redes recurrentes*" —el segundo eslabón de la [Clase 38](/clases/clase-38/teoria), anunciado tres años antes—.
 
 ---
 
@@ -163,16 +163,16 @@ Los autores prueban tres puntos de corte sobre Slow Fusion, la mejor red en Spor
 
 - **La extensión temporal es minúscula:** máximo 10 fotogramas (~1/3 s), y muchas acciones no se distinguen en ese horizonte. [I3D](/papers/i3d-carreira-2017) usa 64 fotogramas (2,56 s) y atribuye a eso su ventaja.
 - **La red es poco profunda y no hereda ImageNet.** Prueba que pre-entrenar en video y transferir funciona, pero nunca lo inverso: partir de una red pre-entrenada en ImageNet. Es la palanca más grande que dejó sin tirar, la que [Two-Stream](/papers/two-stream-simonyan-2014) usa en ambos streams y la que I3D formaliza con el *boring-video fixed point*.
-- **Sin batch normalization, sin residuales, con learning rate manual**, entrenando con Downpour SGD asincrónico sobre 10 a 50 réplicas por modelo.
+- **Sin batch normalization, sin residuales y con learning rate manual**, sobre Downpour SGD asincrónico.
 - **El estudio de fusión temporal quedó confundido con la calidad del dataset:** "la conectividad temporal casi no importa" es verdadero en Sports-1M y falso en Kinetics, pero se citó como verdad general sobre video.
 
 ---
 
 ## Por qué importa hoy
 
-**Es el origen del eslabón "CNN2D + agrupación temporal".** El Single-Frame con promedio de 20 clips *es* CNN2D + temporal pooling, y este paper es la primera medición seria de su techo. Cuando la [Clase 38](/clases/clase-38/teoria) enumera sus desventajas —"no aprovecha la información temporal" y "tiende a tener un rendimiento deficiente"— está resumiendo esta tabla; y sus ventajas también, porque es AlexNet más un promedio: sin kernels 3D, sin flujo óptico externo, sin RNN con estado. La brecha de 1,6 puntos frente a Slow Fusion es la **evidencia empírica original** de esa desventaja, y lo que motivó introducir el movimiento explícitamente.
+**Es el origen del eslabón "CNN2D + agrupación temporal".** El Single-Frame con promedio de 20 clips *es* CNN2D + temporal pooling, y este paper mide su techo por primera vez. Cuando la [Clase 38](/clases/clase-38/teoria) enumera sus desventajas —"no aprovecha la información temporal" y "tiende a tener un rendimiento deficiente"— está resumiendo esta tabla; y sus ventajas también, porque es AlexNet más un promedio: sin kernels 3D, sin flujo óptico, sin RNN. La brecha de 1,6 puntos frente a Slow Fusion es la **evidencia empírica original** de esa desventaja, y lo que motivó introducir el movimiento explícitamente.
 
-El [Laboratorio 36](/laboratorios/lab-36) reprodujo el fenómeno a escala de curso: con un ResNet-34 y *average temporal pooling*, muestrear 4 frames rindió igual que 8, en la mitad del tiempo. Si el modelo ignora el orden, agregar frames solo promedia mejor la apariencia. Por eso la [Clase 36](/clases/clase-36) y el [fundamento de análisis de video](/fundamentos/analisis-de-video) tratan el pooling temporal como punto de partida y no como destino.
+El [Laboratorio 36](/laboratorios/lab-36) reprodujo el fenómeno: con un ResNet-34 y *average temporal pooling*, muestrear 4 frames rindió igual que 8, en la mitad del tiempo. Si el modelo ignora el orden, agregar frames solo promedia mejor la apariencia. Por eso la [Clase 36](/clases/clase-36) y el [fundamento de análisis de video](/fundamentos/analisis-de-video) tratan el pooling temporal como punto de partida y no como destino.
 
 **Cómo su diagnóstico motivó Two-Stream e I3D.** Si aprender movimiento *implícitamente* desde píxeles crudos casi no ayuda, quedan dos salidas. **Dar el movimiento ya calculado**: las [two-stream ConvNets](/papers/two-stream-simonyan-2014) aparecen el mismo año con flujo óptico pre-computado en un stream inicializado desde ImageNet, y saltan a la banda de los 88% en UCF-101. O **dar la maquinaria arquitectónica adecuada con suficiente extensión temporal**: el linaje [C3D](/papers/c3d-tran-2015) → [I3D](/papers/i3d-carreira-2017), del que Slow Fusion es el ancestro reconocible; que solo ganara 1,6 puntos es un artefacto de la poca profundidad, la corta extensión temporal y la falta de pre-entrenamiento de imagen, no una refutación de la convolución 3D.
 
@@ -204,7 +204,6 @@ La lección de fondo: **un resultado negativo bien medido es más productivo que
 
 ## Notas y enlaces
 
-- **Clase asociada:** [Clase 38](/clases/clase-38) y su [teoría](/clases/clase-38/teoria), donde este paper abre la escalera *CNN2D + agrupación temporal → CNN2D + RNN → Two-Stream → C3D → I3D* y anticipa los cuatro escalones siguientes.
-- **Laboratorio relacionado:** el [Laboratorio 36](/laboratorios/lab-36) reprodujo el hallazgo central (4 frames ≈ 8 frames con average temporal pooling).
+- **Clase y laboratorio:** [Clase 38](/clases/clase-38) y su [teoría](/clases/clase-38/teoria), donde este paper abre la escalera *CNN2D + agrupación temporal → CNN2D + RNN → Two-Stream → C3D → I3D*; el [Laboratorio 36](/laboratorios/lab-36) reprodujo su hallazgo central (4 frames ≈ 8 frames).
 - **Descendencia y benchmarks:** [Two-Stream](/papers/two-stream-simonyan-2014), [C3D](/papers/c3d-tran-2015), [I3D](/papers/i3d-carreira-2017), [UCF-101](/papers/ucf101-soomro-2012), [Kinetics](/papers/kinetics-kay-2017) y el backbone [AlexNet](/papers/alexnet-krizhevsky-2012).
-- **Fundamentos:** [reconocimiento de acciones](/fundamentos/reconocimiento-de-acciones), [análisis de video](/fundamentos/analisis-de-video) y [transfer learning](/fundamentos/transfer-learning) —para este último, la U invertida de UCF-101 es la regla práctica.
+- **Fundamentos:** [reconocimiento de acciones](/fundamentos/reconocimiento-de-acciones), [análisis de video](/fundamentos/analisis-de-video) y [transfer learning](/fundamentos/transfer-learning).
