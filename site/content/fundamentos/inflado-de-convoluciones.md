@@ -99,7 +99,7 @@ En la práctica ambas funcionan y la elección se trata como hiperparámetro. Lo
 
 ## 4. Qué se infla y qué no
 
-Esta es la parte que más tiempo ahorra en la práctica. La regla general es una sola frase: **se reescala por $1/N$ únicamente lo que suma a lo largo del eje temporal**. Todo lo demás se copia, se extiende o se reconstruye.
+Esta es la parte que más tiempo ahorra en la práctica, y la regla general cabe en una frase: **se reescala por $1/N$ únicamente lo que suma a lo largo del eje temporal**. Todo lo demás se copia, se extiende o se reconstruye.
 
 | Componente | ¿Qué se hace? | ¿Reescalar por $1/N$? | Por qué |
 |---|---|---|---|
@@ -215,13 +215,11 @@ Las diferencias que conviene tener presentes al mover la técnica de un dominio 
 | ¿Es conmensurable con los ejes espaciales? | No: cuadros vs píxeles, escalas físicas distintas | Sí, los tres ejes son milímetros, aunque el espaciado entre cortes suele exceder al intra-corte |
 | ¿Kernel cúbico defendible? | Poco: el eje temporal tiene estadística distinta | Más defendible, pero la anisotropía del espaciado lo relativiza |
 
-Es decir: el argumento de asimetría espacio-temporal que hace sospechoso un kernel $k\times k\times k$ en video se debilita en volúmenes, pero no desaparece —un CT clínico con cortes gruesos es fuertemente anisótropo, y el kernel atraviesa muchos más milímetros por tap en profundidad que en el plano.
+O sea: el argumento de asimetría espacio-temporal que hace sospechoso un kernel $k\times k\times k$ en video se debilita en volúmenes, pero no desaparece —un CT con cortes gruesos es fuertemente anisótropo, y el kernel atraviesa muchos más milímetros por tap en profundidad que en el plano.
 
-**Net2Net y las transformaciones que preservan la función.** *Net2Net* (Chen, Goodfellow y Shlens, 2016) propone crecer una red ya entrenada con dos operaciones que dejan su función intacta: **Net2WiderNet**, que replica unidades y **reparte los pesos salientes entre las copias**, y **Net2DeeperNet**, que inserta una capa inicializada como **identidad**. El parentesco con las dos inicializaciones de §3 no es casual: el reparto entre copias es el análogo estructural del $W/N$ sobre el eje de canales, y la capa identidad es el análogo de la delta central. La diferencia hay que marcarla: Net2Net crece una red **dentro de la misma dimensionalidad**, mientras que el inflado cambia el **rango del tensor de pesos** y agrega un eje a la entrada. Son ideas emparentadas por el **principio** —inicializar preservando la función—, no la misma técnica.
+**Net2Net y las transformaciones que preservan la función.** *Net2Net* (Chen, Goodfellow y Shlens, 2016) hace crecer una red ya entrenada con dos operaciones que dejan su función intacta: **Net2WiderNet**, que replica unidades y **reparte los pesos salientes entre las copias**, y **Net2DeeperNet**, que inserta una capa inicializada como **identidad**. El parentesco con las dos inicializaciones de §3 no es casual: el reparto entre copias es el análogo del $W/N$ sobre el eje de canales, y la capa identidad el de la delta central. La diferencia hay que marcarla: Net2Net crece **dentro de la misma dimensionalidad**, mientras que el inflado cambia el **rango del tensor de pesos**. Son ideas emparentadas por el **principio** —inicializar preservando la función—, no la misma técnica. La familia reaparece en la expansión de modelos de lenguaje, donde se entrena un modelo chico y se lo expande en anchura o profundidad para que el grande arranque calculando lo que calculaba el chico: otra vez mismo principio, distinto mecanismo.
 
-**Expansión de modelos grandes.** La misma familia reaparece en el entrenamiento de modelos de lenguaje, donde se entrena un modelo chico y se lo expande en anchura o profundidad con inicializaciones diseñadas para que el modelo grande arranque calculando lo que calculaba el chico. Otra vez: mismo principio, distinto mecanismo.
-
-Dos aclaraciones para cerrar el perímetro. Alimentar una CNN 2D de ImageNet con un **espectrograma** de audio *no* es inflar: es reinterpretar una señal como imagen y usar el checkpoint sin tocarlo (ver [MFCC y escala Mel](/fundamentos/mfcc-y-escala-mel)). Y la operación no es simétrica: inflar 2D→3D tiene una solución canónica, pero "desinflar" 3D→2D no tiene ninguna igual de limpia, porque habría que descartar información en lugar de repartirla.
+Dos aclaraciones para cerrar el perímetro. Alimentar una CNN 2D de ImageNet con un **espectrograma** de audio *no* es inflar: es reinterpretar una señal como imagen y usar el checkpoint sin tocarlo (ver [MFCC y escala Mel](/fundamentos/mfcc-y-escala-mel)). Y la operación no es simétrica: inflar 2D→3D tiene una solución canónica, pero "desinflar" 3D→2D no, porque habría que descartar información en lugar de repartirla.
 
 ---
 
@@ -245,7 +243,7 @@ Dos aclaraciones para cerrar el perímetro. Alimentar una CNN 2D de ImageNet con
 
 El inflado dejó de ser un titular y se volvió infraestructura, que es el destino de las buenas ideas de ingeniería.
 
-**Sigue siendo la manera estándar de arrancar un modelo 3D con datos escasos**, y eso describe la situación de casi cualquier proyecto aplicado. Las librerías de video y de imagen médica distribuyen checkpoints inflados o funciones para producirlos, y en el régimen de cientos o miles de clips (o volúmenes) anotados la diferencia contra entrenar desde cero sigue siendo la diferencia entre un modelo usable y uno que hace overfitting.
+**Sigue siendo la manera estándar de arrancar un modelo 3D con datos escasos**, y eso describe la situación de casi cualquier proyecto aplicado. Las librerías de video y de imagen médica distribuyen checkpoints inflados o funciones para producirlos, y en el régimen de cientos o miles de clips (o volúmenes) anotados, entrenar desde cero es la diferencia entre un modelo usable y uno que hace overfitting.
 
 **Para video, el inflado se corrió un lugar en la cadena.** El aporte metodológico durable de I3D no fue el inflado en sí sino la receta **"preentrenar en Kinetics y transferir"**, que rige el [reconocimiento de acciones](/fundamentos/reconocimiento-de-acciones) posterior. Hoy el inflado desde ImageNet es sobre todo **cómo se construye** el modelo que después se preentrena en Kinetics; quien hace fine-tuning sobre su dataset chico parte de un checkpoint de Kinetics y puede no inflar nunca nada a mano.
 

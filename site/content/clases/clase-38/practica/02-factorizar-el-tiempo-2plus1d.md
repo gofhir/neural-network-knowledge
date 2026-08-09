@@ -6,7 +6,7 @@ math: true
 
 La tabla de I3D en la [teoría](/clases/clase-38/teoria) cierra con tres desventajas: **"tiene una gran cantidad de parámetros"**, **"es computacionalmente costoso"** y **"la inferencia no es más rápida que los modelos anteriores"**. La respuesta que dieron [S3D](/papers/s3d-xie-2018) y [R(2+1)D](/papers/r2plus1d-tran-2018) en 2018 es la misma idea vista desde dos backbones distintos: **descomponer el kernel cúbico** $t \times k \times k$ en una convolución espacial $1 \times k \times k$ seguida de una temporal $t \times 1 \times 1$, con una no linealidad en medio. Este capítulo implementa ese bloque en los tres frameworks, verifica con código la fórmula de canales intermedios de la [profundización](/clases/clase-38/profundizacion) —la que hace justa la comparación con 3D— y mide el costo real en wall-clock. El resultado de esa medición no es el esperado, y es lo más útil del capítulo.
 
-> **Lecturas de apoyo:** las Partes II y III de la [profundización](/clases/clase-38/profundizacion); el fundamento [Inflado de Convoluciones](/fundamentos/inflado-de-convoluciones); el [camino 01](/clases/clase-38/practica) sobre el inflado de I3D.
+> **Lecturas de apoyo:** las Partes II y III de la [profundización](/clases/clase-38/profundizacion); el fundamento [Inflado de Convoluciones](/fundamentos/inflado-de-convoluciones); el [camino 01](/clases/clase-38/practica/01-inflar-una-cnn-2d-a-3d) sobre el inflado de I3D.
 
 ---
 

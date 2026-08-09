@@ -160,7 +160,7 @@ Esta es la Tabla 1 del paper, con $\alpha = 8$, $\beta = 1/8$, $\tau = 16$, back
 | res3 | [ $1\times1^2, 128$ ; $1\times3^2, 128$ ; $1\times1^2, 512$ ] $\times 4$ | [ $3\times1^2, 16$ $^{\dagger}$ ; $1\times3^2, 16$ ; $1\times1^2, 64$ ] $\times 4$ | Slow: $4 \times 28^2$ / Fast: $32 \times 28^2$ |
 | res4 | [ $3\times1^2, 256$ $^{\dagger}$ ; $1\times3^2, 256$ ; $1\times1^2, 1024$ ] $\times 6$ | [ $3\times1^2, 32$ $^{\dagger}$ ; $1\times3^2, 32$ ; $1\times1^2, 128$ ] $\times 6$ | Slow: $4 \times 14^2$ / Fast: $32 \times 14^2$ |
 | res5 | [ $3\times1^2, 512$ $^{\dagger}$ ; $1\times3^2, 512$ ; $1\times1^2, 2048$ ] $\times 3$ | [ $3\times1^2, 64$ $^{\dagger}$ ; $1\times3^2, 64$ ; $1\times1^2, 256$ ] $\times 3$ | Slow: $4 \times 7^2$ / Fast: $32 \times 7^2$ |
-| — | global average pool, concatenate, fc | | # clases |
+| — | global average pool, concatenate, fc | — | # clases |
 
 Dos observaciones que vale la pena internalizar:
 
@@ -217,24 +217,24 @@ Las propuestas de región vienen de un detector de personas **off-the-shelf, no 
 
 | Modelo | Flujo | Pretrain | top-1 | top-5 | GFLOPs × vistas |
 | --- | --- | --- | --- | --- | --- |
-| I3D | | ImageNet | 72.1 | 90.3 | 108 × N/A |
-| **Two-Stream I3D**  | sí |  ImageNet | 75.7 | 92.0 | **216** × N/A |
-| S3D-G  | sí |  ImageNet | 77.2 | 93.0 | 143 × N/A |
-| Nonlocal R50 | | ImageNet | 76.5 | 92.6 | 282 × 30 |
-| **Nonlocal R101** (SOTA previo) | | ImageNet | 77.7 | 93.3 | **359** × 30 |
-| R(2+1)D Flow  | sí |  — | 67.5 | 87.2 | 152 × 115 |
-| STC | | — | 68.7 | 88.5 | N/A |
-| ARTNet | | — | 69.2 | 88.3 | 23.5 × **250** |
-| S3D | | — | 69.4 | 89.1 | 66.4 × N/A |
-| ECO | | — | 70.0 | 89.4 | N/A |
-| I3D  | sí |  — | 71.6 | 90.0 | 216 × N/A |
-| R(2+1)D | | — | 72.0 | 90.0 | 152 × 115 |
-| **R(2+1)D Flow** (mejor previo sin ImageNet)  | sí |  — | **73.9** | 90.9 | 304 × 115 |
-| **SlowFast 4×16, R50** | | — | 75.6 | 92.1 | **36.1** × 30 |
-| **SlowFast 8×8, R50** | | — | 77.0 | 92.6 | 65.7 × 30 |
-| **SlowFast 8×8, R101** | | — | 77.9 | 93.2 | 106 × 30 |
-| **SlowFast 16×8, R101** | | — | 78.9 | 93.5 | 213 × 30 |
-| **SlowFast 16×8, R101+NL** | | — | **79.8** | **93.9** | 234 × 30 |
+| I3D | — | ImageNet | 72.1 | 90.3 | 108 × N/A |
+| **Two-Stream I3D** | sí | ImageNet | 75.7 | 92.0 | **216** × N/A |
+| S3D-G | sí | ImageNet | 77.2 | 93.0 | 143 × N/A |
+| Nonlocal R50 | — | ImageNet | 76.5 | 92.6 | 282 × 30 |
+| **Nonlocal R101** (SOTA previo) | — | ImageNet | 77.7 | 93.3 | **359** × 30 |
+| R(2+1)D Flow | sí | — | 67.5 | 87.2 | 152 × 115 |
+| STC | — | — | 68.7 | 88.5 | N/A |
+| ARTNet | — | — | 69.2 | 88.3 | 23.5 × **250** |
+| S3D | — | — | 69.4 | 89.1 | 66.4 × N/A |
+| ECO | — | — | 70.0 | 89.4 | N/A |
+| I3D | sí | — | 71.6 | 90.0 | 216 × N/A |
+| R(2+1)D | — | — | 72.0 | 90.0 | 152 × 115 |
+| **R(2+1)D Flow** (mejor previo sin ImageNet) | sí | — | **73.9** | 90.9 | 304 × 115 |
+| **SlowFast 4×16, R50** | — | — | 75.6 | 92.1 | **36.1** × 30 |
+| **SlowFast 8×8, R50** | — | — | 77.0 | 92.6 | 65.7 × 30 |
+| **SlowFast 8×8, R101** | — | — | 77.9 | 93.2 | 106 × 30 |
+| **SlowFast 16×8, R101** | — | — | 78.9 | 93.5 | 213 × 30 |
+| **SlowFast 16×8, R101+NL** | — | — | **79.8** | **93.9** | 234 × 30 |
 
 **Comparación explícita con I3D**, que es lo que más importa para la Clase 38:
 
@@ -298,17 +298,17 @@ Comparación con el estado del arte en AVA v2.1 (todos los SlowFast con $T\times
 
 | Modelo | Flujo | Pretrain de video | val mAP | test mAP |
 | --- | --- | --- | --- | --- |
-| I3D | | Kinetics-400 | 14.5 | — |
-| I3D  | sí |  Kinetics-400 | 15.6 | — |
-| ACRN, S3D  | sí |  Kinetics-400 | 17.4 | — |
-| ATR, R50+NL | | Kinetics-400 | 20.0 | — |
-| ATR, R50+NL  | sí |  Kinetics-400 | 21.7 | — |
-| Ensamble de 9 modelos  | sí |  Kinetics-400 | 25.6 | 21.1 |
-| I3D (Girdhar et al.) | | Kinetics-600 | 21.9 | 21.0 |
-| **SlowFast** | | Kinetics-400 | **26.3** | — |
-| **SlowFast** | | Kinetics-600 | 26.8 | — |
-| **SlowFast, +NL** | | Kinetics-600 | 27.3 | 27.1 |
-| **SlowFast\*, +NL** (propuestas propias en train) | | Kinetics-600 | **28.2** | — |
+| I3D | — | Kinetics-400 | 14.5 | — |
+| I3D | sí | Kinetics-400 | 15.6 | — |
+| ACRN, S3D | sí | Kinetics-400 | 17.4 | — |
+| ATR, R50+NL | — | Kinetics-400 | 20.0 | — |
+| ATR, R50+NL | sí | Kinetics-400 | 21.7 | — |
+| Ensamble de 9 modelos | sí | Kinetics-400 | 25.6 | 21.1 |
+| I3D (Girdhar et al.) | — | Kinetics-600 | 21.9 | 21.0 |
+| **SlowFast** | — | Kinetics-400 | **26.3** | — |
+| **SlowFast** | — | Kinetics-600 | 26.8 | — |
+| **SlowFast, +NL** | — | Kinetics-600 | 27.3 | 27.1 |
+| **SlowFast\*, +NL** (propuestas propias en train) | — | Kinetics-600 | **28.2** | — |
 
 Con solo pre-entrenamiento en Kinetics-400, SlowFast logra **26.3 mAP**: **+5.6 mAP** sobre el mejor previo comparable de modelo único (21.7 de ATR) y **+7.3 mAP** sobre el mejor que no usa flujo. En **AVA v2.2** (anotaciones más consistentes): **29.0 mAP** con 8×8, **29.8** con 16×8, **30.7** con test multiescala y volteo horizontal. Un ensamble de 7 modelos alcanzó **34.3 mAP** en el test server y quedó **primero en el AVA action detection challenge 2019**.
 
