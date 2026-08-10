@@ -71,7 +71,7 @@ Apuntes y análisis de cada sesión del diplomado, en orden cronológico. Cada c
   {{< card link="clase-32" title="Clase 32 - Olvido Catastrófico y Aprendizaje Continuo" subtitle="EWC, LwF, rehearsal, escenarios de continual learning" icon="refresh" >}}
 {{< /cards >}}
 
-## Bloque 8 — Decisión, razonamiento, audio y video (clases 33-38)
+## Bloque 8 — Decisión, razonamiento, audio y video (clases 33-39)
 
 {{< cards >}}
   {{< card link="clase-33" title="Clase 33 - Aprendizaje por Imitación e IRL" subtitle="Behavioral cloning, DAgger, aprendizaje reforzado inverso" icon="variable" >}}
@@ -80,4 +80,5 @@ Apuntes y análisis de cada sesión del diplomado, en orden cronológico. Cada c
   {{< card link="clase-36" title="Clase 36 - Introducción al Análisis de Video" subtitle="Tracking, reconocimiento de acciones, flujo óptico, datasets, enfoques de deep learning" icon="eye" >}}
   {{< card link="clase-37" title="Clase 37 - Datasets y Herramientas para Audio" subtitle="El ciclo de vida del dato de audio: formatos, transforms, augmentation, datasets" icon="adjustments" >}}
   {{< card link="clase-38" title="Clase 38 - CNN para reconocimiento en video" subtitle="Modelos pre-entrenados: temporal pooling, RNN, two-stream, C3D e I3D; el inflado de pesos 2D a 3D" icon="eye" >}}
+  {{< card link="clase-39" title="Clase 39 - Modelos de Deep Learning para Audio" subtitle="CNN+RNN+MLP sobre log-mel, onda cruda y convoluciones dilatadas, y la auditoría de los Transformers en audio" icon="adjustments" >}}
 {{< /cards >}}

@@ -53,8 +53,26 @@ Dos sub-problemas con tensiones opuestas vertebran el campo: **ASR / comprensió
     {{< hito year="2014" name="CTC loss" status="minimal" >}}
       Graves et al. (ICML 2006), aplicado a ASR end-to-end por DeepSpeech 1 en 2014: *Connectionist Temporal Classification* es una pérdida que permite entrenar secuencia-a-secuencia sin alineamiento explícito entre audio y texto. **Por qué importó:** resolvió el problema central de DeepSpeech y se volvió la pérdida estándar de ASR neural.
     {{< /hito >}}
+    {{< hito year="2015" name="CLDNN" status="deep" link="/papers/cldnn-sainath-2015" >}}
+      Sainath et al. (Google, ICASSP 2015): CNN, LSTM y capas densas en una sola red entrenada de punta a punta, con la tesis de que sus propiedades son complementarias — la convolución reduce la varianza espectral, la recurrencia modela el tiempo largo, las densas separan clases. **Por qué importó:** formalizó el patrón CRNN que dominó audio, música y detección de eventos durante cinco años, y su intuición sobre combinar un operador local con uno global sigue siendo la de Conformer. Es la arquitectura del "Ejemplo 1" de la [Clase 39](/clases/clase-39).
+    {{< /hito >}}
     {{< hito year="2015" name="Listen, Attend and Spell" status="minimal" >}}
       Chan et al. (Google): primer ASR puramente atencional. Encoder-decoder con atención al estilo Bahdanau, sin CTC. **Por qué importó:** demostró que ASR podía hacerse como traducción audio→texto, con ortografía aprendida implícitamente.
+    {{< /hito >}}
+    {{< hito year="2016" name="WaveNet" status="deep" link="/papers/wavenet-oord-2016" >}}
+      van den Oord et al. (DeepMind): modelo autorregresivo que genera la forma de onda muestra a muestra, con **convoluciones causales dilatadas** para alcanzar campos receptivos de cientos de milisegundos con pocas decenas de capas. **Por qué importó:** rompió el techo de calidad del TTS paramétrico y concatenativo, se desplegó en Google Assistant en 2017, y su esquema de dilataciones se convirtió en herramienta estándar mucho más allá del audio (TCN, DeepLab, ByteNet).
+    {{< /hito >}}
+    {{< hito year="2017" name="Very Deep CNN sobre onda cruda (familia M)" status="covered" link="/papers/raw-waveforms-dai-2017" >}}
+      Dai et al. (CMU, Stanford, Bosch): CNN 1D de hasta 34 capas aplicadas directamente sobre la forma de onda, con una primera capa de kernel 80 —10 ms a 8 kHz— que aprende algo parecido a un banco de filtros. **Por qué importó:** mostró que la profundidad con stride agresivo alcanza campos receptivos de más de un segundo sin dilatación, y que los features hechos a mano no eran imprescindibles. Es el paper del laboratorio de la [Clase 39](/clases/clase-39).
+    {{< /hito >}}
+    {{< hito year="2017" name="VGGish y el pre-entrenamiento de audio" status="deep" link="/papers/vggish-hershey-2017" >}}
+      Hershey et al. (Google): tomar AlexNet, VGG, Inception y ResNet tal cual, alimentarlas con espectrogramas log-mel y entrenarlas sobre 70 millones de vídeos de YouTube. **Por qué importó:** validó a gran escala la idea de tratar el espectrograma como imagen, y produjo el primer extractor de embeddings de audio de propósito general — el "ImageNet del audio" que faltaba, y el estándar de facto hasta la llegada de AST.
+    {{< /hito >}}
+    {{< hito year="2017" name="Scaper" status="covered" link="/papers/scaper-salamon-2017" >}}
+      Salamon et al. (NYU): librería para sintetizar paisajes sonoros muestreando eventos, fondos y parámetros de mezcla desde distribuciones especificadas. **Por qué importó:** resolvió el cuello de botella de la detección de eventos sonoros — las anotaciones fuertes con marca de tiempo son exactas por construcción cuando uno genera la mezcla, y además permite estudios controlados de degradación por SNR y polifonía.
+    {{< /hito >}}
+    {{< hito year="2018" name="SV2TTS: clonación de voz zero-shot" status="covered" link="/papers/sv2tts-jia-2018" >}}
+      Jia et al. (Google, NeurIPS 2018): tres componentes entrenados por separado —encoder de hablante sobre audio sin transcribir, Tacotron 2 condicionado y vocoder WaveNet— para sintetizar habla de voces nunca vistas a partir de segundos de referencia. **Por qué importó:** desacopló identidad y contenido, abrió la clonación de voz práctica, y con ella el problema de los deepfakes de voz.
     {{< /hito >}}
     {{< hito year="2015" name="DeepSpeech 2" status="minimal" >}}
       Amodei et al. (Baidu): escala de DeepSpeech 1 — más datos, más profundidad, RNN bidireccional con CTC. **Por qué importó:** mostró que ASR neural podía escalar a calidad de producto en inglés y mandarín.
@@ -70,8 +88,20 @@ Dos sub-problemas con tensiones opuestas vertebran el campo: **ASR / comprensió
     {{< hito year="2020" name="wav2vec 2.0" status="covered" link="/papers/wav2vec2-baevski-2020" >}}
       Baevski et al. (FAIR): cuantizar representaciones latentes y predecirlas con masking estilo BERT (pérdida contrastiva). **Por qué importó:** estableció el paradigma de pretraining masivo + fine-tuning ligero (10 min etiquetados bastan), base de Whisper y MMS. Cubierto en la [Clase 37](/clases/clase-37).
     {{< /hito >}}
-    {{< hito year="2021" name="HuBERT" status="minimal" >}}
-      Hsu et al. (FAIR): mejora wav2vec 2.0 con clustering iterativo de targets discretos. **Por qué importó:** mejor rendimiento en transferencia a tareas de TTS, identificación de hablante y emoción.
+    {{< hito year="2019" name="Deep Learning for Audio Signal Processing" status="covered" link="/papers/dl-audio-purwins-2019" >}}
+      Purwins, Li, Virtanen, Schlüter, Chang y Sainath (IEEE JSTSP): el survey que consolidó el campo — representaciones, modelos, tareas, augmentation y datos, con el estado del arte de cada dominio de audio. **Por qué importó:** es el mapa de referencia de la disciplina justo antes de que el aprendizaje autosupervisado y los Transformers la reordenaran, y la fuente estructural de la [Clase 39](/clases/clase-39).
+    {{< /hito >}}
+    {{< hito year="2019" name="musicnn" status="covered" link="/papers/musicnn-pons-2019" >}}
+      Pons y Serra (MTG, Universitat Pompeu Fabra): CNN para etiquetado musical con **filtros de forma musical** —verticales y angostos para el timbre, horizontales y largos para el ritmo— en vez de kernels cuadrados heredados de visión. **Por qué importó:** el argumento más claro de que los dos ejes de un espectrograma no son intercambiables, y modelos preentrenados abiertos para tareas musicales.
+    {{< /hito >}}
+    {{< hito year="2020" name="Conformer" status="deep" link="/papers/conformer-gulati-2020" >}}
+      Gulati et al. (Google, Interspeech 2020): fusiona self-attention y convolución dentro de un mismo bloque, con embedding posicional relativo y estructura *macaron*. **Por qué importó:** conserva la tesis de la complementariedad local/global de CLDNN y solo reemplaza la recurrencia por atención — y con eso supera a modelos con diez veces más parámetros. Es la arquitectura estándar del reconocimiento de voz moderno.
+    {{< /hito >}}
+    {{< hito year="2021" name="HuBERT" status="deep" link="/papers/hubert-hsu-2021" >}}
+      Hsu et al. (FAIR): predicción enmascarada estilo BERT sobre unidades discretas **fabricadas por clustering k-means** e iteradas sobre las propias representaciones del modelo. **Por qué importó:** resolvió el problema de que el habla no viene segmentada en entidades discretas, con el hallazgo de que las unidades del maestro no necesitan ser correctas sino consistentes. Base de textless NLP, GSLM y AudioLM.
+    {{< /hito >}}
+    {{< hito year="2021" name="AST: Audio Spectrogram Transformer" status="deep" link="/papers/ast-gong-2021" >}}
+      Gong, Chung y Glass (MIT CSAIL): la primera arquitectura de audio sin convoluciones — parches solapados del espectrograma alimentando un ViT, con transferencia cross-modal desde ImageNet mediante interpolación del embedding posicional. **Por qué importó:** mostró que la tokenización del audio no necesita ser semántica, solo regular, y que el dataset masivo que faltaba en audio podía tomarse prestado de visión.
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de foundation models" years="2022-presente" >}}
