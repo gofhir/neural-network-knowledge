@@ -45,9 +45,7 @@ Hay tres capas de degradación, y conviene separarlas porque no son la misma cos
 
 **2. Son a nivel de video, no de segmento.** Sección 3.1: *"Each frame inherits all the labels of its parent video."* Un video de 4.6 minutos etiquetado "Trumpet" produce ~287 ejemplos de 960 ms, y en la enorme mayoría de ellos **no suena una trompeta**. Es supervisión débil en el sentido técnico de *Multiple Instance Learning*: la etiqueta es una propiedad de la bolsa, no de la instancia.
 
-**3. Muchas no son acústicamente relevantes.** El paper lo dice sin defenderse: *"of the 30K labels, some are clearly acoustically relevant ('Trumpet') and others are less so ('Web Page')"*. Los priors abarcan cinco órdenes de magnitud, de "Song" y "Music" ($10^{-1}$) a "Cormorant" y "Lecturer" ($10^{-6}$), sin jerarquía impuesta.
-
-La honestidad del paper merece citarse: *"We are not able to quantify how 'weak' the labels are […] and for the majority of classes (e.g., 'Computer Hardware', 'Boeing 757', 'Ollie'), it's not clear how to decide relevance."* Con el contrapunto correcto: para una clase como "Beach" el **ambiente de fondo es la señal**, así que "no informativo" ni siquiera está bien definido.
+**3. Muchas no son acústicamente relevantes.** El paper lo dice sin defenderse: *"of the 30K labels, some are clearly acoustically relevant ('Trumpet') and others are less so ('Web Page')"*. Los priors abarcan cinco órdenes de magnitud, de "Song" y "Music" ($10^{-1}$) a "Cormorant" y "Lecturer" ($10^{-6}$), sin jerarquía impuesta. La honestidad del paper merece citarse: *"We are not able to quantify how 'weak' the labels are […] and for the majority of classes (e.g., 'Computer Hardware', 'Boeing 757', 'Ollie'), it's not clear how to decide relevance."* Con el contrapunto correcto: para una clase como "Beach" el **ambiente de fondo es la señal**, así que "no informativo" ni siquiera está bien definido.
 
 {{< concept-alert type="clave" >}}
 La estrategia frente al ruido de etiqueta **no es algorítmica, es de escala**. Frente a Kumar y Raj, que formalizan el problema como MIL, los autores declaran: *"we are investigating the limits of training with weak labels for very large datasets […] we hope that, given enough training, the net can learn to spot useful cues."* La apuesta es que el ruido **no correlacionado** con el audio actúa como ruido de gradiente y se promedia. Lo que **sí** está correlacionado —el sesgo del canal visual— no se promedia y queda dentro del modelo.
@@ -277,13 +275,11 @@ Y hay un agravante que casi nunca se menciona: **sobre el eje mel, un desplazami
 
 Un sonido armónico con fundamental $f_0$ tiene energía en $f_0, 2f_0, 3f_0, \dots$: un patrón **periódico y no local en frecuencia**, y la firma más informativa que existe para distinguir un tono de un ruido, separar fuentes e identificar timbre.
 
-**Un kernel $3\times3$ no lo captura.** Tres bandas mel adyacentes en la región de 1 kHz cubren del orden de 100–150 Hz. Si $f_0 = 200$ Hz, los armónicos están separados por 200 Hz: **el kernel de la primera capa nunca ve dos armónicos simultáneamente.** En imágenes esto no tiene análogo: cuando hay periodicidad visual (una reja, un tejido) el patrón está a escala de pocos píxeles.
+**Un kernel $3\times3$ no lo captura.** Tres bandas mel adyacentes en la región de 1 kHz cubren del orden de 100–150 Hz; si $f_0 = 200$ Hz, los armónicos están separados por 200 Hz y **el kernel de la primera capa nunca ve dos armónicos simultáneamente**. En imágenes esto no tiene análogo: cuando hay periodicidad visual (una reja, un tejido) el patrón está a escala de pocos píxeles.
 
-**La red lo resuelve por profundidad.** Calculando el campo receptivo de la pila convolucional de VGGish (6 conv $3\times3$ con 4 max-pools de stride 2) con $\text{RF}_{out} = \text{RF}_{in} + (k-1)\,j_{in}$ y $j_{out} = j_{in}\,s$, se llega a **RF = 70 unidades por eje** tras `pool4`. Como el eje de frecuencia tiene solo **64 bandas**, la última capa convolucional **ve el espectro completo**: la estructura armónica global es accesible, pero solo tras seis capas de composición, y la red tiene que **aprenderla** como conjunción de patrones locales en lugar de recibirla como primitiva.
+**La red lo resuelve por profundidad.** Calculando el campo receptivo de la pila convolucional de VGGish (6 conv $3\times3$ con 4 max-pools de stride 2) con $\text{RF}_{out} = \text{RF}_{in} + (k-1)\,j_{in}$, se llega a **RF = 70 unidades por eje** tras `pool4`. Como el eje de frecuencia tiene solo **64 bandas**, la última capa convolucional **ve el espectro completo**: la estructura armónica global es accesible, pero solo tras seis capas de composición, y la red tiene que **aprenderla** como conjunción de patrones locales en lugar de recibirla como primitiva.
 
-Ese es el costo real, y es de **eficiencia estadística**: la red gasta capacidad y datos aprendiendo algo que la física del sonido regala. La literatura posterior lo atacó de frente con **harmonic stacking** (apilar copias del espectrograma desplazadas a $2f, 3f, \dots$ como canales, para que un kernel local sí vea armónicos alineados) y con la CQT, donde la separación entre armónicos es independiente de $f_0$ en escala log.
-
-**Veredicto: sorprende moderadamente.** La profundidad compra alcance, pero de forma ineficiente. Es la diferencia estructural donde una arquitectura específica de audio tiene el argumento más sólido.
+Ese es el costo real, y es de **eficiencia estadística**: la red gasta capacidad y datos aprendiendo algo que la física del sonido regala. La literatura posterior lo atacó con **harmonic stacking** (apilar copias del espectrograma desplazadas a $2f, 3f, \dots$ como canales, para que un kernel local sí vea armónicos alineados) y con la CQT. **Veredicto: sorprende moderadamente** — es la diferencia estructural donde una arquitectura específica de audio tiene el argumento más sólido.
 
 ### (c) Las fuentes se suman; los objetos visuales se ocluyen
 
@@ -312,7 +308,7 @@ Cuatro consecuencias concretas y verificables en este paper:
 
 ### (d) El eje de frecuencia ya viene deformado por diseño perceptual
 
-Los píxeles de una imagen viven en un espacio de coordenadas **lineal y físicamente neutro**: nadie aplica una transformación no lineal a las coordenadas espaciales antes de alimentar la CNN. El espectrograma log-mel aplica **dos** transformaciones no lineales antes de que la red vea nada: el **warp mel** en el eje de frecuencia —la coordenada del "píxel" no es la frecuencia física, sino una función de ella elegida por experimentos psicoacústicos de 1937— y el **logaritmo** en el eje de valores.
+Los píxeles de una imagen viven en un espacio de coordenadas **lineal y físicamente neutro**: nadie aplica una transformación no lineal a las coordenadas espaciales antes de alimentar la CNN. El espectrograma log-mel aplica **dos** antes de que la red vea nada: el **warp mel** en el eje de frecuencia —la coordenada del "píxel" no es la frecuencia física, sino una función de ella elegida por experimentos psicoacústicos de 1937— y el **logaritmo** en el eje de valores.
 
 {{< concept-alert type="clave" >}}
 La "imagen" que la CNN procesa **no es el dato físico**: es el dato ya filtrado por un modelo del sistema auditivo humano. Hay una cantidad enorme de conocimiento de dominio —resolución crítica del oído, ley de Weber-Fechner, banda útil del habla— incrustada en el preprocesamiento y no en la arquitectura. **La afirmación "usamos redes de visión sin modificar" es cierta a nivel de arquitectura y falsa a nivel de sistema: la adaptación al audio existe y está toda en el front-end.**
@@ -423,7 +419,7 @@ Y un matiz sobre la Figura 1: la lectura correcta es "**d′** es aproximadament
 
 ## En la clase 39 y su laboratorio
 
-El slide "Audio vs Image Data" de la [Clase 39](/clases/clase-39) afirma que *"the 2D time-freq representation (spectrogram) of an audio signal can be interpreted as an image […] While this is possible, there are relevant differences between audio and visual data that is important to consider."* Este paper es exactamente las dos mitades de esa frase: la **validación empírica a gran escala** de la primera parte, y —en su Sección 1— la **fuente de la advertencia** que el slide no desarrolla. La sección de diferencias entre audio e imagen de esta página es el desarrollo faltante.
+El slide "Audio vs Image Data" de la [Clase 39](/clases/clase-39) afirma que *"the 2D time-freq representation (spectrogram) of an audio signal can be interpreted as an image […] While this is possible, there are relevant differences between audio and visual data that is important to consider."* Este paper es exactamente las dos mitades de esa frase: la **validación empírica a gran escala** de la primera parte, y —en su Sección 1— la **fuente de la advertencia** que el slide no desarrolla.
 
 El laboratorio hace **fine-tuning de VGGish sobre [UrbanSound8K](/papers/urbansound8k-salamon-2014)**, en la Parte 2 del mismo notebook cuya Parte 1 entrena la familia M de [Dai et al. sobre forma de onda cruda](/papers/raw-waveforms-dai-2017). Tres cosas conviene tener claras antes de ejecutarlo.
 
