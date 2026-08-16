@@ -60,6 +60,9 @@ Tres tensiones definen el campo: (1) cómo **modelar movimiento sin desperdiciar
     {{< hito year="2019" name="SlowFast" status="covered" link="/papers/slowfast-feichtenhofer-2019" >}}
       Feichtenhofer et al. (FAIR): dos vías paralelas — una "slow" a baja frecuencia y muchos canales para apariencia, una "fast" a alta frecuencia y pocos canales para movimiento — conectadas lateralmente. Inspirado en los pathways M/P del sistema visual. **Por qué importó:** elimina la dependencia del **flujo óptico precomputado** al redefinir las dos corrientes por framerate en lugar de por modalidad, y entrena **desde cero** —lo que relativiza el argumento de I3D de que heredar ImageNet era indispensable. Estado del arte en Kinetics y AVA. Cubierto en la [Clase 38](/clases/clase-38).
     {{< /hito >}}
+    {{< hito year="2019" name="TSM" status="covered" link="/papers/tsm-lin-2019" >}}
+      Lin, Gan y Han (MIT): la línea de la **eficiencia** en vez de la capacidad. En lugar de introducir una operación temporal, desplaza 1/4 de los canales del mapa de características a lo largo del eje del tiempo —1/8 al pasado, 1/8 al futuro— y deja que la convolución 2D siguiente haga la mezcla, apoyándose en que una convolución se descompone en *desplazamiento + multiplicación-acumulación*. **Cero parámetros y cero FLOPs adicionales.** Su variante unidireccional habilita reconocimiento causal en vivo con 13,4 ms de latencia en una Jetson Nano. **Por qué importó:** cierra la era 3D mostrando que su costo era en buena medida evitable —33 GFLOPs y 17,4 ms contra los 306 GFLOPs y 165 ms del I3D comparable, con más precisión— y su tabla de resultados se volvió el instrumento canónico para medir **cuánta temporalidad exige cada benchmark**: +3,5 puntos en Kinetics contra +28,0 en Something-Something. Cubierto en la [Clase 40](/clases/clase-40), con la mecánica en [Desplazamiento Temporal](/fundamentos/desplazamiento-temporal).
+    {{< /hito >}}
   {{< /era >}}
   {{< era name="Era de Video Transformers" years="2021-2022" >}}
     {{< hito year="2021" name="TimeSformer" status="minimal" >}}
@@ -228,6 +231,7 @@ Las apuestas activas en video: **coherencia física genuina** (más allá de Sor
 **Laboratorios:**
 - [Lab 36 - Introducción al Análisis de Video](/laboratorios/lab-36) — el baseline honesto: ResNet-34 + average temporal pooling sobre UCF11. Reducir de 8 a 4 frames no perjudica (85,9 % contra 84,6 %), lo que prueba que el modelo no usa el orden temporal.
 - [Lab 38 - Action Recognition con I3D](/laboratorios/lab-38) — I3D pre-entrenado en Kinetics-400 en inferencia pura. Un bug de preproceso del tutorial oficial de TF Hub invierte una predicción, y el video invertido en el tiempo no cambia la respuesta: el sesgo de apariencia de Kinetics, medido.
+- [Lab 40 - Reconocimiento de acciones con TSM](/laboratorios/lab-40) — el modelo opuesto sobre los mismos videos de UCF-101. Como el módulo de desplazamiento no tiene parámetros, se puede anular, intensificar o volver causal sobre el checkpoint entrenado: anularlo cuesta 82,76 puntos en un salto alto y 0,42 en una guitarra, y el modo online iguala al offline a igual proporción de canales desplazados.
 
 **Dominios relacionados:**
 - [Visión](/dominios/vision) — donde nacieron las CNN y ViT, transferidos a video.

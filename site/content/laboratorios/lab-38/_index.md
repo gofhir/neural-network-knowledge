@@ -99,4 +99,4 @@ Entropía máxima posible: $\ln(400) = 5{,}991$ nats.
 
 ---
 
-**Ver también:** [Clase 38 - Teoría](/clases/clase-38/teoria) · [Clase 38 - Profundización](/clases/clase-38/profundizacion) · [Clase 38 - Práctica](/clases/clase-38/practica) · [Lab 36 - Análisis de Video](/laboratorios/lab-36) (el mismo sesgo temporal, en una CNN 2D) · [Clase 36](/clases/clase-36) · Dominio [Video](/dominios/video).
+**Ver también:** [Clase 38 - Teoría](/clases/clase-38/teoria) · [Clase 38 - Profundización](/clases/clase-38/profundizacion) · [Clase 38 - Práctica](/clases/clase-38/practica) · [Lab 40 - Reconocimiento de acciones con TSM](/laboratorios/lab-40) (el modelo opuesto sobre los mismos videos de UCF-101: 33 GFLOPs contra 306, y una ablación que mide cuánta temporalidad contiene cada acción) · [Lab 36 - Análisis de Video](/laboratorios/lab-36) (el mismo sesgo temporal, en una CNN 2D) · [Clase 36](/clases/clase-36) · Dominio [Video](/dominios/video).

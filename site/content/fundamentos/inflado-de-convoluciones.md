@@ -258,6 +258,7 @@ Lo reutilizable del inflado no es la fórmula $W/N$: es el método. Ante un camb
 ## Para Profundizar
 
 - [Clase 38](/clases/clase-38) — la clase donde el inflado es el tema central; su [profundización](/clases/clase-38/profundizacion) deriva la condición de punto fijo, la contabilidad de parámetros y la factorización $(2+1)$D.
+- [Desplazamiento Temporal](/fundamentos/desplazamiento-temporal) — la estrategia opuesta frente al mismo problema. El inflado **acepta** el costo de la convolución 3D y resuelve el de los datos heredando pesos 2D; [TSM](/papers/tsm-lin-2019) **elimina** el costo negándose a introducir una operación temporal, y se queda con la CNN 2D que el hardware ya optimiza. Desarrollada en la [Clase 40](/clases/clase-40).
 - [Clase 36](/clases/clase-36) — introducción al análisis de video: convolución 3D, flujo óptico y las cinco familias de arquitecturas.
 - [Clase 12 - Data Augmentation y Transfer Learning](/clases/clase-12) — el marco general del que el inflado es un caso particular.
 - [Lab 38 - Action Recognition con I3D](/laboratorios/lab-38) — el inflado, medido. El lab encuentra que normalizar la entrada a $[0,1]$ en vez de $[-1,1]$ invierte una predicción de I3D, y la causa es que **el inflado también hereda las BatchNorm de Inception-v1** con sus estadísticas calibradas sobre entradas centradas en cero. La herencia 2D no es sólo de kernels.

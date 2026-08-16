@@ -54,6 +54,7 @@ La estrategia: muestrear 8 frames de cada video, pasar **cada frame por separado
   {{< card link="/clases/clase-36/practica" title="Práctica de clase" subtitle="Demuestra la invarianza al orden del 2D CNN en triple framework" icon="code" >}}
   {{< card link="/laboratorios/lab-35" title="Lab 35 - Análisis de Audio (anterior)" subtitle="FFT, STFT, MFCC — el otro medio del módulo Audio y Video" icon="arrow-left" >}}
   {{< card link="/laboratorios/lab-38" title="Lab 38 - Action Recognition con I3D" subtitle="El mismo sesgo temporal, una arquitectura más arriba: invertir el video no cambia la predicción de una CNN 3D. Aquí el pooling 2D no puede usar el orden; allá la 3D puede y no lo usa" icon="film" >}}
+  {{< card link="/laboratorios/lab-40" title="Lab 40 - Reconocimiento de acciones con TSM" subtitle="El tercer punto de la serie: una CNN 2D que sí modela el tiempo, y una ablación que mide el aporte video por video — 82.76 puntos en un salto alto, 0.42 en una guitarra" icon="film" >}}
 {{< /cards >}}
 
 ---

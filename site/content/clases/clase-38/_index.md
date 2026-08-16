@@ -20,6 +20,7 @@ Complementa la [Clase 36](/clases/clase-36), que cubrió el panorama del anális
   {{< card link="practica" title="Practica desde 0" subtitle="Inflar una CNN 2D a 3D y verificar el punto fijo; bloques (2+1)D — en triple framework" icon="code" >}}
   {{< card link="/laboratorios/lab-38" title="Laboratorio 38" subtitle="Reconocimiento de acciones con I3D" icon="variable" >}}
   {{< card link="/clases/clase-36" title="Relacionada: Introducción al Análisis de Video" subtitle="El panorama del campo: VOT, action recognition, datasets y enfoques" icon="academic-cap" >}}
+  {{< card link="/clases/clase-40" title="Relacionada: Reconocimiento de acciones eficiente" subtitle="La estrategia opuesta frente al mismo problema: en vez de inflar la convolución para modelar el tiempo, desplazar canales y no agregar ninguna operación" icon="academic-cap" >}}
   {{< card link="/clases/clase-37" title="Clase anterior: Datasets y Herramientas para Audio" subtitle="El ciclo de vida del dato de audio" icon="arrow-left" >}}
 {{< /cards >}}
 
