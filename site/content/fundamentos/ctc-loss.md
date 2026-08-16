@@ -572,4 +572,6 @@ Papers de referencia en el site:
 - Limitaciones: **conditional independence**, **peaky outputs**, **alineamiento monotonico**, $|\mathbf{l}| \leq T$.
 - Sigue siendo el head estandar para ASR (DeepSpeech, wav2vec) y STR regular (CRNN, EasyOCR). En texto irregular y traduccion se prefiere attention.
 
-Ver tambien: [funciones de perdida](funciones-perdida) · [redes recurrentes](redes-recurrentes) · [LSTM y GRU](lstm-gru) · [mecanismo de atencion](mecanismo-atencion) · [paper CTC original](/papers/ctc-graves-2006) · [paper CRNN](/papers/crnn-shi-2017) · [paper ABCNet](/papers/abcnet-liu-2020).
+Ver tambien: [funciones de perdida](funciones-perdida) · [redes recurrentes](redes-recurrentes) · [LSTM y GRU](lstm-gru) · [mecanismo de atencion](mecanismo-atencion) · [reconocimiento de voz](reconocimiento-de-voz) · [paper CTC original](/papers/ctc-graves-2006) · [paper CRNN](/papers/crnn-shi-2017) · [paper ABCNet](/papers/abcnet-liu-2020).
+
+La [Clase 41](/clases/clase-41) llega a CTC desde el problema de la segmentacion en habla, y su [practica](/clases/clase-41/practica/01-ctc-desde-cero) implementa el forward desde cero y lo **verifica contra la enumeracion exhaustiva de alineamientos** (error del orden de $10^{-17}$), ademas de medir cuantos hay: $\binom{T+U}{2U}$, o sea $2{,}6\times10^{11}$ para transcribir cuatro letras desde un segundo de audio. Su [profundizacion](/clases/clase-41/profundizacion) deriva por que la condicion `l[s] != l[s-2]` de la recursion es la que preserva las letras dobles.

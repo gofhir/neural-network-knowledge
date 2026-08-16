@@ -50,14 +50,26 @@ Dos sub-problemas con tensiones opuestas vertebran el campo: **ASR / comprensió
     {{< /hito >}}
   {{< /era >}}
   {{< era name="Era end-to-end con atención" years="2014-2018" >}}
-    {{< hito year="2014" name="CTC loss" status="minimal" >}}
-      Graves et al. (ICML 2006), aplicado a ASR end-to-end por DeepSpeech 1 en 2014: *Connectionist Temporal Classification* es una pérdida que permite entrenar secuencia-a-secuencia sin alineamiento explícito entre audio y texto. **Por qué importó:** resolvió el problema central de DeepSpeech y se volvió la pérdida estándar de ASR neural.
+    {{< hito year="2013" name="Deep BiLSTM + CTC" status="covered" link="/papers/deep-rnn-speech-graves-2013" >}}
+      Graves, Mohamed y Hinton (Toronto): la pregunta era si una RNN —que ya es profunda *en el tiempo*— gana algo con ser profunda *en el espacio*. Apilar BiLSTM y entrenarlas end-to-end con CTC da **17,7 % de PER en TIMIT**, el mejor resultado del momento. **Por qué importó:** es el primer eslabón enteramente neuronal del pipeline de ASR, y la arquitectura del "Ejemplo 1" de la [Clase 41](/clases/clase-41).
+    {{< /hito >}}
+    {{< hito year="2014" name="CTC loss" status="covered" link="/papers/ctc-graves-2006" >}}
+      Graves et al. (ICML 2006), aplicado a ASR end-to-end por DeepSpeech 1 en 2014: *Connectionist Temporal Classification* introduce un token **blank** y define la probabilidad de una transcripción como la **suma sobre todas las alineaciones** que la producen — un número que crece como $\binom{T+U}{2U}$ y que una recursión de tres términos calcula en $O(TU)$. **Por qué importó:** resolvió el problema central de DeepSpeech y se volvió la pérdida estándar de ASR neural. Su costo es asumir independencia condicional entre salidas, lo que obliga a un modelo de lenguaje externo. Desarrollado en la [Clase 41](/clases/clase-41/profundizacion).
+    {{< /hito >}}
+    {{< hito year="2015" name="Atención aplicada al habla" status="covered" link="/papers/attention-asr-chorowski-2015" >}}
+      Chorowski, Bahdanau et al.: el primer traslado serio de la atención de traducción al habla, y el primero en documentar por qué **no funciona directamente**. El habla contiene fragmentos acústicamente idénticos repartidos por todo el enunciado, y una atención puramente por contenido no puede distinguirlos: el modelo se rompe con secuencias más largas que las de entrenamiento. **Por qué importó:** la solución —dar al mecanismo *conciencia de ubicación*— fija el patrón de las atenciones monótonas posteriores.
     {{< /hito >}}
     {{< hito year="2015" name="CLDNN" status="deep" link="/papers/cldnn-sainath-2015" >}}
       Sainath et al. (Google, ICASSP 2015): CNN, LSTM y capas densas en una sola red entrenada de punta a punta, con la tesis de que sus propiedades son complementarias — la convolución reduce la varianza espectral, la recurrencia modela el tiempo largo, las densas separan clases. **Por qué importó:** formalizó el patrón CRNN que dominó audio, música y detección de eventos durante cinco años, y su intuición sobre combinar un operador local con uno global sigue siendo la de Conformer. Es la arquitectura del "Ejemplo 1" de la [Clase 39](/clases/clase-39).
     {{< /hito >}}
-    {{< hito year="2015" name="Listen, Attend and Spell" status="minimal" >}}
-      Chan et al. (Google): primer ASR puramente atencional. Encoder-decoder con atención al estilo Bahdanau, sin CTC. **Por qué importó:** demostró que ASR podía hacerse como traducción audio→texto, con ortografía aprendida implícitamente.
+    {{< hito year="2015" name="Listen, Attend and Spell" status="covered" link="/papers/las-chan-2016" >}}
+      Chan et al. (Google): primer ASR de vocabulario grande puramente atencional. Encoder-decoder con atención al estilo Bahdanau, sin CTC y sin supuesto de independencia entre salidas — el modelo aprende acústica y ortografía juntas. El *listener* es un encoder **piramidal** que reduce a la mitad los pasos temporales en cada capa, y los autores reportan que **sin él el modelo no converge**. **Por qué importó:** demostró que ASR podía hacerse como traducción audio→texto; su pirámide es el "pooling in time" del Ejemplo 2 de la [Clase 41](/clases/clase-41).
+    {{< /hito >}}
+    {{< hito year="2015" name="Deep Speech 2" status="covered" link="/papers/deep-speech-2-amodei-2015" >}}
+      Amodei et al. (Baidu): la rama CTC llevada a escala industrial — **11 940 horas de inglés y 9 400 de mandarín** con la misma arquitectura, sin léxico de pronunciaciones específico por idioma. BatchNorm para RNN, el currículum SortaGrad y una batería de optimizaciones de HPC que dan 7× de speedup. **Por qué importó:** mostró que el end-to-end escala, que la escala es en buena medida un problema de ingeniería de cómputo, y alcanzó o superó a transcriptores humanos en varios benchmarks.
+    {{< /hito >}}
+    {{< hito year="2016" name="Pooling over time para LVSR" status="covered" link="/papers/e2e-lvsr-bahdanau-2016" >}}
+      Bahdanau, Chorowski et al.: llevan la atención de los fonemas de TIMIT al vocabulario grande del Wall Street Journal, y atacan el cuello de botella real — que la atención debe recorrer todos los frames por cada carácter emitido. Dos remedios: limitar el barrido y **agregar frames vecinos** para acortar la secuencia fuente. **Por qué importó:** el pooling temporal se volvió estándar en todos los encoders de audio posteriores, incluidos los Transformers.
     {{< /hito >}}
     {{< hito year="2016" name="WaveNet" status="deep" link="/papers/wavenet-oord-2016" >}}
       van den Oord et al. (DeepMind): modelo autorregresivo que genera la forma de onda muestra a muestra, con **convoluciones causales dilatadas** para alcanzar campos receptivos de cientos de milisegundos con pocas decenas de capas. **Por qué importó:** rompió el techo de calidad del TTS paramétrico y concatenativo, se desplegó en Google Assistant en 2017, y su esquema de dilataciones se convirtió en herramienta estándar mucho más allá del audio (TCN, DeepLab, ByteNet).
@@ -74,8 +86,11 @@ Dos sub-problemas con tensiones opuestas vertebran el campo: **ASR / comprensió
     {{< hito year="2018" name="SV2TTS: clonación de voz zero-shot" status="covered" link="/papers/sv2tts-jia-2018" >}}
       Jia et al. (Google, NeurIPS 2018): tres componentes entrenados por separado —encoder de hablante sobre audio sin transcribir, Tacotron 2 condicionado y vocoder WaveNet— para sintetizar habla de voces nunca vistas a partir de segundos de referencia. **Por qué importó:** desacopló identidad y contenido, abrió la clonación de voz práctica, y con ella el problema de los deepfakes de voz.
     {{< /hito >}}
-    {{< hito year="2015" name="DeepSpeech 2" status="minimal" >}}
-      Amodei et al. (Baidu): escala de DeepSpeech 1 — más datos, más profundidad, RNN bidireccional con CTC. **Por qué importó:** mostró que ASR neural podía escalar a calidad de producto en inglés y mandarín.
+    {{< hito year="2017" name="VoxCeleb" status="covered" link="/papers/voxceleb-nagrani-2017" >}}
+      Nagrani, Chung y Zisserman (VGG Oxford): **1 251 hablantes y 153 516 enunciados** extraídos de entrevistas de YouTube, etiquetados **sin que ningún humano escuche nada** — un pipeline de visión por computador detecta caras, verifica con un modelo audiovisual que la persona en pantalla es la que habla, y confirma su identidad facial. [VoxCeleb2](/papers/voxceleb2-chung-2018) lo lleva en 2018 a 6 112 hablantes y más de un millón de enunciados, con particiones disjuntas. **Por qué importó:** sacó al reconocimiento de hablante de las condiciones de laboratorio y le dio la escala que el aprendizaje profundo necesitaba.
+    {{< /hito >}}
+    {{< hito year="2018" name="x-vectors" status="covered" link="/papers/x-vectors-snyder-2018" >}}
+      Snyder et al. (JHU): una TDNN entrenada para discriminar hablantes, con una capa de **statistics pooling** —media y desviación estándar sobre el tiempo— que convierte enunciados de largo variable en descriptores fijos. El aporte del título es que la **aumentación con ruido y reverberación** es la palanca más barata para hacerlos robustos. **Por qué importó:** desplazó a los i-vectors generativos y se volvió la línea base obligatoria del área, porque a diferencia de ellos **escala con los datos**.
     {{< /hito >}}
     {{< hito year="2012/2017" name="RNN-Transducer" status="minimal" >}}
       Graves (propuesta original 2012; consolidación de producción ~2017): combinación de CTC con un modelo de lenguaje interno autoregresivo. **Por qué importó:** el algoritmo de ASR streaming de producción en Google y Apple — funciona online sin esperar el final de la oración.
@@ -84,6 +99,9 @@ Dos sub-problemas con tensiones opuestas vertebran el campo: **ASR / comprensió
   {{< era name="Era self-supervised" years="2019-2021" >}}
     {{< hito year="2019" name="wav2vec" status="minimal" >}}
       Schneider et al. (FAIR): pretraining no supervisado de representaciones de audio prediciendo el futuro de la señal. **Por qué importó:** primer "BERT para audio" — fine-tuning con pocos datos etiquetados igualó a modelos supervisados con miles de horas.
+    {{< /hito >}}
+    {{< hito year="2019" name="NetVLAD para reconocimiento de hablante" status="covered" link="/papers/utterance-level-xie-2019" >}}
+      Xie, Nagrani, Chung y Zisserman (VGG Oxford): un *thin ResNet-34* de 3 millones de parámetros más una capa **[NetVLAD](/papers/netvlad-arandjelovic-2016)** que agrega los frames acumulando residuos respecto de un diccionario aprendido, en vez de promediarlos. El experimento decisivo es interno: **con el mismo backbone y los mismos datos**, cambiar promedio temporal por NetVLAD lleva el EER de **10,48 % a 3,57 %**. **Por qué importó:** mostró que en reconocimiento de hablante el componente que decide el rendimiento no es el extractor de features sino **cómo se agregan** — y trajo al audio una técnica nacida diez años antes en [búsqueda de imágenes](/papers/vlad-jegou-2010). Es el modelo de la [Clase 41](/clases/clase-41).
     {{< /hito >}}
     {{< hito year="2020" name="wav2vec 2.0" status="covered" link="/papers/wav2vec2-baevski-2020" >}}
       Baevski et al. (FAIR): cuantizar representaciones latentes y predecirlas con masking estilo BERT (pérdida contrastiva). **Por qué importó:** estableció el paradigma de pretraining masivo + fine-tuning ligero (10 min etiquetados bastan), base de Whisper y MMS. Cubierto en la [Clase 37](/clases/clase-37).

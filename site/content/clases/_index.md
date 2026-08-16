@@ -82,4 +82,5 @@ Apuntes y análisis de cada sesión del diplomado, en orden cronológico. Cada c
   {{< card link="clase-38" title="Clase 38 - CNN para reconocimiento en video" subtitle="Modelos pre-entrenados: temporal pooling, RNN, two-stream, C3D e I3D; el inflado de pesos 2D a 3D" icon="eye" >}}
   {{< card link="clase-39" title="Clase 39 - Modelos de Deep Learning para Audio" subtitle="CNN+RNN+MLP sobre log-mel, onda cruda y convoluciones dilatadas, y la auditoría de los Transformers en audio" icon="adjustments" >}}
   {{< card link="clase-40" title="Clase 40 - Analítica de Videos: Reconocimiento de acciones" subtitle="La ruta de la eficiencia: TSN y el muestreo por segmentos, TSM y el desplazamiento temporal a costo cero, y por qué Kinetics y Something-Something miden cosas distintas" icon="eye" >}}
+  {{< card link="clase-41" title="Clase 41 - Speech Recognition y Speaker Recognition" subtitle="Dos tareas opuestas sobre la misma señal: alinear audio con texto mediante el token blank y CTC, y colapsar un enunciado en un descriptor con VLAD. Cada una descarta lo que la otra necesita" icon="adjustments" >}}
 {{< /cards >}}

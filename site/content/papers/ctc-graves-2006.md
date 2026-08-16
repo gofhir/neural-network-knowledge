@@ -291,4 +291,6 @@ Entender CTC permite entender por qué attention se vuelve preferible en STR irr
 
 ---
 
+La [Clase 41](/clases/clase-41) presenta CTC desde el lado del problema —la desalineación entre los frames de audio y los caracteres de la transcripción— y su [práctica](/clases/clase-41/practica/01-ctc-desde-cero) lo implementa desde cero, verificando el forward contra la enumeración exhaustiva de alineamientos y midiendo cuántos hay que sumar: $\binom{T+U}{2U}$, unos $2{,}6\times10^{11}$ para cuatro letras sobre un segundo de audio.
+
 CTC resuelve un problema fundacional —entrenar redes recurrentes para etiquetar secuencias sin alineamiento previo— con un mecanismo matemáticamente elegante: ampliar el alfabeto con un blank, definir una distribución sobre paths, marginalizar con forward-backward. Veinte años después sigue presente en producción: en el head de fine-tuning de Wav2Vec 2.0, en streaming ASR, en CRNN para OCR, en sistemas low-latency donde el costo de un decoder autoregresivo no se puede pagar. Su influencia teórica es aún mayor: estableció el patrón **"marginalizar sobre alineamientos con dynamic programming"** que reaparece en RNN-T, en CTC-segmental, en pointer networks, y conceptualmente en los objectives masked-prediction de los foundation models.
