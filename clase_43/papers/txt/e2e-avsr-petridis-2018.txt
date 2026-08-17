@@ -1,0 +1,322 @@
+                                                                   END-TO-END AUDIOVISUAL SPEECH RECOGNITION
+
+                                                                Stavros Petridis1, Themos Stafylakis2, Pingchuan Ma1 , Feipeng Cai1
+                                                                               Georgios Tzimiropoulos2, Maja Pantic1
+                                                                          1
+                                                                        Dept. of Computing, Imperial College London, UK
+                                                                    2
+                                                                   Computer Vision Laboratory, University of Nottingham, UK
+
+
+
+
+arXiv:1802.06424v2 [cs.CV] 22 Feb 2018
+                                                             stavros.petridis04@imperial.ac.uk, themos.stafylakis@nottingham.ac.uk
+
+
+                                                                 ABSTRACT                                   (MFCCs) and a deep autoencoder is trained to extract bottle-
+                                                                                                            neck features [4, 5, 6, 7, 8, 9]. Then these features are fed to
+                                         Several end-to-end deep learning approaches have been re-          a classifier like a support vector machine or a Hidden Markov
+                                         cently presented which extract either audio or visual features     Model.
+                                         from the input images or audio signals and perform speech
+                                                                                                                Few works have been presented very recently which
+                                         recognition. However, research on end-to-end audiovisual
+                                                                                                            follow an end-to-end approach for visual speech recogni-
+                                         models is very limited. In this work, we present an end-to-
+                                                                                                            tion. The main approaches followed can be divided into two
+                                         end audiovisual model based on residual networks and Bidi-
+                                                                                                            groups. In the first one, fully connected layers are used to ex-
+                                         rectional Gated Recurrent Units (BGRUs). To the best of our
+                                                                                                            tract features and LSTM layers model the temporal dynamics
+                                         knowledge, this is the first audiovisual fusion model which
+                                                                                                            of the sequence [10, 11]. In the second group, a 3D convolu-
+                                         simultaneously learns to extract features directly from the im-
+                                                                                                            tional layer is used followed either by standard convolutional
+                                         age pixels and audio waveforms and performs within-context
+                                                                                                            layers [12] or residual networks (ResNet) [13] combined with
+                                         word recognition on a large publicly available dataset (LRW).
+                                                                                                            LSTMs or GRUs. End-to-end approaches have also been
+                                         The model consists of two streams, one for each modality,
+                                                                                                            successfully used for speech emotion recognition using 1D
+                                         which extract features directly from mouth regions and raw
+                                                                                                            CNNs and LSTMs [14].
+                                         waveforms. The temporal dynamics in each stream/modality
+                                         are modeled by a 2-layer BGRU and the fusion of multiple                However, work on end-to-end audiovisual speech recog-
+                                         streams/modalities takes place via another 2-layer BGRU. A         nition has been very limited. To the best of our knowledge,
+                                         slight improvement in the classification rate over an end-to-      there are only two works which perform end-to-end training
+                                         end audio-only and MFCC-based model is reported in clean           for audiovisual speech recognition [15, 16]. In the former, an
+                                         audio conditions and low levels of noise. In presence of high      attention mechanism is applied to both the mouth ROIs and
+                                         levels of noise, the end-to-end audiovisual model significantly    MFCCs and the model is trained end-to-end. However, the
+                                         outperforms both audio-only models.                                system does not use the raw audio signal or spectrogram but
+                                                                                                            relies on MFCC features. In the latter, fully connected lay-
+                                             Index Terms— Audiovisual Speech Recognition, Resid-            ers together with LSTMs are used in order to extract features
+                                         ual Networks, End-to-End Training, BGRUs, Audiovisual              directly from raw images and spectrograms and perform clas-
+                                         Fusion                                                             sification on the OuluVS database [17].
+                                                                                                                In this paper, we extend the work of [10], which mainly
+                                                            1. INTRODUCTION                                 works for small databases, using ResNets as proposed in
+                                                                                                            [13]. To the best of our knowledge, this is the first end-
+                                         Traditional audiovisual fusion systems consist of two stages,      to-end model which performs audiovisual word recognition
+                                         feature extraction from the image and audio signals and com-       from raw mouth ROIs and waveforms on a large in-the-wild
+                                         bination of the features for joint classification [1, 2, 3]. Re-   database. The proposed model consists of two streams, one
+                                         cently, several deep learning approaches for audiovisual fu-       per modality, which extract features directly from the raw
+                                         sion have been presented which aim to replace the feature ex-      images and waveforms, respectively. Each stream consists of
+                                         traction stage with deep bottleneck architectures. Usually a       a ResNet which extracts features from the raw inputs. This
+                                         transform, like principal component analysis (PCA), is first       is followed by a 2-layer BGRU network which models the
+                                         applied to the mouth region of interest (ROI) and spectro-         temporal dynamics in each stream. Finally, the information of
+                                         grams or concatenated Mel-Frequency Cepstral Coefficients          the different streams/modalities is fused via another 2-layer
+                                                                                                            BGRU which models the joint temporal dynamics. A similar
+                                            ACCEPTED TO ICASSP 2018                                         architecture has been proposed by [18] for audiovisual emo-
+                                                                                                                 Target
+                                                                                             Softmax (500)       Classes
+
+
+
+                                                                                                BGRU (1024)
+
+                                                                                              BGRU (1024)
+
+
+           (a)                  (b)                                                 BGRU (1024)               BGRU (1024)
+
+ Fig. 1. Example of mouth ROI extraction.                                           BGRU (1024)              BGRU (1024)
+
+
+tion recognition. The main differences of our work are the                         ResNet-34             ResNet-18
+following: 1) we use a ResNet for the audio stream instead
+of a rather shallow 2-layer CNN, 2) we do not use a pre-                             3D Conv.
+trained ResNet for the visual stream but we train a ResNet
+from scratch, 3) we use BGRUs in each stream which help
+modeling the temporal dynamics of each modality instead of
+using just one BLSM layer at the top and 4) we use a training
+procedure which allows for efficient end-to-end training of                       Image Sequence       Audio Waveform
+the entire network.
+    We perform classification of 500 words from the LRW           Fig. 2. Overview of the end-to-end audiovisual speech recog-
+database achieving state-of-the-art performance for audiovi-      nition system. Two streams are used for feature extraction
+sual fusion. The proposed system results in an absolute in-       directly from the raw images and audio waveforms. The tem-
+crease of 0.3% in classification accuracy over the end-to-end     poral dynamics are modelled by BGRUs in each stream. The
+audio-only model and an MFCC-based system. The end-to-            top two BGRUs fuse the information of the audio and visual
+end audiovisual fusion model also significantly outperforms       streams and jointly model their temporal dynamics.
+(up to 14.1% absolute improvement) the audio-only models
+under high levels of noise.
+                                                                  features directly from the raw input images and the audio
+                                                                  waveforms, respectively. Each stream consists of two parts:
+                   2. LRW DATABASE                                a residual network (ResNet) [22] which learns to automat-
+                                                                  ically extract features from the raw image and waveform,
+For the purposes of this study we use the Lip Reading in the      respectively and a 2-layer BGRU which models the temporal
+Wild (LRW) database [19] which is the largest publicly avail-     dynamics of the features in each stream. Finally, 2 BGRU
+able lipreading dataset in the wild. The database consists of     layers on top of the two streams are used in order to fuse the
+short segments (1.16 seconds) from BBC programs, mainly           information of the audio and visual streams.
+news and talk shows. It is a very challenging set since it con-
+tains more than 1000 speakers and large variation in head pose
+and illumination. The number of words, 500, is also much          3.1. Visual Stream
+higher than existing lipreading databases used for word recog-    The visual stream is similar to [13] and consists of a spa-
+nition, which typically contain 10 to 50 words [20, 21, 17].      tiotemporal convolution followed by a 34-layer ResNet and
+    Another characteristic of the database is the presence of     a 2-layer BGRU. A spatiotemporal convolutional layer is ca-
+several words which are visually similar. For example, there      pable of capturing the short-term dynamics of the mouth re-
+are words which are present in their singular and plural forms    gion and is proven to be advantageous, even when recurrent
+or simply different forms of the same word, e.g., America and     networks are deployed for back-end [12]. It consists of a
+American. We should also emphasise that words appear in the       convolutional layer with 64 3D kernels of 5 by 7 by 7 size
+middle of an utterance and there may be co-articulation of the    (time/width/height), followed by batch normalization and rec-
+lips from preceding and subsequent words.                         tified linear units.
+                                                                       We use the 34-layer identity mapping version, which was
+      3. END-TO-END AUDIOVISUAL SPEECH                            proposed for ImageNet [23]. The ResNet drops progressively
+                RECOGNITION                                       the spatial dimensionality until its output becomes a single di-
+                                                                  mensional tensor per time step. We should emphasize that we
+The proposed deep learning system for audiovisual fusion is       did not make use of pretrained models, as they are optimized
+shown in Fig. 2. It consists of two streams which extract         for completely different tasks (e.g. static colored images from
+ImageNet or CIFAR). Finally, the output of ResNet-34 is fed         4.3. Training
+to a 2-layer BGRU which consists of 1024 cells in each layer.
+                                                                    Training is divided into 2 phases: first the audio/visual
+                                                                    streams are trained independently and then the audiovisual
+3.2. Audio Stream                                                   network is trained end-to-end. During training data augmen-
+                                                                    tation is performed on the video sequences of mouth ROIs.
+The audio stream consists of an 18-layer ResNet followed by         This is done by applying random cropping and horizontal
+two BGRU layers. There is no need to use a spatiotemporal           flips with probability 50% to all frames of a given clip. Data
+convolution front-end in this case as the audio waveform is an      augmentation is also applied to the audio sequences. During
+1D signal. We use the standard architecture for the ResNet-         training babble noise at different levels (between -5 dB to 20
+18 with the main difference being that we use 1D instead of         db) might be added to the original audio clip. The selection
+2D kernels which are used for image data. A temporal kernel         of one of the noise levels or the use of the clean audio is done
+of 5ms with a stride of 0.25ms is used in the first convolu-        using a uniform distribution.
+tional layer in order to extract fine-scale spectral information.
+The output of the ResNet is divided into 29 frames/windows          4.3.1. Single Stream Training
+using average pooling in order to ensure the same frame rate
+as the video is used. These audio frames are then fed to the        Initialisation: First, each stream is trained independently.
+following ResNet layers which consist of the default kernels        Directly training end-to-end each stream leads to suboptimal
+of size 3 by 1 so deeper layers extract long-term speech char-      performance so we follow the same 3-step procedure as in
+acteristics. The output of the ResNet-18 is fed to a 2-layer        [13]. Initially, a temporal convolutional back-end is used in-
+BGRU which consists of 1024 cells in each layer (using the          stead of the 2-layer BGRU. The combination of ResNet and
+same architecture as in [13]).                                      temporal convolution (together with a softmax output layer)
+                                                                    is trained until there is no improvement in the classification
+                                                                    rate on the validation set for more than 5 epochs. Then the
+3.3. Classification Layers                                          temporal convolutional back-end is removed and the BGRU
+                                                                    back-end is attached. The 2-layer BGRU (again with a sotf-
+The BGRU outputs of each stream are concatenated and fed to         max output layer) is trained for 5 epochs, keeping the weights
+another 2-layer BGRU in order to fuse the information from          of the 3D convolution front-end and the ResNet fixed.
+the audio and visual streams and jointly model their temporal       End-to-End Training: Once the ResNet and the 2-layer
+dynamics. The output layer is a softmax layer which provides        BGRU in each stream have been pretrained then they are put
+a label to each frame. The sequence is labeled based on the         together and the entire stream is trained end-to-end (using a
+highest average probability.                                        softmax output layer). The Adam training algorithm [24] is
+                                                                    used for end-to-end training with a mini-batch size of 36 se-
+                                                                    quences and an initial learning rate of 0.0003. Early stopping
+               4. EXPERIMENTAL SETUP
+                                                                    with a delay of 5 epochs was also used.
+4.1. Preprocessing
+                                                                    4.3.2. Audiovisual Training
+Video: The first step is the extraction of the mouth region of
+                                                                    Initialisation: Once the single streams have been trained then
+interest (ROI). Since the mouth ROIs are already centered, a
+                                                                    they are used for initialising the corresponding streams in
+fixed bounding box of 96 by 96 is used for all videos as shown
+                                                                    the multi-stream architecture. Then another 2-layer BGRU is
+in Fig. 1. Finally, the frames are transformed to grayscale and
+                                                                    added on top of all streams in order to fuse the single stream
+are normalized with respect to the overall mean and variance.
+                                                                    outputs. The top BGRU is first trained for 5 epochs (with a
+Audio: Each audio segment is z-normalised, i.e., has zero           softmax output layer), keeping the weights of the audio and
+mean and standard deviation one to account for variations in        visual streams fixed.
+different levels of loudness between the speakers.                  End-to-End Training: Finally, the entire audiovisual net-
+                                                                    work is trained jointly using Adam with a mini-batch size of
+                                                                    18 sequences and an initial learning rate of 0.0001. Early
+4.2. Evaluation Protocol
+                                                                    stopping is also applied with a delay of 5 epochs.
+The video segments are already partitioned into training, val-
+idation and test sets. There are between 800 and 1000 se-                                   5. RESULTS
+quences for each word in the training set and 50 sequences
+in the validation and test sets, respectively. In total there are   Results are shown in Table 1. We report the performance of
+488766, 25000, and 25000 examples in the training, valida-          the end-to-end audio-only, visual-only and audiovisual mod-
+tion and test sets, respectively.                                   els. For comparison purposes, since there are no previous
+                                                                        100
+
+Table 1. Classification Rate (CR) of the Audio-only (A),                95
+Video-only (V) and audiovisual models (A + V) on the LRW
+database. *This is a similar end-to-end model which uses a              90
+
+different mouth ROI, computed based on tracked facial land-             85
+
+marks, in each video. In this work, we use a fixed mouth ROI
+                                                                   CR   80
+for all videos.
+                                                                        75
+                Stream                   CR
+                                                                        70
+                 A (End-to-End)           97.7                                                       V   A     AV   MFCC
+
+                 A (MFCC)                 97.7                          65
+
+
+                 V (End-to-End)           82.0                          60
+
+                 V [13]*                  83.0                                -5     0         5
+                                                                                                   SNR (dB)
+                                                                                                              10           15   20
+
+
+                 V [15]                   76.2
+                 V [19]                   61.1                     Fig. 3. Classification Rate (CR) as a function of the noise
+                 A + V (End-to-End)       98.0                     level. A: End-to-End audio model. V: End-to-End visual
+                                                                   model, AV: End-to-End audiovisual model. MFCC: A 2-layer
+                                                                   BGRU trained with MFCCs.
+audio/audiovisual results on the LRW database we also com-
+pute the performance of a 2-layer BGRU network trained with        in an absolute improvement of 0.9%, 3.5% and 7.5% over the
+MFCC features which are the standard features for acoustic         MFCC classifier, at 5 dB, 0 dB and -5 dB, respectively.
+speech recognition. We use 13 coefficients (and their deltas)           The audiovisual model (yellow dotted line) is more ro-
+using a 40ms window and a 10ms step. The network is trained        bust to audio noise than the audio-only models. It performs
+in the same way as the BGRU networks in section 4.3 with           slightly better under low noise levels (10 dB to 20 dB) but
+the only difference that it was trained for longer using early     it significantly outperforms both of them under high noise
+stopping.                                                          levels (-5 dB to 5 dB). In particular, it leads to an absolute
+    The end-to-end audio system results in a similar perfor-       improvement of 1.3%, 3.9% and 14.1% over the end-to-end
+mance to MFCCs which is a significant result given that the        audio-only model at 5 dB, 0 dB and -5 dB, respectively.
+input to the system is just the raw waveform. However, we
+should note that the effort required in order to train the end-
+to-end system is significantly higher than the 2-layer BGRU                              6. CONCLUSION
+used with MFCCs. The end-to-end audiovisual system leads
+to a small improvement over the audio-only models of 0.3%.         In this work, we present an end-to-end visual audiovisual fu-
+This is expected since the contribution of the visual modality     sion system which jointly learns to extract features directly
+is usually marginal in clean audio conditions as reported in       from the pixels and audio waveforms and performs classifi-
+previous works as well [1, 16].                                    cation using BGRUs. Results on the largest publicly avail-
+    In order to investigate the robustness to audio noise of the   able database for within-context word recognition in the wild
+audiovisual fusion approach we run experiments under vary-         show that the end-to-end audiovisual model slightly outper-
+ing noise levels. The audio signal for each sequence is cor-       forms a standard MFCC-based system under clean conditions
+rupted by additive babble noise from the NOISEX database           and low levels of noise. It also significantly outperforms the
+[25] so as the SNR varies from -5 dB to 20 dB.                     end-to-end and MFCC-based audio models in the presence of
+                                                                   high levels of noise. A natural next step would be to extend
+    Results for the audio, visual and audiovisual models un-
+                                                                   the system in order to be able to recognise sentences instead
+der noisy conditions are shown in Fig. 3. The video-only
+                                                                   of isolated words. Finally, it would also be interesting to in-
+classifier (blue solid line) is not affected by the addition of
+                                                                   vestigate in future work an adaptive fusion mechanism which
+the audio noise and therefore its performance remains con-
+                                                                   learns to weight each modality based on the noise levels.
+stant over all noise levels. On the other hand, as expected, the
+performance of the audio classifier (red dashed line) is sig-
+nificantly affected. Similarly, the performance of the MFCC                        7. ACKNOWLEDGEMENTS
+classifier (purple solid line) is also significantly affected by
+noise. It is interesting to point out that although the MFCC       This work has been funded by the European Community
+and end-to-end audio models result in the same performance         Horizon 2020 under grant agreement no. 645094 (SEWA).
+when audio is clean or under low levels of noise (10 to 20         Themos Stafylakis has been partly funded by the European
+dB), the end-to-end audio model results in much better per-        Commission program Horizon 2020, under grant agreement
+formance under high levels of noise (-5 dB to 5 dB). It results    no. 706668 (Talking Heads).
+                     8. REFERENCES                                 [14] G. Trigeorgis, F. Ringeval, R. Brueckner, E. Marchi,
+                                                                        M. Nicolaou, B. Schuller, and S. Zafeiriou, “Adieu
+ [1] G. Potamianos, C. Neti, G. Gravier, A. Garg, and A. W.             features? end-to-end speech emotion recognition us-
+     Senior, “Recent advances in the automatic recognition              ing a deep convolutional recurrent network,” in IEEE
+     of audiovisual speech,” Proceedings of the IEEE, vol.              ICASSP, 2016, pp. 5200–5204.
+     91, no. 9, pp. 1306–1326, Sept 2003.
+                                                                   [15] J. S. Chung, A. Senior, O. Vinyals, and A. Zisserman,
+ [2] S. Dupont and J. Luettin, “Audio-visual speech model-              “Lip reading sentences in the wild,” IEEE CVPR, 2017.
+     ing for continuous speech recognition,” IEEE Trans. on
+     Multimedia, vol. 2, no. 3, pp. 141–151, 2000.                 [16] S. Petridis, Y. Wang, Z. Li, and M. Pantic, “End-to-
+                                                                        end audiovisual fusion with LSTMs,” in Auditory-Visual
+ [3] S. Petridis and M. Pantic, “Prediction-based audiovisual           Speech Processing Conference, 2017.
+     fusion for classification of non-linguistic vocalisations,”
+                                                                   [17] I. Anina, Z. Zhou, G. Zhao, and M. Pietikäinen,
+     IEEE Transactions on Affective Computing, vol. 7, no.
+                                                                        “Ouluvs2: A multi-view audiovisual database for non-
+     1, pp. 45–58, 2016.
+                                                                        rigid mouth motion analysis,” in IEEE FG, 2015, pp.
+ [4] J. Ngiam, A. Khosla, M. Kim, J. Nam, H. Lee, and A. Y              1–5.
+     Ng, “Multimodal deep learning,” in Proc. of ICML,             [18] P. Tzirakis, G. Trigeorgis, M. A. Nicolaou, B. Schuller,
+     2011, pp. 689–696.                                                 and S. Zafeiriou, “End-to-end multimodal emotion
+                                                                        recognition using deep neural networks,” IEEE Journal
+ [5] D. Hu, X. Li, and X. Lu, “Temporal multimodal learn-
+                                                                        of Selected Topics in Signal Processing 2017.
+     ing in audiovisual speech recognition,” in IEEE CVPR,
+     2016, pp. 3574–3582.                                          [19] J. S. Chung and A. Zisserman, “Lip reading in the wild,”
+                                                                        in ACCV. Springer, 2016, pp. 87–103.
+ [6] H. Ninomiya, N. Kitaoka, S. Tamura, Y. Iribe, and
+     K. Takeda, “Integration of deep bottleneck features for       [20] M. Cooke, J. Barker, S. Cunningham, and X. Shao, “An
+     audio-visual speech recognition,” in Interspeech, 2015.            audio-visual corpus for speech perception and automatic
+                                                                        speech recognition,” The Journal of the Acoustical So-
+ [7] Y. Mroueh, E. Marcheret, and V. Goel, “Deep multi-                 ciety of America, vol. 120, no. 5, pp. 2421–2424, 2006.
+     modal learning for audio-visual speech recognition,” in
+     IEEE ICASSP, 2015, pp. 2130–2134.                             [21] E. Patterson, S. Gurbuz, Z. Tufekci, and J. Gowdy,
+                                                                        “Moving-talker, speaker-independent feature study, and
+ [8] Y. Takashima, R. Aihara, T. Takiguchi, Y. Ariki, N. Mi-            baseline results using the CUAVE multimodal speech
+     tani, K. Omori, and K. Nakazono, “Audio-visual speech              corpus,” EURASIP J. Appl. Signal Process., vol. 2002,
+     recognition using bimodal-trained bottleneck features              no. 1, pp. 1189–1201, Jan. 2002.
+     for a person with severe hearing loss,” Interspeech, pp.
+     277–281, 2016.                                                [22] K. He, X. Zhang, S. Ren, and J. Sun, “Deep residual
+                                                                        learning for image recognition,” in IEEE CVPR, 2016,
+ [9] S. Petridis and M. Pantic, “Deep complementary bottle-             pp. 770–778.
+     neck features for visual speech recognition,” in ICASSP,
+     2016, pp. 2304–2308.                                          [23] K. He, X. Zhang, S. Ren, and J. Sun, “Identity mappings
+                                                                        in deep residual networks,” in ECCV. Springer, 2016,
+[10] S. Petridis, Z. Li, and M. Pantic, “End-to-end visual              pp. 630–645.
+     speech recognition with LSTMs,” in IEEE ICASSP,
+     2017, pp. 2592–2596.                                          [24] D. Kingma and J. Ba, “Adam: A method for stochastic
+                                                                        optimization,” arXiv preprint arXiv:1412.6980, 2014.
+[11] M. Wand, J. Koutnik, and J. Schmidhuber, “Lipreading
+                                                                   [25] A. Varga and H. Steeneken, “Assessment for automatic
+     with long short-term memory,” in IEEE ICASSP, 2016,
+                                                                        speech recognition: Ii. NOISEX-92: A database and
+     pp. 6115–6119.
+                                                                        an experiment to study the effect of additive noise on
+[12] Y. M. Assael, B. Shillingford, S. Whiteson, and                    speech recognition systems,” Speech communication,
+     N. de Freitas, “Lipnet: Sentence-level lipreading,” arXiv          vol. 12, no. 3, pp. 247–251, 1993.
+     preprint arXiv:1611.01599, 2016.
+
+[13] T. Stafylakis and G. Tzimiropoulos, “Combining resid-
+     ual networks with LSTMs for lipreading,” in Inter-
+     speech, 2017, vol. 9, pp. 3652–3656.
+

@@ -53,6 +53,23 @@ Tres tensiones definen el campo: (1) cómo **alinear modalidades sin pares anota
       Hudson & Manning (GQA), Zellers et al. (VCR): benchmarks de razonamiento visual con preguntas composicionales y de sentido común. **Por qué importó:** revelaron lo lejos que estaban los modelos de razonar realmente.
     {{< /hito >}}
   {{< /era >}}
+  {{< era name="Era audiovisual: la sincronía como supervisión" years="2016-2022" >}}
+    {{< hito year="2016" name="SoundNet" status="covered" link="/papers/soundnet-aytar-2016" >}}
+      Aytar, Vondrick y Torralba (MIT): redes visuales de ImageNet y Places actúan de **maestros** sobre los fotogramas de dos millones de videos sin etiquetar, y una CNN 1D sobre onda cruda aprende a reproducir sus distribuciones. **Por qué importó:** la primera demostración a escala de que **una modalidad puede supervisar a otra** sin ninguna anotación humana, usando la sincronía del video como puente. Abre toda esta era. Cubierto en la [Clase 43](/clases/clase-43).
+    {{< /hito >}}
+    {{< hito year="2017" name="Look, Listen and Learn (L³)" status="covered" link="/papers/look-listen-learn-arandjelovic-2017" >}}
+      Arandjelović y Zisserman (VGG Oxford): elimina el maestro y plantea una tarea **simétrica** — *¿este fragmento de audio corresponde a esta imagen?*—, con positivos del mismo instante y negativos de videos distintos. **Por qué importó:** ninguna red enseña a la otra y ninguna necesita estar preentrenada; lo que se aprende es lo que ambas modalidades tienen en común, y eso puede exceder el vocabulario de cualquiera de las dos.
+    {{< /hito >}}
+    {{< hito year="2018" name="Objects that Sound" status="covered" link="/papers/objects-that-sound-arandjelovic-2018" >}}
+      Arandjelović y Zisserman: la continuación de L³ con una arquitectura que además **localiza en el cuadro** el objeto que produce el sonido. **Por qué importó:** la correspondencia audiovisual no solo da representaciones sino correspondencia espacial, aprendida sin ninguna anotación de posición.
+    {{< /hito >}}
+    {{< hito year="2018" name="End-to-End Audiovisual Speech Recognition" status="covered" link="/papers/e2e-avsr-petridis-2018" >}}
+      Petridis et al.: el otro uso de la misma propiedad — no supervisar sino **decidir**. Dos flujos sobre boca y onda cruda, fusionados por una BiGRU, sobre LRW. **Por qué importó:** cuantifica la complementariedad con precisión — **+0,3 puntos con audio limpio y +14,1 a −5 dB**—, y su figura de ruido, donde la línea del video es horizontal, es el argumento más claro de por qué existe la fusión multimodal. Cubierto en la [Clase 43](/clases/clase-43).
+    {{< /hito >}}
+    {{< hito year="2022" name="AV-HuBERT" status="covered" link="/papers/av-hubert-shi-2022" >}}
+      Shi et al. (Meta AI): enmascara ambos flujos y predice unidades latentes descubiertas y refinadas iterativamente, al estilo BERT. **Por qué importó:** **32,5 % de WER en LRS3 con 30 horas etiquetadas**, superando a un sistema entrenado con 31 000 horas — mil veces más. Y usar la representación audiovisual para reconocimiento **solo de audio** reduce el WER un 40 % relativo. Cierra el arco que SoundNet abrió seis años antes. Cubierto en la [Clase 43](/clases/clase-43).
+    {{< /hito >}}
+  {{< /era >}}
   {{< era name="Era de pretraining multimodal" years="2019-2020" >}}
     {{< hito year="2019" name="ViLBERT" status="minimal" >}}
       Lu et al.: dos torres BERT (texto + imagen) con cross-attention entre ellas, preentrenadas con MLM extendido. **Por qué importó:** primer pretraining multimodal transferible.
