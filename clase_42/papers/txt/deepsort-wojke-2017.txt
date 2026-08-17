@@ -1,0 +1,322 @@
+                                            SIMPLE ONLINE AND REALTIME TRACKING WITH A DEEP ASSOCIATION METRIC
+
+                                                                             Nicolai Wojke† , Alex Bewley , Dietrich Paulus†
+
+                                                             University of Koblenz-Landau† , Queensland University of Technology
+
+
+                                                                 ABSTRACT
+
+
+
+
+arXiv:1703.07402v1 [cs.CV] 21 Mar 2017
+                                         Simple Online and Realtime Tracking (SORT) is a pragmatic
+                                         approach to multiple object tracking with a focus on simple,
+                                         effective algorithms. In this paper, we integrate appearance
+                                         information to improve the performance of SORT. Due to this
+                                         extension we are able to track objects through longer peri-
+                                         ods of occlusions, effectively reducing the number of identity
+                                         switches. In spirit of the original framework we place much
+                                         of the computational complexity into an offline pre-training
+                                         stage where we learn a deep association metric on a large-
+                                         scale person re-identification dataset. During online appli-
+                                         cation, we establish measurement-to-track associations using
+                                         nearest neighbor queries in visual appearance space. Experi-      Fig. 1: Exemplary output of our method on the MOT chal-
+                                         mental evaluation shows that our extensions reduce the num-       lenge dataset [15] in a common tracking situation with fre-
+                                         ber of identity switches by 45%, achieving overall competi-       quent occlusion.
+                                         tive performance at high frame rates.
+                                             Index Terms— Computer Vision, Multiple Object Track-          much simpler framework that performs Kalman filtering in
+                                         ing, Data Association                                             image space and frame-by-frame data association using the
+                                                                                                           Hungarian method with an association metric that measures
+                                                            1. INTRODUCTION                                bounding box overlap. This simple approach achieves favor-
+                                                                                                           able performance at high frame rates. On the MOT challenge
+                                         Due to recent progress in object detection, tracking-by-          dataset [13], SORT with a state-of-the-art people detector [14]
+                                         detection has become the leading paradigm in multiple object      ranks on average higher than MHT on standard detections.
+                                         tracking. Within this paradigm, object trajectories are usually   This not only underlines the influence of object detector per-
+                                         found in a global optimization problem that processes entire      formance on overall tracking results, but is also an important
+                                         video batches at once. For example, flow network formula-         insight from a practitioners point of view.
+                                         tions [1, 2, 3] and probabilistic graphical models [4, 5, 6, 7]       While achieving overall good performance in terms of
+                                         have become popular frameworks of this type. However,             tracking precision and accuracy, SORT returns a relatively
+                                         due to batch processing, these methods are not applicable         high number of identity switches. This is, because the em-
+                                         in online scenarios where a target identity must be available     ployed association metric is only accurate when state esti-
+                                         at each time step. More traditional methods are Multiple          mation uncertainty is low. Therefore, SORT has a deficiency
+                                         Hypothesis Tracking (MHT) [8] and the Joint Probabilistic         in tracking through occlusions as they typically appear in
+                                         Data Association Filter (JPDAF) [9]. These methods perform        frontal-view camera scenes. We overcome this issue by re-
+                                         data association on a frame-by-frame basis. In the JPDAF,         placing the association metric with a more informed metric
+                                         a single state hypothesis is generated by weighting individ-      that combines motion and appearance information. In par-
+                                         ual measurements by their association likelihoods. In MHT,        ticular, we apply a convolutional neural network (CNN) that
+                                         all possible hypotheses are tracked, but pruning schemes          has been trained to discriminate pedestrians on a large-scale
+                                         must be applied for computational tractability. Both meth-        person re-identification dataset. Through integration of this
+                                         ods have recently been revisited in a tracking-by-detection       network we increase robustness against misses and occlusions
+                                         scenario [10, 11] and shown promising results. However, the       while keeping the system easy to implement, efficient, and
+                                         performance of these methods comes at increased computa-          applicable to online scenarios. Our code and a pre-trained
+                                         tional and implementation complexity.                             CNN model are made publicly available to facilitate research
+                                             Simple online and realtime tracking (SORT) [12] is a          experimentation and practical application development.
+    2. SORT WITH DEEP ASSOCIATION METRIC                               standard deviations the detection is away from the mean track
+                                                                       location. Further, using this metric it is possible to exclude
+We adopt a conventional single hypothesis tracking methodol-           unlikely associations by thresholding the Mahalanobis dis-
+ogy with recursive Kalman filtering and frame-by-frame data            tance at a 95% confidence interval computed from the inverse
+association. In the following section we describe the core             χ2 distribution. We denote this decision with an indicator
+components of this system in greater detail.
+                                                                                         bi,j = 1[d(1) (i, j) ≤ t(1) ]
+                                                                                          (1)
+                                                                                                                                   (2)
+2.1. Track Handling and State Estimation                               that evaluates to 1 if the association between the i-th track
+                                                                       and j-th detection is admissible. For our four dimensional
+The track handling and Kalman filtering framework is mostly
+                                                                       measurement space the corresponding Mahalanobis threshold
+identical to the original formulation in [12]. We assume
+                                                                       is t(1) = 9.4877.
+a very general tracking scenario where the camera is un-
+                                                                            While the Mahalanobis distance is a suitable association
+calibrated and where we have no ego-motion information
+                                                                       metric when motion uncertainty is low, in our image-space
+available. While these circumstances pose a challenge to
+                                                                       problem formulation the predicted state distribution obtained
+the filtering framework, it is the most common setup con-
+                                                                       from the Kalman filtering framework provides only a rough
+sidered in recent multiple object tracking benchmarks [15].
+                                                                       estimate of the object location. In particular, unaccounted
+Therefore, our tracking scenario is defined on the eight di-
+                                                                       camera motion can introduce rapid displacements in the im-
+mensional state space (u, v, γ, h, ẋ, ẏ, γ̇, ḣ) that contains the
+                                                                       age plane, making the Mahalanobis distance a rather unin-
+bounding box center position (u, v), aspect ratio γ, height
+                                                                       formed metric for tracking through occlusions. Therefore, we
+h, and their respective velocities in image coordinates. We
+                                                                       integrate a second metric into the assignment problem. For
+use a standard Kalman filter with constant velocity motion
+                                                                       each bounding box detection dj we compute an appearance
+and linear observation model, where we take the bounding
+                                                                       descriptor r j with kr j k = 1. Further, we keep a gallery Rk =
+coordinates (u, v, γ, h) as direct observations of the object             (i)
+state.                                                                 {r k }L k=1 of the last Lk = 100 associated appearance de-
+                                                                                k
+
+
+    For each track k we count the number of frames since the           scriptors for each track k. Then, our second metric measures
+last successful measurement association ak . This counter is           the smallest cosine distance between the i-th track and j-th
+incremented during Kalman filter prediction and reset to 0             detection in appearance space:
+when the track has been associated with a measurement.                                                           (i)    (i)
+                                                                                d(2) (i, j) = min{1 − r j T r k | r k ∈ Ri }.      (3)
+Tracks that exceed a predefined maximum age Amax are con-
+sidered to have left the scene and are deleted from the track          Again, we introduce a binary variable to indicate if an associ-
+set. New track hypotheses are initiated for each detection that        ation is admissible according to this metric
+cannot be associated to an existing track. These new tracks
+                                                                                         bi,j = 1[d(2) (i, j) ≤ t(2) ]
+                                                                                          (2)
+are classified as tentative during their first three frames. Dur-                                                                  (4)
+ing this time, we expect a successful measurement association
+                                                                       and we find a suitable threshold for this indicator on a sepa-
+at each time step. Tracks that are not successfully associated
+                                                                       rate training dataset. In practice, we apply a pre-trained CNN
+to a measurement within their first three frames are deleted.
+                                                                       to compute bounding box appearance descriptors. The archi-
+                                                                       tecture of this network is described in Section 2.4.
+2.2. Assignment Problem                                                    In combination, both metrics complement each other by
+                                                                       serving different aspects of the assignment problem. On
+A conventional way to solve the association between the pre-
+                                                                       the one hand, the Mahalanobis distance provides informa-
+dicted Kalman states and newly arrived measurements is to
+                                                                       tion about possible object locations based on motion that are
+build an assignment problem that can be solved using the
+                                                                       particularly useful for short-term predictions. On the other
+Hungarian algorithm. Into this problem formulation we in-
+                                                                       hand, the cosine distance considers appearance information
+tegrate motion and appearance information through combina-
+                                                                       that are particularly useful to recover identities after long-
+tion of two appropriate metrics.
+                                                                       term occlusions, when motion is less discriminative. To build
+    To incorporate motion information we use the (squared)
+                                                                       the association problem we combine both metrics using a
+Mahalanobis distance between predicted Kalman states and
+                                                                       weighted sum
+newly arrived measurements:
+                                    T
+                                                                                   ci,j = λ d(1) (i, j) + (1 − λ)d(2) (i, j)       (5)
+           d(1) (i, j) = (dj − y i ) S i −1 (dj − y i ),        (1)
+                                                                       where we call an association admissible if it is within the gat-
+where we denote the projection of the i-th track distribution          ing region of both metrics:
+into measurement space by (y i , S i ) and the j-th bounding                                             2
+box detection by dj . The Mahalanobis distance takes state                                                      (m)
+                                                                                                         Y
+                                                                                                bi,j =         bi,j .              (6)
+estimation uncertainty into account by measuring how many                                                m=1
+Listing 1 Matching Cascade                                           Name                 Patch Size/Stride      Output Size
+Input: Track indices T = {1, . . . , N }, Detection indices D =      Conv 1                   3 × 3/1           32 × 128 × 64
+    {1, . . . , M }, Maximum age Amax
+                                                                     Conv 2                   3 × 3/1           32 × 128 × 64
+ 1: Compute cost matrix C = [ci,j ] using Eq. 5
+ 2: Compute gate matrix B = [bi,j ] using Eq. 6
+                                                                     Max Pool 3               3 × 3/2           32 × 64 × 32
+ 3: Initialize set of matches M ← ∅                                  Residual 4               3 × 3/1            32 × 64 × 32
+ 4: Initialize set of unmatched detections U ← D                     Residual 5               3 × 3/1            32 × 64 × 32
+ 5: for n ∈ {1, . . . , Amax } do                                    Residual 6               3 × 3/2            64 × 32 × 16
+ 6:    Select tracks by age Tn ← {i ∈ T | ai = n}                    Residual 7               3 × 3/1            64 × 32 × 16
+ 7:    [xi,j ] ← min cost matching(C, Tn , U)                        Residual 8               3 × 3/2            128 × 16 × 8
+ 8:    M ← M ∪ {(i,     Pj) | bi,j · xi,j > 0}                       Residual 9               3 × 3/1            128 × 16 × 8
+ 9:    U ← U \ {j | i bi,j · xi,j > 0}                               Dense 10                                        128
+10: end for                                                          Batch and `2 normalization                      128
+11: return M, U
+                                                                    Table 1: Overview of the CNN architecture. The final batch
+                                                                    and `2 normalization projects features onto the unit hyper-
+The influence of each metric on the combined association cost       sphere.
+can be controlled through hyperparameter λ. During our ex-
+periments we found that setting λ = 0 is a reasonable choice
+when there is substantial camera motion. In this setting, only
+                                                                    In lines 8 and 9 we update the set of matches and unmatched
+appearance information are used in the association cost term.
+                                                                    detections, which we return after completion in line 11. Note
+However, the Mahalanobis gate is still used to disregarded
+                                                                    that this matching cascade gives priority to tracks of smaller
+infeasible assignments based on possible object locations in-
+                                                                    age, i.e., tracks that have been seen more recently.
+ferred by the Kalman filter.
+                                                                        In a final matching stage, we run intersection over union
+                                                                    association as proposed in the original SORT algorithm [12]
+2.3. Matching Cascade                                               on the set of unconfirmed and unmatched tracks of age n = 1.
+     Instead of solving for measurement-to-track associations       This helps to to account for sudden appearance changes, e.g.,
+in a global assignment problem, we introduce a cascade that         due to partial occlusion with static scene geometry, and to
+solves a series of subproblems. To motivate this approach,          increase robustness against erroneous initialization.
+consider the following situation: When an object is occluded
+for a longer period of time, subsequent Kalman filter predic-
+tions increase the uncertainty associated with the object lo-       2.4. Deep Appearance Descriptor
+cation. Consequently, probability mass spreads out in state
+space and the observation likelihood becomes less peaked. In-       By using simple nearest neighbor queries without additional
+tuitively, the association metric should account for this spread    metric learning, successful application of our method requires
+of probability mass by increasing the measurement-to-track          a well-discriminating feature embedding to be trained offline,
+distance. Counterintuitively, when two tracks compete for the       before the actual online tracking application. To this end, we
+same detection, the Mahalanobis distance favors larger uncer-       employ a CNN that has been trained on a large-scale person
+tainty, because it effectively reduces the distance in standard     re-identification dataset [21] that contains over 1,100,000 im-
+deviations of any detection towards the projected track mean.       ages of 1,261 pedestrians, making it well suited for deep met-
+This is an undesired behavior as it can lead to increased track     ric learning in a people tracking context.
+fragmentations and unstable tracks. Therefore, we introduce              The CNN architecture of our network is shown in Table 1.
+a matching cascade that gives priority to more frequently seen      In summary, we employ a wide residual network [22] with
+objects to encode our notion of probability spread in the asso-     two convolutional layers followed by six residual blocks. The
+ciation likelihood.                                                 global feauture map of dimensionality 128 is computed in
+     Listing 1 outlines our matching algorithm. As input we         dense layer 10. A final batch and `2 normalization projects
+provide the set of track T and detection D indices as well as       features onto the unit hypersphere to be compatible with our
+the maximum age Amax . In lines 1 and 2 we compute the              cosine appearance metric. In total, the network has 2,800,864
+association cost matrix and the matrix of admissible associa-       parameters and one forward pass of 32 bounding boxes takes
+tions. We then iterate over track age n to solve a linear assign-   approximately 30 ms on an Nvidia GeForce GTX 1050 mo-
+ment problem for tracks of increasing age. In line 6 we select      bile GPU. Thus, this network is well suited for online track-
+the subset of tracks Tn that have not been associated with a        ing, provided that a modern GPU is available. While the de-
+detection in the last n frames. In line 7 we solve the linear as-   tails of our training procedure are out of the scope of this
+signment between tracks in Tn and unmatched detections U.           paper, we provide a pre-trained model in our GitHub reposi-
+                                       MOTA ↑       MOTP ↑          MT ↑    ML ↓      ID ↓     FM ↓      FP ↓     FN ↓ Runtime ↑
+KDNT [16]?                BATCH          68.2         79.4          41.0%   19.0%     933      1093     11479     45605      0.7 Hz
+LMP p [17]?               BATCH          71.0         80.2          46.9%   21.9%     434       587     7880      44564      0.5 Hz
+MCMOT HDM [18]            BATCH          62.4         78.3          31.5%   24.2%     1394     1318      9855     57257      35 Hz
+NOMTwSDP16 [19]           BATCH          62.2         79.6          32.5%   31.1%      406      642     5119      63352       3 Hz
+EAMTT [20]               ONLINE          52.5         78.8          19.0%   34.9%     910      1321     4407      81223      12 Hz
+POI [16]?                ONLINE          66.1         79.5          34.0%   20.8%     805      3093      5061     55914      10 Hz
+SORT [12]?               ONLINE          59.8         79.6          25.4%   22.7%     1423     1835      8698     63245      60 Hz
+Deep SORT (Ours)?        ONLINE          61.4         79.1          32.8%   18.2%     781      2008     12852     56668      40 Hz
+
+Table 2: Tracking results on the MOT16 [15] challenge. We compare to other published methods with non-standard detections.
+The full table of results can be found on the challenge website. Methods marked with ? use detections provided by [16].
+
+
+tory 1 along with a script that can be used to generate features.     track fragmentation increase slightly due to maintaining ob-
+                                                                      ject identities through occlusions and misses. We also see a
+                                                                      significant increase in number of mostly tracked objects and
+                    3. EXPERIMENTS                                    a decrease of mostly lost objects. Overall, due to integration
+                                                                      of appearance information we successfully maintain identi-
+We assess the performance of our tracker on the MOT16                 ties through longer occlusions. This can also be seen by qual-
+benchmark [15]. This benchmark evaluates tracking per-                itative analysis of the tracking output that we provide in the
+formance on seven challenging test sequences, including               supplementary material. An exemplary output of our tracker
+frontal-view scenes with moving camera as well as top-down            is shown in Figure 1.
+surveillance setups. As input to our tracker we rely on detec-             Our method is also a strong competitor to other online
+tions provided by Yu et al. [16]. They have trained a Faster          tracking frameworks. In particular, our approach returns the
+RCNN on a collection of public and private datasets to pro-           fewest number of identity switches of all online methods
+vide excellent performance. For a fair comparison, we have            while maintaining competitive MOTA scores, track fragmen-
+re-run SORT on the same detections.                                   tations, and false negatives. The reported tracking accuracy
+     Evaluation on test sequences were carried out using λ = 0        is mostly impaired by a larger number of false positives.
+and Amax = 30 frames. As in [16], detections have been                Given their overall impact on the MOTA score, applying a
+thresholded at a confidence score of 0.3. The remaining pa-           larger confidence threshold to the detections can potentially
+rameters of our method have been found on separate training           increase the reported performance of our algorithm by a large
+sequences which are provided by the benchmark. Evaluation             margin. However, visual inspection of the tracking output
+is carried out according to the following metrics:                    shows that these false positives are mostly generated from
+• Multi-object tracking accuracy (MOTA): Summary of over-             sporadic detector responses at static scene geometry. Due to
+   all tracking accuracy in terms of false positives, false nega-     our relatively large maximum allowed track age, these are
+   tives and identity switches [23].                                  more commonly joined to object trajectories. At the same
+• Multi-object tracking precision (MOTP): Summary of over-            time, we did not observe tracks jumping between false alarms
+   all tracking precision in terms of bounding box overlap be-        frequently. Instead, the tracker commonly generated rela-
+   tween ground-truth and reported location [23].                     tively stable, stationary tracks at the reported object location.
+• Mostly tracked (MT): Percentage of ground-truth tracks                   Our implementation runs at approximately 20 Hz with
+   that have the same label for at least 80% of their life span.      roughly half of the time spent on feature generation. There-
+• Mostly lost(ML): Percentage of ground-truth tracks that are         fore, given a modern GPU, the system remains computation-
+   tracked for at most 20% of their life span.                        ally efficient and operates at real time.
+• Identity switches (ID): Number of times the reported iden-
+   tity of a ground-truth track changes.
+                                                                                           4. CONCLUSION
+• Fragmentation (FM): Number of times a track is interrupted
+   by a missing detection.                                            We have presented an extension to SORT that incorporates ap-
+The results of our evaluation are shown in Table 2. Our adap-         pearance information through a pre-trained association met-
+tions successfully reduce the number of identity switches. In         ric. Due to this extension, we are able to track through longer
+comparison to SORT, ID switches reduce from 1423 to 781.              periods of occlusion, making SORT a strong competitor to
+This is a decrease of approximately 45%. At the same time,            state-of-the-art online tracking algorithms. Yet, the algorithm
+  1 https://github.com/nwojke/deep_sort                               remains simple to implement and runs in real time.
+                     5. REFERENCES                                 [14] S. Ren, K. He, R. Girshick, and J. Sun, “Faster R-CNN:
+                                                                        Towards real-time object detection with region proposal
+ [1] L. Zhang, Y. Li, and R. Nevatia, “Global data associa-             networks,” in NIPS, 2015.
+     tion for multi-object tracking using network flows,” in
+     CVPR, 2008, pp. 1–8.                                          [15] A. Milan, L. Leal-Taixé, I. Reid, S. Roth, and
+                                                                        K. Schindler, “Mot16: A benchmark for multi-object
+ [2] H. Pirsiavash, D. Ramanan, and C. C. Fowlkes,                      tracking,” arXiv preprint arXiv:1603.00831, 2016.
+     “Globally-optimal greedy algorithms for tracking a vari-
+     able number of objects,” in CVPR, 2011, pp. 1201–             [16] F. Yu, W. Li, Q. Li, Y. Liu, X. Shi, and J. Yan, “Poi:
+     1208.                                                              Multiple object tracking with high performance detec-
+                                                                        tion and appearance feature,” in ECCV. Springer, 2016,
+ [3] J. Berclaz, F. Fleuret, E. Türetken, and P. Fua, “Multi-          pp. 36–42.
+     ple object tracking using k-shortest paths optimization,”
+                                                                   [17] M. Keuper, S. Tang, Y. Zhongjie, B. Andres, T. Brox,
+     IEEE Trans. Pattern Anal. Mach. Intell., vol. 33, no. 9,
+                                                                        and B. Schiele, “A multi-cut formulation for joint
+     pp. 1806–1819, 2011.
+                                                                        segmentation and tracking of multiple objects,” arXiv
+ [4] B. Yang and R. Nevatia, “An online learned CRF model               preprint arXiv:1607.06317, 2016.
+     for multi-target tracking,” in CVPR, 2012, pp. 2034–          [18] B. Lee, E. Erdenee, S. Jin, M. Y. Nam, Y. G. Jung, and
+     2041.                                                              P. K. Rhee, “Multi-class multi-object tracking using
+                                                                        changing point detection,” in ECCV. Springer, 2016,
+ [5] B. Yang and R. Nevatia, “Multi-target tracking by on-
+                                                                        pp. 68–83.
+     line learning of non-linear motion patterns and robust
+     appearance models,” in CVPR, 2012, pp. 1918–1925.             [19] W. Choi, “Near-online multi-target tracking with aggre-
+                                                                        gated local flow descriptor,” in ICCV, 2015, pp. 3029–
+ [6] A. Andriyenko, K. Schindler, and S. Roth, “Discrete-
+                                                                        3037.
+     continuous optimization for multi-target tracking,” in
+     CVPR, 2012, pp. 1926–1933.                                    [20] R. Sanchez-Matilla, F. Poiesi, and A. Cavallaro, “Online
+                                                                        multi-target tracking with strong and weak detections,”
+ [7] A. Milan, K. Schindler, and S. Roth, “Detection- and               in European Conference on Computer Vision. Springer,
+     trajectory-level exclusion in multiple object tracking,”           2016, pp. 84–99.
+     in CVPR, 2013, pp. 3682–3689.
+                                                                   [21] L. Zheng, Z. Bie, Y. Sun, J. Wang, C. Su, S. Wang, and
+ [8] D. B. Reid, “An algorithm for tracking multiple targets,”          Q. Tian, “MARS: A video benchmark for large-scale
+     IEEE Trans. Autom. Control, vol. 24, no. 6, pp. 843–               person re-identification,” in ECCV, 2016.
+     854, 1979.
+                                                                   [22] S. Zagoruyko and N. Komodakis, “Wide residual net-
+ [9] T.E. Fortmann, Y. Bar-Shalom, and M. Scheffe, “Sonar               works,” in BMVC, 2016, pp. 1–12.
+     tracking of multiple targets using joint probabilistic data
+     association,” IEEE J. Ocean. Eng., vol. 8, no. 3, pp.         [23] K. Bernardin and R. Stiefelhagen, “Evaluating mul-
+     173–184, 1983.                                                     tiple object tracking performance: The CLEAR MOT
+                                                                        metrics,” EURASIP J. Image Video Process, vol. 2008,
+[10] C. Kim, F. Li, A. Ciptadi, and J. M. Rehg, “Multiple               2008.
+     hypothesis tracking revisited,” in ICCV, 2015, pp. 4696–
+     4704.
+
+[11] S.H. Rezatofighi, A. Milan, Z. Zhang, Qi. Shi, An. Dick,
+     and I. Reid, “Joint probabilistic data association revis-
+     ited,” in ICCV, 2015, pp. 3047–3055.
+
+[12] A. Bewley, G. Zongyuan, F. Ramos, and B. Upcroft,
+     “Simple online and realtime tracking,” in ICIP, 2016,
+     pp. 3464–3468.
+
+[13] L. Leal-Taixé, A. Milan, I. Reid, S. Roth, and
+     K. Schindler, “MOTChallenge 2015: Towards a bench-
+     mark for multi-target tracking,” arXiv:1504.01942 [cs],
+     2015.
+

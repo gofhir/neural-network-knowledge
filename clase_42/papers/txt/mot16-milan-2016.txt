@@ -1,0 +1,846 @@
+                                                                                                                                                                                            1
+
+
+
+
+                                            MOT16: A Benchmark for Multi-Object Tracking
+                                                           Anton Milan∗ , Laura Leal-Taixé∗ , Ian Reid, Stefan Roth, and Konrad Schindler
+
+                                              Abstract—Standardized benchmarks are crucial for the majority of computer vision applications. Although leaderboards and ranking
+                                              tables should not be over-claimed, benchmarks often provide the most objective measure of performance and are therefore important
+                                              guides for reseach. Recently, a new benchmark for Multiple Object Tracking, MOTChallenge, was launched with the goal of collecting
+                                              existing and new data and creating a framework for the standardized evaluation of multiple object tracking methods [28]. The first
+                                              release of the benchmark focuses on multiple people tracking, since pedestrians are by far the most studied object in the tracking
+                                              community. This paper accompanies a new release of the MOTChallenge benchmark. Unlike the initial release, all videos of MOT16
+                                              have been carefully annotated following a consistent protocol. Moreover, it not only offers a significant increase in the number of labeled
+                                              boxes, but also provides multiple object classes beside pedestrians and the level of visibility for every single object of interest.
+
+
+
+
+arXiv:1603.00831v2 [cs.CV] 3 May 2016
+                                              Index Terms—multiple people tracking, benchmark, evaluation metrics, dataset
+
+                                                                                                                       F
+
+
+
+
+                                        1    I NTRODUCTION                                                                 for all datasets was provided to all participants, which
+                                                                                                                           allowed for all results to be compared in a fair way.
+                                        Evaluating and comparing multi-target tracking meth-
+                                                                                                                              Since October 2014, 47 methods have been publicly
+                                        ods is not trivial for numerous reasons (cf. e.g. [34]).
+                                                                                                                           tested on the MOTChallenge benchmark, and over 180
+                                        First, unlike for other tasks, such as image denoising,
+                                                                                                                           users have registered. It has been established as a new
+                                        the ground truth, i.e. the perfect solution one aims to
+                                                                                                                           standard benchmark for multiple people tracking, and
+                                        achieve, is difficult to define clearly. Partially visible,
+                                                                                                                           methods have improved accuracy by over 10%. The first
+                                        occluded, or cropped targets, reflections in mirrors or
+                                                                                                                           workshop [2] organized on the MOTChallenge bench-
+                                        windows, and objects that very closely resemble targets
+                                                                                                                           mark took place in early 2015 in conjunction with the
+                                        all impose intrinsic ambiguities, such that even humans
+                                                                                                                           Winter Conference on Applications of Computer Vision
+                                        may not agree on one particular ideal solution. Second, a
+                                                                                                                           (WACV). Despite its success, MOT15 is lacking in a few
+                                        number of different evaluation metrics with free param-
+                                                                                                                           aspects:
+                                        eters and ambiguous definitions often lead to conflicting
+                                        quantitative results across the literature. Finally, the lack                        • The annotation protocol is not consistent across all
+                                        of pre-defined test and training data makes it difficult to                            sequences since some of the ground truth was col-
+                                        compare different methods fairly.                                                      lected from various sources with already available
+                                           Even though multi-target tracking is a crucial problem                              annotations;
+                                        in scene understanding, until recently it still lacked                               • the distribution of crowd density is not balanced for
+
+                                        large-scale benchmarks to provide a fair comparison                                    training and test sequences;
+                                        between tracking methods. In 2014, we released the                                   • some of the sequences are easy and well-known (e.g.
+
+                                        MOTChallenge benchmark, which consisted of three main                                  PETS09-S2L1) and methods are overfitted to them,
+                                        components: (1) a (re-)collection of publicly available                                which makes them not ideal for training purposes;
+                                        and new datasets, (2) a centralized evaluation method,                               • the provided detections did not show good per-
+
+                                        and (3) an infrastructure that allows for crowdsourcing                                formance on the benchmark, which made some
+                                        of new data, new evaluation methods and even new an-                                   participants switch to another pedestrian detector.
+                                        notations. The first release of the dataset named MOT15                              In order to improve the above shortcomings, we
+                                        consisted of 11 sequences for training and 11 for testing,                         now introduce the new MOT16 benchmark, a set of
+                                        with a total of 11286 frames or 996 seconds of video.                              14 sequences with more crowded scenarios, different
+                                        Pre-computed object detections, annotations (only for the                          viewpoints, camera motions and weather conditions.
+                                        training sequences), and a common evaluation method                                Most importantly, the annotations for all sequences have
+                                                                                                                           been carried out by qualified researchers from scratch
+                                        ∗ = authors contributed equally.
+                                                                                                                           following a strict protocol, and finally double-checked to
+                                        A. Milan∗ and I. Reid are with the Australian Centre for Visual Technologies
+                                        at the University of Adelaide, Australia.                                          ensure highest annotation accuracy. Not only pedestrians
+                                        L. Leal-Taixé∗ and K. Schindler are with the Photogrammetry and Remote            are annotated, but also vehicles, sitting people, occluding
+                                        Sensing Group at ETH Zurich, Switzerland.                                          objects, as well as other significant object classes. With
+                                        S. Roth is with the Department of Computer Science, Technische Universität
+                                        Darmstadt, Germany.                                                                this fine-grained level of annotation it is possible to
+                                        Primary contacts: leal@geod.baug.ethz.ch, anton.milan@adelaide.edu.au              accurately compute the degree of occlusion and cropping
+                                                                                                                        2
+
+
+
+of all bounding boxes, which is also provided with            like ICCV or CVPR remains challenging. Furthermore,
+the benchmark. We hope that this rich ground truth            the sequences tend to be focused only on surveillance
+information will be very useful to the community in           scenarios, and lately on specific tasks such as vessel
+order to develop even more accurate tracking methods          tracking.
+and advancing the field further. This paper has thus             A well-established and useful way of organizing
+three main goals:                                             datasets is through standardized challenges. These are
+  1) To present the new MOT16 benchmark for fair              usually in the form of web servers that host the data and
+      evaluation of multi-target tracking methods;            through which results are uploaded by the users. Results
+  2) to detail the annotation protocol strictly followed      are then computed in a centralized way by the server
+      to create the ground truth of the benchmark;            and afterwards presented online to the public, making
+  3) to bring forward the strengths and weaknesses of         comparison with any other method immediately possi-
+      state-of-the-art multi-target tracking methods.         ble. There are several datasets organized in this fashion:
+                                                              the Labeled Faces in the Wild [24] for unconstrained face
+  The benchmark with all datasets, current ranking and
+                                                              recognition, the PASCAL VOC [14] for object detection,
+submission guidelines can be found at:
+                                                              the ImageNet large scale visual recognition challenge
+            http://www.motchallenge.net/                      [?], or the Reconstruction Meets Recognition Challenge
+                                                              (RMRC) [1].
+                                                                 Recently, the KITTI benchmark [19] was introduced
+1.1   Related work
+                                                              for challenges in autonomous driving, which included
+Benchmarks and challenges. In the recent past, the            stereo/flow, odometry, road and lane estimation, object
+computer vision community has developed centralized           detection and orientation estimation, as well as track-
+benchmarks for numerous tasks including object detec-         ing. Some of the sequences include crowded pedestrian
+tion [14], pedestrian detection [12], 3D reconstruction       crossings, making the dataset quite challenging, but the
+[39], optical flow [7], [19], visual odometry [19], single-   camera position is always the same for all sequences (at
+object short-term tracking [26], and stereo estimation        a car’s height).
+[19], [37]. Despite potential pitfalls of such benchmarks        Another work that is worth mentioning is [4], in which
+(e.g. [42]), they have proven to be extremely helpful to      the authors collected a very large amount of data with 42
+advance the state of the art in the respective area. For      million pedestrian trajectories. Since annotation of such
+multiple target tracking, in contrast, there has been very    a large collection of data is infeasible, they use a denser
+limited work on standardizing quantitative evaluation.        set of cameras to create the “ground truth” trajectories.
+   One of the few exceptions is the well known PETS           Though we do not aim at collecting such a large amount
+dataset [16], targeted primarily at surveillance applica-     of data, the goal of our benchmark is somewhat similar:
+tions. The 2009 version consisted of 3 subsets: S1 targeted   to push research in tracking forward by generalizing the
+at person count and density estimation, S2 targeted           test data to a larger set that is highly variable and hard
+at people tracking, and S3 targeted at flow analysis          to overfit.
+and event recognition. The easiest sequence for track-           In the near future, DETRAC, a new benchmark for ve-
+ing (S2L1) consisted of a scene with few pedestrians,         hicle tracking [44], is going to open a similar submission
+and for that sequence state-of-the-art methods perform        system to the one we proposed with MOTChallenge. The
+extremely well with accuracies of over 90% given a            benchmark consists of a total of 100 sequences, 60% of
+good set of initial detections [23], [33], [47]. Methods      which is used for training. Sequences are filmed from a
+then moved to tracking on the hardest sequence (i.e.          high viewpoint (surveillance scenarios) with the goal of
+with the highest crowd density), but hardly ever on the       vehicle tracking.
+complete dataset. Even for this widely used benchmark,           With the MOT16 release within the MOTChallenge
+we observe that tracking results are commonly obtained        benchmark, we aim to increase the difficulty by in-
+in an inconsistent fashion: involving using different sub-    cluding a variety of sequences filmed from different
+sets of the available data, inconsistent model training       viewpoints, with different lighting conditions, and far
+that is often prone to overfitting, varying evaluation        more crowded scenarios when compared to our first
+scripts, and different detection inputs. Results are thus     release.
+not easily comparable. Hence, the question that arises is:
+Are these sequences already too easy for current tracking     Evaluation. A critical point with any dataset is how
+methods, are methods simply overfit, or are they poorly       to measure the performance of the algorithms. In the
+evaluated?                                                    case of multiple object tracking, the CLEAR metrics [25]
+   The PETS team organizes a workshop approximately           have emerged as one of the standard measures. We will
+once a year to which researchers can submit their results,    discuss them in more detail in Sec. 4.1. By measuring the
+and methods are evaluated under the same conditions.          intersection over union of bounding boxes and match-
+Although this is indeed a fair comparison, the fact that      ing those from ground truth annotations and results,
+submissions are evaluated only once a year means that         measures of accuracy and precision can be computed.
+the use of this benchmark for high impact conferences         Precision measures how well the persons are localized,
+                                                                                                                           3
+
+
+
+
+            Fig. 1: An overview of the MOT16 dataset. Top: Training sequences; bottom: test sequences.
+
+
+while accuracy evaluates how many distinct errors such          on bikes or skateboards will also be annotated in this
+as missed targets, ghost trajectories, or identity switches     category (and are typically found by modern pedestrian
+are made.                                                       detectors). Furthermore, if a person briefly bends over or
+   Another set of measures that is widely used in the           squats, e.g. to pick something up or to talk to a child,
+tracking community is that of [30]. There are three             they shall remain in the standard pedestrian class. The
+widely used metrics introduced in that work: mostly             algorithms that submit to our benchmark are expected
+tracked, mostly lost, and partially tracked pedestrians.        to track these targets.
+These numbers give a very good intuition on the per-               In the second group we include all people-like objects
+formance of the method. We refer the reader to [28] for         whose exact classification is ambiguous and can vary
+more formal definitions.                                        depending on the viewer, the application at hand, or
+   A key parameter in both families of metrics is the           other factors. We annotate all static people that are not
+intersection-over-union threshold, which determines if          in an upright position, e.g. sitting, lying down. We also
+a bounding box is matched to an annotation or not. It           include in this category any artificial representation of
+is fairly common to observe methods compared under              a human that might fire a detection response, such as
+different thresholds, varying from 25% to 50%. There are        mannequins, pictures, or reflections. People behind glass
+often many other variables and implementation details           should also be marked as distractors. The idea is to
+that differ between evaluation scripts, but which may           use these annotations in the evaluation such that an
+affect results significantly.                                   algorithm is neither penalized nor rewarded for tracking,
+   It is therefore clear that standardized benchmarks           e.g., a sitting person or a reflection.
+are the only way to compare methods in a fair and                  In the third group, we annotate all moving vehicles
+principled way. Using the same ground truth data and            such as cars, bicycles, motorbikes and non-motorized
+evaluation methodology is the only way to guarantee             vehicles (e.g. strollers), as well as other potential oc-
+that the only part being evaluated is the tracking method       cluders. These annotations will not play any role in
+that delivers the results. This is the main goal behind this    the evaluation, but are provided to the users both for
+paper and behind the MOTChallenge benchmark.                    training purposes and for computing the level of occlu-
+                                                                sion of pedestrians. Static vehicles (parked cars, bicycles)
+2     A NNOTATION RULES                                         are not annotated as long as they do not occlude any
+                                                                pedestrians.
+We follow a set of rules to annotate every moving person
+                                                                   The rules are summarized in Tab. 1 and in Fig. 2 we
+or vehicle within each sequence with a bounding box as
+                                                                present a diagram of the classes of objects we annotate,
+accurately as possible. In the following we define a clear
+                                                                as well as a sample frame with annotations.
+protocol that was obeyed throughout the entire dataset
+to guarantee consistency.
+                                                                2.2   Bounding box alignment
+2.1   Target class                                              The bounding box is aligned with the object’s extent as
+In this benchmark we are interested in tracking moving          accurately as possible. The bounding box should contain
+objects in videos. In particular, we are interested in eval-    all pixels belonging to that object and at the same time be
+uating multiple people tracking algorithms, therefore,          as tight as possible, i.e. no pixels should be left outside
+people will be the center of attention of our annotations.      the box. This means that a walking side-view pedestrian
+We divide the pertinent classes into three categories:          will typically have a box whose width varies periodically
+(i) moving or standing pedestrians;                             with the stride, while a front view or a standing person
+(ii) people that are not in an upright position or artificial   will maintain a more constant aspect ratio over time. If
+representations of humans; and                                  the person is partially occluded, the extent is estimated
+(iii) vehicles and occluders.                                   based on other available information such as expected
+   In the first group, we annotate all moving or standing       size, shadows, reflections, previous and future frames
+(upright) pedestrians that appear in the field of view          and other cues. If a person is cropped by the image
+and can be determined as such by the viewer. People             border, the box is estimated beyond the original frame
+                                                                                                                                    4
+
+
+
+
+         Target                  Ambiguous                          Other
+  Pedestrian                    StaticDperson                    Car     Motorbike
+  Walking                        Sitting
+  Running     OnDvehicle         Lying        Distractor          Occluder
+  Standing                       ...
+  ...              Cycling                        Mannikin       LampDpost
+                   Skating                          Poster       TrashDbin
+                         ...    Reflection          Statue       Pillar
+                                                         ...     Tree
+                                                                 Stroller
+                                                                             Bicycle
+
+Fig. 2: Left: An overview of annotated classes. The classes in orange will be the central ones to evaluate on. The
+red classes include ambiguous cases such that both recovering and missing them will not be penalized in the
+evaluation. The classes in green are annotated for training purposes and for computing the occlusion level of all
+pedestrians. Right: An exemplar of an annotated frame. Note how partially cropped objects are also marked outside
+of the frame. Also note that the bounding box encloses the entire person but not e.g. the white bag of Pedestrian 1
+(bottom left).
+
+
+               Instruction
+ What?         Targets: All upright people including                    to pinpoint the exact location. In other words the anno-
+               + walking, standing, running pedestrians                 tation starts as early and ends as late as possible such
+               + cyclists, skaters                                      that the accuracy is not forfeited. The box coordinates
+               Distractors: Static people or representations            may exceed the visible area. Should a person leave the
+               + people not in upright position (sitting, lying down)   field of view and appear at a later point, they will be
+               + reflections, drawings or photographs of people         assigned a new ID.
+               + human-like objects like dolls, mannequins
+
+               Others: Moving vehicles and occluders
+               + Cars, bikes, motorbikes
+               + Pillars, trees, buildings                              2.4     Minimal size
+ When?         Start as early as possible.
+               End as late as possible.                                 Although the evaluation will only take into account
+               Keep ID as long as the person is inside the field of     pedestrians that have a minimum height in pixels, anno-
+               view and its path can be determined unambiguously.       tations will contain all objects of all sizes as long as they
+ How?          The bounding box should contain all pixels belong-
+               ing to that person and at the same time be as tight      are distinguishable by the annotator. In other words, all
+               as possible.                                             targets independent of their size on the image shall be
+ Occlusions    Always annotate during occlusions if the position can    annotated.
+               be determined unambiguously.
+               If the occlusion is very long and it is not possible
+               to determine the path of the object using simple rea-
+               soning (e.g. constant velocity assumption), the object   2.5     Occlusions
+               will be assigned a new ID once it reappears.
+
+  TABLE 1: Instructions obeyed during annotations.                      There is no need to explicitly annotate the level of
+                                                                        occlusion. This value will be computed automatically
+                                                                        using the ground plane assumption and the annotations.
+to represent the entire person and to estimate the level                Each target is fully annotated through occlusions as long
+of cropping. If an occluding object cannot be accurately                as its extent and location can be determined accurately
+enclosed in one box (e.g. a tree with branches or an                    enough. If a target becomes completely occluded in the
+escalator may require a large bounding box where most                   middle of the sequence and does not become visible
+of the area does not belong to the actual object), then                 later, the track should be terminated (marked as ‘outside
+several boxes may be used to better approximate the                     of view’). If a target reappears after a prolonged period
+extent of that object.                                                  such that its location is ambiguous during the occlusion,
+   Persons on vehicles will only be annotated separately                it will reappear with a new ID.
+from the vehicle if clearly visible. For example, children
+inside strollers or people inside cars will not be anno-
+tated, while motorcyclists or bikers will be.                           2.6     Sanity check
+                                                                        Upon annotating all sequences, a “sanity check” was
+2.3   Start and end of trajectories                                     carried out to ensure that no relevant entities were
+The box (track) appears as soon as the person’s location                missed. To that end, we ran a pedestrian detector on
+and extent can be determined precisely. This is typically               all videos and added all high-confidence detections that
+the case when ≈ 10% of the person becomes visible.                      corresponded to either humans or distractors to the
+Similarly, the track ends when it is no longer possible                 annotation list.
+                                                                                                                             5
+
+
+
+3     DATASETS                                                not reach 100% because of the non-maximum suppres-
+One of the key aspects of any benchmark is data col-          sion applied. Exemplar detection results are shown in
+lection. The goal of MOT16 is to compile a benchmark          Fig. 3.
+with new sequences, which are more challenging than              A detailed breakdown of detection bounding boxes on
+the ones presented in MOT15. In Fig. 1 and Tab. 2 we          individual sequences is provided in Tab. 4.
+show an overview of the sequences included in the
+                                                                 Seq          nDet.    nDet./fr.   min height   max height
+benchmark.                                                       MOT16-01      3,775      8.39          19.00       258.92
+                                                                 MOT16-02      7,267     12.11          19.00       341.97
+                                                                 MOT16-03     85,854     57.24          19.00       297.57
+3.1   2D MOT 2016 sequences                                      MOT16-04     39,437     37.56          19.00       341.97
+                                                                 MOT16-05      4,333      5.18          19.00       225.27
+We have compiled a total of 14 sequences, of which we            MOT16-06      7,851      6.58          19.00       210.12
+use half for training and half for testing. The annotations      MOT16-07     11,309     22.62          19.00       319.00
+of the testing sequences will not be released in order           MOT16-08     10,042     16.07          19.00       518.84
+                                                                 MOT16-09      5,976     11.38          19.00       451.55
+to avoid (over)fitting of the methods to the specific            MOT16-10      8,832     13.50          19.00       366.58
+sequences.                                                       MOT16-11      8,590      9.54          19.00       518.84
+   Sequences are very different from each other, we can          MOT16-12      7,764      8.63          19.00       556.15
+                                                                 MOT16-13      5,355      7.14          19.00       210.12
+classify them according to:                                      MOT16-14      8,781     11.71          19.00       258.92
+   • Moving or static camera – the camera can be held            total       215,166     19.15          19.00       556.15
+     by a person, placed on a stroller or on a car, or can
+     be positioned fixed in the scene.                               TABLE 4: Detection bounding box statistics.
+   • Viewpoint – the camera can overlook the scene from
+     a high position, a medium position (at pedestrian’s         Obviously, we cannot (nor necessarily want to) pre-
+     height), or at a low position.                           vent anyone from using a different set of detections,
+   • Conditions – the weather conditions in which the se-     or relying on a different set of features. However, we
+     quence was taken are reported in order to obtain an      require that this is noted as part of the tracker’s de-
+     estimate of the illumination conditions of the scene.    scription and is also displayed in the ratings table for
+     Sunny sequences may contain shadows and satu-            transparency.
+     rated parts of the image, while the night sequence
+     contains a lot of motion blur, making pedestrian
+                                                              3.3    Data format
+     detection and tracking rather challenging. Cloudy
+     sequences on the other hand contain fewer of those       All images were converted to JPEG and named sequen-
+     artifacts.                                               tially to a 6-digit file name (e.g. 000001.jpg). Detection
+   The new data contains almost 3 times more bounding         and annotation files are simple comma-separated value
+boxes for training and testing compared to MOT15. Most        (CSV) files. Each line represents one object instance and
+sequences are filmed in high resolution, and the mean         contains 9 values as shown in Tab. 5.
+crowd density is 3 times higher when compared to                 The first number indicates in which frame the object
+the first benchmark release. Hence, we expect the new         appears, while the second number identifies that object
+sequences to be more challenging for the tracking com-        as belonging to a trajectory by assigning a unique ID (set
+munity. In Tab. 2, we give an overview of the training        to −1 in a detection file, as no ID is assigned yet). Each
+and testing sequence characteristics for the challenge,       object can be assigned to only one trajectory. The next
+including the number of bounding boxes used.                  four numbers indicate the position of the bounding box
+   Aside from pedestrians, the annotations also include       of the pedestrian in 2D image coordinates. The position
+other classes like vehicles, bicycles, etc. as detailed in    is indicated by the top-left corner as well as width
+Sec. 2. In Tab. 3, we detail the types of annotations that    and height of the bounding box. This is followed by a
+can be found in each sequence of MOT16.                       single number, which in case of detections denotes their
+                                                              confidence score. The last two numbers for detection files
+                                                              are ignored (set to -1).
+3.2   Detections                                                 An example of such a 2D detection file is:
+We tested several state-of-the-art detectors on our bench-          1, -1, 794.2, 47.5, 71.2, 174.8, 67.5, -1, -1
+mark, obtaining the Precision-Recall curves in Fig. 3.              1, -1, 164.1, 19.6, 66.5, 163.2, 29.4, -1, -1
+Note that the deformable part-based model (DPM) v5                  1, -1, 875.4, 39.9, 25.3, 145.0, 19.6, -1, -1
+                                                                    2, -1, 781.7, 25.1, 69.2, 170.2, 58.1, -1, -1
+[15], [22] outperforms the other detectors in the task
+of pedestrian detection. As noted in [21], out-of-the-          For the ground truth and results files, the 7th value
+box R-CNN outperforms DPM in detecting all object             (confidence score) acts as a flag whether the entry is to
+classes except for the class “person”, which is why we        be considered. A value of 0 means that this particular
+supply DPM detections with the benchmark. We use the          instance is ignored in the evaluation, while a value of
+pretrained model with a low threshold of −1 in order to       1 is used to mark it as active. The 8th number indicates
+maintain relatively high recall. Note that the recall does    the type of object annotated, following the convention of
+                                                                                                                                          6
+
+
+                                                           Training sequences
+      Name        FPS     Resolution         Length     Tracks    Boxes   Density         Camera      Viewpoint    Conditions    Source
+      MOT16-02     30     1920x1080       600 (00:20)       49    17,833      29.7         static      medium       cloudy        new
+      MOT16-04     30     1920x1080     1,050 (00:35)       80    47,557      45.3         static        high        night        new
+      MOT16-05     14      640x480        837 (01:00)      124     6,818       8.1        moving       medium        sunny        [13]
+      MOT16-09     30     1920x1080       525 (00:18)       25     5,257      10.0         static        low        indoor        new
+      MOT16-10     30     1920x1080       654 (00:22)       54    12,318      18.8        moving       medium        night        new
+      MOT16-11     30     1920x1080       900 (00:30)       67     9,174      10.2        moving       medium       indoor        new
+      MOT16-13     25     1920x1080       750 (00:30)       68    11,450      15.3        moving         high        sunny        new
+             Total training             5,316 (03:35)      512   110,407      20.8
+
+
+                                                            Testing sequences
+      Name       FPS     Resolution          Length     Tracks     Boxes   Density        Camera      Viewpoint    Conditions    Source
+      MOT16-01    30     1920x1080        450 (00:15)       23      6,395     14.2         static      medium        cloudy       new
+      MOT16-03    30     1920x1080      1,500 (00:50)      148    104,556     69.7         static        high         night       new
+      MOT16-06    14       640x480      1,194 (01:25)      217     11,538      9.7        moving       medium        sunny        [13]
+      MOT16-07    30     1920x1080        500 (00:17)       55     16,322     32.6        moving       medium       shadow        new
+      MOT16-08    30     1920x1080        625 (00:21)       63     16,737     26.8         static      medium        sunny        new
+      MOT16-12    30     1920x1080        900 (00:30)       94      8,295      9.2        moving       medium        indoor       new
+      MOT16-14    25     1920x1080        750 (00:30)      230     18,483     24.6        moving         high        sunny        new
+             Total testing              5,919 (04:08)      830    182,326     30.8
+
+                  TABLE 2: Overview of the sequences currently included in the MOT16 benchmark.
+
+                                                            Annotation classes
+                                                                      Non
+                                                                                                       Oc-
+                                                             Mo-    motor-                 Dis-                         Re-
+                     Pedes-   Person                Bicy-                     Static                cluder      Oc-
+                                                              tor-    ized                trac-                        flec-
+       Sequence       trian       on      Car         cle                      per-                 on the   cluder               Total
+                                                             bike    vehi-                  tor                        tion
+                              vehicle                                           son                 ground      full
+                                                                        cle
+
+       MOT16-01       6,395       346        0       341        0           0    4,790      900      3,150        0       0      15,922
+       MOT16-02      17,833     1,549        0     1,559        0           0    5,271    1,200      1,781        0       0      29,193
+       MOT16-03     104,556        70    1,500    12,060    1,500           0    6,000        0     24,000   13,500       0     163,186
+       MOT16-04      47,557         0    1,050    11,550    1,050           0    4,798        0     23,100   18,900       0     108,005
+       MOT16-05       6,818       315      196       315        0          11        0       16          0        0       0       7,671
+       MOT16-06      11,538       150        0       118        0           0      269      238        109        0       0      12,422
+       MOT16-07      16,322         0        0         0        0           0    2,023        0      1,920        0       0      20,265
+       MOT16-08      16,737         0        0         0        0           0    1,715    2,719      6,875        0       0      28,046
+       MOT16-09       5,257         0        0         0        0           0        0    1,575      1,050        0     948       8,830
+       MOT16-10      12,318         0       25         0        0           0    1,376      470      2,740        0       0      16,929
+       MOT16-11       9,174         0        0         0        0           0        0      306        596        0       0      10,076
+       MOT16-12       8,295         0        0         0        0           0    1,012      765      1,394        0       0      11,464
+       MOT16-13      11,450         0    4,484       103        0           0        0        4      2,542      680       0      19,263
+       MOT16-14      18,483         0    1,563         0        0           0      712       47      4,062      393       0      25,260
+
+       Total        292,733     2,430    8,818    26,046    2,550          11    27,966   8,238     73,319   33,473     948     476,532
+
+
+
+               TABLE 3: Overview of the types of annotations currently found in the MOT16 benchmark.
+
+
+Tab. 6. The last number shows the visibility ratio of each             a separate CSV file following the format described
+bounding box. This can be due to occlusion by another                  above must be created for each sequence and called
+static or moving object, or due to image border cropping.              ‘‘Sequence-Name.txt’’. All files must be com-
+   An example of such an annotation 2D file is:                        pressed into a single ZIP file that can then be uploaded
+      1, 1, 794.2, 47.5, 71.2, 174.8, 1, 1, 0.8                        to be evaluated.
+      1, 2, 164.1, 19.6, 66.5, 163.2, 1, 1, 0.5
+      2, 4, 781.7, 25.1, 69.2, 170.2, 0, 12, 1.                        4        E VALUATION
+  In this case, there are 2 pedestrians in the first frame of          Our framework is a platform for fair comparison of state-
+the sequence, with identity tags 1, 2. In the second frame,            of-the-art tracking methods. By providing authors with
+we can see a reflection (class 12), which is to be consid-             standardized ground truth data, evaluation metrics and
+ered by the evaluation script and will neither count as                scripts, as well as a set of precomputed detections, all
+a false negative, nor as a true positive, independent of               methods are compared under the exact same conditions,
+whether it is correctly recovered or not. Note that all                thereby isolating the performance of the tracker from
+values including the bounding box are 1-based, i.e. the                everything else. In the following paragraphs, we detail
+top left corner corresponds to (1, 1).                                 the set of evaluation metrics that we provide in our
+  To obtain a valid result for the entire benchmark,                   benchmark.
+                                                                                                                                                                                                                                      7
+
+
+
+                            Detector Performance                                                Detector Performance                                                   Detector Performance
+                    1                                                                 1                                                                       1
+                                                                                                                             Training Set                                                           Training Set
+                                                    Training Set                                                             Test Set                                                               Test Set
+                  0.8                               Test Set                        0.8                                                                     0.8
+                                  Rcll: 24.2 %                                                                                                                                       Rcll: 43.7 %
+
+
+
+      Precision
+                  0.6             Prc: 65.7 %
+
+                                                                        Precision                                                               Precision
+                                                                                    0.6                                                                     0.6         Rcll: 49.5 % Prc: 60.1 %
+                  Rcll: 22.0 %                                                                                                                                          Prc: 66.0 %
+                  Prc: 60.1 %
+                  0.4                                                               0.4                                                                     0.4
+
+                  0.2                                                               0.2          Rcll: 47.2 % Rcll: 41.2 %                                  0.2
+                                                                                                 Prc: 27.3 % Prc: 17.5 %
+                    0                                                                 0                                                                       0
+                        0                    0.5                   1                      0     0.2        0.4       0.6        0.8         1                     0    0.2      0.4        0.6         0.8         1
+                                           Recall                                                             Recall                                                               Recall
+
+                                 (a) ACF [11]                                                 (b) Fast-RCNN [20]                                                      (c) DPM v5 [15]                                  (d) MOT16-03
+
+Fig. 3: (a) The performance of three popular pedestrian detectors evaluated on the training (blue) and the test (red)
+set. The circle indicates the operating point (i.e. the input detection set) for the trackers. (d) Exemplar detection
+results. As can be seen, DPM provides the highest recall at the best precision, which is why we release only this
+detection set to the public.
+
+ Position                          Name                                Description
+    1                          Frame number                            Indicate at which frame the object is present
+    2                         Identity number                          Each pedestrian trajectory is identified by a unique ID (−1 for detections)
+    3                        Bounding box left                         Coordinate of the top-left corner of the pedestrian bounding box
+    4                        Bounding box top                          Coordinate of the top-left corner of the pedestrian bounding box
+    5                       Bounding box width                         Width in pixels of the pedestrian bounding box
+    6                       Bounding box height                        Height in pixels of the pedestrian bounding box
+    7                         Confidence score                         DET: Indicates how confident the detector is that this instance is a pedestrian.
+                                                                       GT: It acts as a flag whether the entry is to be considered (1) or ignored (0).
+      8                                   Class                        GT: Indicates the type of object annotated
+      9                                 Visibility                     GT: Visibility ratio, a number between 0 and 1 that says how much of that object is visible. Can be due
+                                                                       to occlusion and due to image border cropping.
+
+TABLE 5: Data format for the input and output files, both for detection (DET) and annotation/ground truth (GT)
+files.
+
+
+                                       Label                                                    ID
+                                       Pedestrian                                                1
+                                                                                                                                                sets of measures that have established themselves in the
+                                       Person on vehicle                                         2                                              literature: The CLEAR metrics proposed by Stiefelhagen
+                                       Car                                                       3                                              et al. [41], and a set of track quality measures introduced
+                                       Bicycle                                                   4
+                                       Motorbike                                                 5
+                                                                                                                                                by Wu and Nevatia [46]. The evaluation scripts used in
+                                       Non motorized vehicle                                     6                                              our benchmark are publicly available.1
+                                       Static person                                             7
+                                       Distractor                                                8                                              4.1.1 Tracker-to-target assignment
+                                       Occluder                                                  9
+                                       Occluder on the ground                                   10                                              There are two common prerequisites for quantifying the
+                                       Occluder full                                            11                                              performance of a tracker. One is to determine for each
+                                       Reflection                                               12
+                                                                                                                                                hypothesized output, whether it is a true positive (TP)
+                                                                                                                                                that describes an actual (annotated) target, or whether
+TABLE 6: Label classes present in the annotation files and
+                                                                                                                                                the output is a false alarm (or false positive, FP). This
+ID appearing in the 7th column of the files as described
+                                                                                                                                                decision is typically made by thresholding based on
+in Tab. 5.
+                                                                                                                                                a defined distance (or dissimilarity) measure d (see
+                                                                                                                                                Sec. 4.1.2). A target that is missed by any hypothesis
+                                                                                                                                                is a false negative (FN). A good result is expected to
+4.1    Evaluation metrics                                                                                                                       have as few FPs and FNs as possible. Next to the
+                                                                                                                                                absolute numbers, we also show the false positive ratio
+In the past, a large number of metrics for quantitative
+                                                                                                                                                measured by the number of false alarms per frame (FAF),
+evaluation of multiple target tracking have been pro-
+                                                                                                                                                sometimes also referred to as false positives per image
+posed [8], [30], [38], [40], [41], [46]. Choosing “the right”
+                                                                                                                                                (FPPI) in the object detection literature.
+one is largely application dependent and the quest for a
+                                                                                                                                                   Obviously, it may happen that the same target is
+unique, general evaluation metric is still ongoing. On the
+                                                                                                                                                covered by multiple outputs. The second prerequisite
+one hand, it is desirable to summarize the performance
+                                                                                                                                                before computing the numbers is then to establish the
+into one single number to enable a direct comparison. On
+                                                                                                                                                correspondence between all annotated and hypothesized
+the other hand, one might not want to lose information
+                                                                                                                                                objects under the constraint that a true object should be
+about the individual errors made by the algorithms and
+                                                                                                                                                recovered at most once, and that one hypothesis cannot
+provide several performance estimates, which precludes
+                                                                                                                                                account for more than one target.
+a clear ranking.
+  Following a recent trend [6], [33], [45], we employ two                                                                                                   1. http://motchallenge.net/devkit
+                                                                                                                             8
+
+
+GT Traj.           FP   TP FN Tracked
+                                                                                                              Frag.
+                                               Frag.                                                                      ID sw.
+                                                       ID sw.
+
+
+frame         ID sw.
+1 2      3      4    5     6     1   2    3    4    5      6      1     2   3     4   5    6      1   2   3     4     5      6
+             (a)                              (b)                               (c)                            (d)
+Fig. 4: Four cases illustrating tracker-to-target assignments. (a) An ID switch occurs when the mapping switches
+from the previously assigned red track to the blue one. (b) A track fragmentation is counted in frame 3 because
+the target is tracked in frames 1-2, then interrupts, and then reacquires its ‘tracked’ status at a later point. A new
+(blue) track hypothesis also causes an ID switch at this point. (c) Although the tracking results is reasonably good,
+an optimal single-frame assignment in frame 1 is propagated through the sequence, causing 5 missed targets (FN)
+and 4 false positives (FP). Note that no fragmentations are counted in frames 3 and 6 because tracking of those
+targets is not resumed at a later point. (d) A degenerate case illustrating that target re-identification is not handled
+correctly. An interrupted ground truth trajectory will typically cause a fragmentation. Also note the less intuitive
+ID switch, which is counted because blue is the closest target in frame 5 that is not in conflict with the mapping
+in frame 4.
+
+
+    For the following, we assume that each ground truth         with a stroke color corresponding to its matched hypoth-
+trajectory has one unique start and one unique end              esis. False positives and false negatives are plotted as
+point, i.e. that it is not fragmented. Note that the current    empty circles. See figure caption for more details.
+evaluation procedure does not explicitly handle target            After determining true matches and establishing cor-
+re-identification. In other words, when a target leaves         respondences it is now possible to compute the metrics.
+the field-of-view and then reappears, it is treated as an       We do so by concatenating all test sequences and eval-
+unseen target with a new ID. As proposed in [41], the           uating on the entire benchmark. This is in general more
+optimal matching is found using Munkre’s (a.k.a. Hun-           meaningful instead of averaging per-sequences figures
+garian) algorithm. However, dealing with video data,            due to the large variation in the number of targets.
+this matching is not performed independently for each
+frame, but rather considering a temporal correspon-             4.1.2   Distance measure
+dence. More precisely, if a ground truth object i is
+                                                                In the most general case, the relationship between
+matched to hypothesis j at time t − 1 and the distance
+                                                                ground truth objects and a tracker output is established
+(or dissimilarity) between i and j in frame t is below
+                                                                using bounding boxes on the image plane. Similar to
+td , then the correspondence between i and j is carried
+                                                                object detection [14], the intersection over union (a.k.a.
+over to frame t even if there exists another hypothesis
+                                                                the Jaccard index) is usually employed as the similarity
+that is closer to the actual target. A mismatch error (or
+                                                                criterion, while the threshold td is set to 0.5 or 50%.
+equivalently an identity switch, IDSW) is counted if a
+ground truth target i is matched to track j and the last
+known assignment was k 6= j. Note that this definition          4.1.3   Target-like annotations
+of ID switches is more similar to [30] and stricter than        People are a common object class present in many
+the original one [41]. Also note that, while it is certainly    scenes, but should we track all people in our benchmark?
+desirable to keep the number of ID switches low, their          For example, should we track static people sitting on a
+absolute number alone is not always expressive to assess        bench? Or people on bicycles? How about people behind
+the overall performance, but should rather be considered        a glass? We define the target class of MOT16 as all
+in relation to the number of recovered targets. The             upright people, standing or walking, that are reachable
+intuition is that a method that finds twice as many             along the viewing ray without a physical obstacle, i.e.
+trajectories will almost certainly produce more identity        reflections, people behind a transparent wall or window
+switches. For that reason, we also state the relative           are excluded. We also exclude from our target class
+number of ID switches, which is computed as IDSW /              people on bycicles or other vehicles. For all these cases
+Recall.                                                         where the class is very similar to our target class (see
+    These relationships are illustrated in Fig. 4. For sim-     Figure 5), we adopt a similar strategy as in [32]. That
+plicity, we plot ground truth trajectories with dashed          is, a method is neither penalized nor rewarded for
+curves, and the tracker output with solid ones, where           tracking or not tracking those similar classes. Since a
+the color represents a unique target ID. The grey areas         detector is likely to fire in those cases, we do not want
+indicate the matching threshold (see next section). Each        to penalize a tracker with a set of false positives for
+true target that has been successfully recovered in one         properly following that set of detections, i.e. of a person
+particular frame is represented with a filled black dot         on a bicycle. Likewise, we do not want to penalize with
+                                                                                                                         9
+
+
+
+
+Fig. 5: The annotations include different classes of objects similar to the target class, a pedestrian in our case. We
+consider these special classes (distractor, reflection, static person and person on vehicle) to be so similar to the
+target class that a tracker should neither be penalized nor rewarded for tracking them in the sequence.
+
+
+false negatives a tracker that is based on motion cues        4.1.5 Multiple Object Tracking Precision
+and therefore does not track a sitting person.                The Multiple Object Tracking Precision is the average
+   In order to handle these special cases, we adapt the       dissimilarity between all true positives and their corre-
+tracker-to-target assignment algorithm to perform the         sponding ground truth targets. For bounding box over-
+following steps:                                              lap, this is computed as
+   1) At each frame, all bounding boxes of the result file                                 P
+      are matched to the ground truth via the Hungarian                                      t,i dt,i
+                                                                                 MOTP = P             ,             (2)
+      algorithm.                                                                               t ct
+   2) All result boxes that overlap > 50% with one of         where ct denotes the number of matches in frame t
+      these classes (distractor, static person, reflection,   and dt,i is the bounding box overlap of target i with
+      person on vehicle) are removed from the solution.       its assigned ground truth object. MOTP thereby gives
+   3) During the final evaluation, only those boxes that      the average overlap between all correctly matched hy-
+      are annotated as pedestrians are used.                  potheses and their respective objects and ranges between
+4.1.4 Multiple Object Tracking Accuracy                       td := 50% and 100%.
+                                                                 It is important to point out that MOTP is a measure of
+The MOTA [41] is perhaps the most widely used metric          localization precision, not to be confused with the positive
+to evaluate a tracker’s performance. The main reason for      predictive value or relevance in the context of precision /
+this is its expressiveness as it combines three sources of    recall curves used, e.g., in object detection.
+errors defined above:                                            In practice, it mostly quantifies the localization ac-
+                        P
+                            (FNt + FPt + IDSWt )              curacy of the detector, and therefore, it provides little
+          MOTA = 1 − t            P              ,     (1)
+                                    t GTt                     information about the actual performance of the tracker.
+where t is the frame index and GT is the number of
+ground truth objects. We report the percentage MOTA           4.1.6 Track quality measures
+(−∞, 100] in our benchmark. Note that MOTA can also           Each ground truth trajectory can be classified as mostly
+be negative in cases where the number of errors made          tracked (MT), partially tracked (PT), and mostly lost
+by the tracker exceeds the number of all objects in the       (ML). This is done based on how much of the trajectory is
+scene.                                                        recovered by the tracking algorithm. A target is mostly
+   Even though the MOTA score gives a good indica-            tracked if it is successfully tracked for at least 80% of
+tion of the overall performance, it is highly debatable       its life span. Note that it is irrelevant for this measure
+whether this number alone can serve as a single perfor-       whether the ID remains the same throughout the track.
+mance measure.                                                If a track is only recovered for less than 20% of its
+   Robustness. One incentive behind compiling this            total length, it is said to be mostly lost (ML). All other
+benchmark was to reduce dataset bias by keeping the           tracks are partially tracked. A higher number of MT and
+data as diverse as possible. The main motivation is to        few ML is desirable. We report MT and ML as a ratio
+challenge state-of-the-art approaches and analyze their       of mostly tracked and mostly lost targets to the total
+performance in unconstrained environments and on un-          number of ground truth trajectories.
+seen data. Our experience shows that most methods can            In certain situations one might be interested in ob-
+be heavily overfitted on one particular dataset, and may      taining long, persistent tracks without gaps of untracked
+not be general enough to handle an entirely different         periods. To that end, the number of track fragmentations
+setting without a major change in parameters or even in       (FM) counts how many times a ground truth trajectory is
+the model.                                                    interrupted (untracked). In other words, a fragmentation
+   To indicate the robustness of each tracker across all      is counted each time a trajectory changes its status from
+benchmark sequences, we show the standard deviation           tracked to untracked and tracking of that same trajectory
+of their MOTA score.                                          is resumed at a later point. Similarly to the ID switch
+                                                                                                                            10
+
+
+
+ratio (cf . Sec. 4.1.1), we also provide the relative number     trajectories. A solution is obtained by finding the mini-
+of fragmentations as FM / Recall.                                mum cost flow in the graph. Multiple assignments and
+                                                                 track splitting is prevented by introducing binary and
+4.1.7    Tracker ranking                                         linear constraints.
+As we have seen in this section, there are a number of              Here we use two solvers: (i) the successive shortest
+reasonable performance measures to assess the quality            paths approach [35] that employs dynamic programming
+of a tracking system, which makes it rather difficult to         with non-maxima suppression, termed DP NMS; (ii) a
+reduce the evaluation to one single number. To never-            linear programming solver that appears as a baseline in
+theless give an intuition on how each tracker performs           [27]. This solver uses the Gurobi Library [3].
+compared to its competitors, we compute and show
+the average rank for each one by ranking all trackers            5.3   CEM : Continuous energy minimization
+according to each metric and then averaging across all           CEM [33] formulates the problem in terms of a high-
+performance measures.                                            dimensional continuous energy. Here, we use the basic
+                                                                 approach [5] without explicit occlusion reasoning or
+5     BASELINE M ETHODS                                          appearance model. The target state X is represented by
+                                                                 continuous x, y coordinates in all frames. The energy
+As a starting point for the benchmark, we are working            E(X) is made up of several components, including a
+on including a number of recent multi-target tracking            data term to keep the solution close to the observed data
+approaches as baselines, which we will briefly outline           (detections), a dynamic model to smooth the trajectories,
+for completeness but refer the reader to the respective          an exclusion term to avoid collisions, a persistence term
+publication for more details. Note that we have used             to reduce track fragmentations, and a regularizer. The re-
+the publicly available code and trained all of them in           sulting energy is highly non-convex and is minimized in
+the same way (cf . Sec. 5.1). However, we explicitly             an alternating fashion using conjugate gradient descent
+state that the provided numbers may not represent the            and deterministic jump moves.
+best possible performance for each method, as could
+be achieved by the authors themselves. Table 7 lists
+                                                                 5.4   SMOT: Similar moving objects
+current benchmark results for all baselines as well as
+for all anonymous entries at the time of writing of this         The Similar Multi-Object Tracking (SMOT) approach [10]
+manuscript.                                                      specifically targets situations where target appearance is
+                                                                 ambiguous and rather concentrates on using the motion
+                                                                 as a primary cue for data association. Tracklets with
+5.1     Training and testing                                     similar motion are linked to longer trajectories using
+Most of the available tracking approaches do not include         the generalized linear assignment (GLA) formulation.
+a learning (or training) algorithm to determine the set of       The motion similarity and the underlying dynamics of
+model parameters for a particular dataset. Therefore, we         a tracklet are modeled as the order of a linear regressor
+follow a simplistic search scheme for all baseline meth-         approximating that tracklet.
+ods to find a good setting for our benchmark. To that
+end, we take the default parameter set Θ := {θ1 , . . . , θP }   5.5   TBD : Tracking-by-detection
+as suggested by the authors, where P is the number of            This two-stage tracking-by-detection (TBD) approach
+free parameters for each method. We then perform 20              [18], [48] is part of a larger traffic scene understanding
+independent runs on the training set with varying pa-            framework and employs a rather simple data association
+rameters. In each run, a parameter value θi is uniformly         technique. The first stage links overlapping detections
+sampled around its default value in the range [ 21 θi , 2θi ].   with similar appearance in successive frames into track-
+Finally, the parameter set Θ∗ that achieved the highest          lets. The second stage aims to bridge occlusions of up to
+MOTA score across all 20 runs (cf . Sec. 4.1.4) is taken         20 frames. Both stages employ the Hungarian algorithm
+as the optimal setting and run once on the test set. The         to optimally solve the matching problem. Note that we
+optimal parameter set is stated in the description entry         did not re-train this baseline but rather used the original
+for each baseline method on the benchmark website.               implementation and parameters provided.
+
+5.2     DP NMS : Network flow tracking                           5.6 JPDA M: Joint probabilistic data association us-
+Since its original publication [49], a large number of           ing m-best solutions
+methods that are based on the network flow formulation           Joint Probabilistic Data Association (JPDA) [17] is one
+have appeared in the literature [9], [29], [31], [35], [43].     of the oldest techniques for global data association. It
+The basic idea is to model the tracking as a graph,              first builds a joint hypothesis probability that includes all
+where each node represents a detection and each edge             possible assignments, and then computes the marginal
+represents a transition between two detections. Special          probabilities for each target to be assigned to each mea-
+source and sink nodes allow spawning and absorbing               surement. The state for each target is estimated in an
+                                                                                                                                                  11
+
+
+              Method      MOTA       MOTP    FAR    MT(%)    ML(%)        FP        FN    IDsw    rel.ID     FM    rel.FM      Hz    Ref.
+              TBD        33.7 ±9.2    76.5    1.0      7.2     54.2    5,804    112,587   2,418     63.3   2,252      58.9     1.3   [18]
+              CEM        33.2 ±7.9    75.8    1.2      7.8     54.4    6,837    114,322     642     17.2     731      19.6     0.3   [33]
+              DP NMS     32.2 ±9.8    76.4    0.2      5.4     62.1    1,123    121,579     972     29.2     944      28.3   212.6   [35]
+              SMOT       29.7 ±7.3    75.2    2.9      4.3     47.7   17,426    107,552   3,108     75.8   4,483     109.3     0.2   [10]
+              JPDA M     26.2 ±6.1    76.3    0.6      4.1     67.5    3,689    130,549     365     12.9     638      22.5    22.2   [36]
+
+                                     TABLE 7: Quantitative results of the baselines on MOT16.
+
+
+
+online manner, typically using one Kalman filter per                      [6]  S.-H. Bae and K.-J. Yoon. Robust online multi-object tracking
+target. While this approach is theoretically sound, it is                      based on tracklet confidence and online discriminative appear-
+                                                                               ance learning. In CVPR 2014.
+prohibitive in practice due to the exponential number of                  [7] S. Baker, D. Scharstein, J. P. Lewis, S. Roth, M. J. Black, and
+possible assignment hypotheses to be considered. It has                        R. Szeliski. A database and evaluation methodology for optical
+thus long been considered impractical for computer vi-                         flow. IJCV, 92(1):1–31, Mar. 2011.
+                                                                          [8] K. Bernardin and R. Stiefelhagen. Evaluating multiple object
+sion applications, especially in crowded scenes. Recently,                     tracking performance: The CLEAR MOT metrics. Image and Video
+an efficient approximation to JPDA was proposed [36].                          Processing, 2008(1):1–10, May 2008.
+                                                                          [9] A. A. Butt and R. T. Collins. Multi-target tracking by Lagrangian
+The main idea is to approximate the full joint probability                     relaxation to min-cost network flow. In CVPR 2013.
+distribution by m strongest hypotheses. It turns out that                 [10] C. Dicle, M. Sznaier, and O. Camps. The way they move: Tracking
+in practice, only around 100 most likely assignments are                       multiple targets with similar appearance. In ICCV 2013.
+                                                                          [11] P. Dollár, R. Appel, S. Belongie, and P. Perona. Fast feature
+sufficient to obtain the exact same solution as full JPDA.                     pyramids for object detection. PAMI, 36(8):1532–1545, 2014.
+                                                                          [12] P. Dollár, C. Wojek, B. Schiele, and P. Perona. Pedestrian detection:
+                                                                               A benchmark. In CVPR, 2009.
+                                                                          [13] A. Ess, B. Leibe, K. Schindler, and L. Van Gool. A mobile vision
+6     C ONCLUSION AND F UTURE W ORK                                            system for robust multi-person tracking. In CVPR 2008.
+                                                                          [14] M. Everingham, L. Van Gool, C. Williams, J. Winn, and A. Zisser-
+We have presented a new challenging set of sequences                           man. The PASCAL Visual Object Classes Challenge 2012 (VOC2012)
+within the MOTChallenge benchmark. The 2016                                    Results. 2012.
+sequences contain 3 times more targets to be tracked                      [15] P. F. Felzenszwalb, R. B. Girshick, D. McAllester, and D. Ramanan.
+                                                                               Object detection with discriminatively trained part based models.
+when compared to the initial 2015 version. Furthermore,                        PAMI, 32(9):1627–1645, 2010.
+more accurate annotations were carried out following                      [16] J. Ferryman and A. Ellis. PETS2010: Dataset and challenge. In
+                                                                               Advanced Video and Signal Based Surveillance (AVSS), 2010.
+a strict protocol, and extra classes such as vehicles,                    [17] T. E. Fortmann, Y. Bar-Shalom, and M. Scheffe. Multi-target
+sitting people, reflections or distractors were also                           tracking using joint probabilistic data association. In 19th IEEE
+annotated to provide further information to the                                Conference on Decision and Control including the Symposium on
+                                                                               Adaptive Processes, volume 19, pages 807–812, Dec. 1980.
+community. We believe that the MOT16 release within                       [18] A. Geiger, M. Lauer, C. Wojek, C. Stiller, and R. Urtasun. 3d traffic
+the already established MOTChallenge benchmark                                 scene understanding from movable platforms. PAMI, 2014.
+                                                                          [19] A. Geiger, P. Lenz, and R. Urtasun. Are we ready for autonomous
+provides a fairer comparison of state-of-the-art tracking                      driving? The KITTI Vision Benchmark Suite. In CVPR 2012.
+methods, and challenges researchers to develop more                       [20] R. Girshick. Fast R-CNN. In ICCV 2015, 2015.
+generic methods that perform well in unconstrained                        [21] R. Girshick, F. Iandola, T. Darrell, and J. Malik. Deformable part
+                                                                               models are convolutional neural networks. CVPR, 2015.
+environments and on unseen data. In the future, we                        [22] R. B. Girshick, P. F. Felzenszwalb, and D. McAllester. Dis-
+plan to continue our workshops and challenges series,                          criminatively trained deformable part models, release 5. http:
+                                                                               //people.cs.uchicago.edu/∼rbg/latent-release5/.
+and also introduce various other (sub-)benchmarks for                     [23] J. a. Henriques, R. Caseiro, and J. Batista. Globally optimal
+targeted applications, e.g. sport analysis, or biomedical                      solution to multi-object tracking with merged measurements. In
+cell tracking.                                                                 ICCV 2011.
+                                                                          [24] G. B. Huang, M. Ramesh, T. Berg, and E. Learned-Miller. Labeled
+                                                                               faces in the wild: A database for studying face recognition in
+Acknowledgements. We would like to specially ac-                               unconstrained environments. Technical Report 07-49, University
+knowledge Siyu Tang, Sarah Becker, Andreas Lin and                             of Massachussetts, Amherst, 2007.
+                                                                          [25] R. Kasturi, D. Goldgof, P. Soundararajan, V. Manohar, J. Garofolo,
+Kinga Milan for their help in the annotation process.                          M. Boonstra, V. Korzhova, and J. Zhang. Framework for perfor-
+We thank Bernt Schiele for helpful discussions and                             mance evaluation for face, text and vehicle detection and tracking
+                                                                               in video: data, metrics, and protocol. PAMI, 31(2), 2009.
+important insights into benchmarking. IDR gratefully                      [26] M. Kristan et al. The visual object tracking VOT2014 challenge
+acknowledges the support of the Australian Research                            results. In European Conference on Computer Vision Workshops
+Council through FL130100102.                                                   (ECCVW). Visual Object Tracking Challenge Workshop, 2014.
+                                                                          [27] L. Leal-Taixé, M. Fenzi, A. Kuznetsova, B. Rosenhahn, and
+                                                                               S. Savarese. Lerning an image-based motion context for multiple
+                                                                               people tracking. CVPR, 2014.
+R EFERENCES                                                               [28] L. Leal-Taixé, A. Milan, I. Reid, S. Roth, and K. Schindler.
+                                                                               MOTChallenge 2015: Towards a benchmark for multi-target track-
+[1]   Reconstruction Meets Recognition Challenge, 2014. http://ttic.           ing. arXiv:1504.01942, 2015.
+      uchicago.edu/∼rurtasun/rmrc/index.php.                              [29] L. Leal-Taixé, G. Pons-Moll, and B. Rosenhahn. Branch-and-price
+[2]   1st Workshop on Benchmarking Multi-Target Tracking, 2015. http:          global optimization for multi-view multi-object tracking. CVPR,
+      //www.igp.ethz.ch/photogrammetry/bmtt2015/home.html.                     2012.
+[3]   Gurobi library, www.gurobi.com.                                     [30] Y. Li, C. Huang, and R. Nevatia. Learning to associate: Hybrid-
+[4]   A. Alahi, V. Ramanathan, and L. Fei-Fei. Socially-aware large-           boosted multi-target tracker for crowded scene. In CVPR 2009.
+      scale crowd forecasting. In CVPR, 2014.                             [31] J. Liu, P. Carr, R. T. Collins, and Y. Liu. Tracking sports players
+[5]   A. Andriyenko and K. Schindler. Multi-target tracking by contin-         with context-conditioned motion models. In CVPR 2013, pages
+      uous energy minimization. In CVPR 2011, pages 1265–1272.
+                                                                            12
+
+
+
+     1830–1837.
+[32] M. Mathias, R. Benenson, M. Pedersoli, and L. V. Gool. Face
+     detection without bells and whistles. In ECCV 2014, 2014.
+[33] A. Milan, S. Roth, and K. Schindler. Continuous energy mini-
+     mization for multitarget tracking. PAMI, 36(1):58–72, 2014.
+[34] A. Milan, K. Schindler, and S. Roth. Challenges of ground truth
+     evaluation of multi-target tracking. In 2013 IEEE Conference on
+     Computer Vision and Pattern Recognition Workshops (CVPRW), pages
+     735–742, June 2013.
+[35] H. Pirsiavash, D. Ramanan, and C. C. Fowlkes. Globally-optimal
+     greedy algorithms for tracking a variable number of objects. In
+     CVPR 2011.
+[36] H. S. Rezatofighi, A. Milan, Z. Zhang, Q. Shi, A. Dick, and I. Reid.
+     Joint probabilistic data association revisited. In ICCV 2015.
+[37] D. Scharstein and R. Szeliski. A taxonomy and evaluation of dense
+     two-frame stereo correspondence algorithms. IJCV, 47(1-3):7–42,
+     Apr. 2002.
+[38] D. Schuhmacher, B.-T. Vo, and B.-N. Vo. A consistent metric for
+     performance evaluation of multi-object filters. IEEE Transactions
+     on Signal Processing, 56(8):3447–3457, Aug. 2008.
+[39] S. M. Seitz, B. Curless, J. Diebel, D. Scharstein, and R. Szeliski.
+     A comparison and evaluation of multi-view stereo reconstruction
+     algorithms. In CVPR 2006, pages 519–528.
+[40] K. Smith, D. Gatica-Perez, J.-M. Odobez, and S. Ba. Evaluating
+     multi-object tracking. In Workshop on Empirical Evaluation Methods
+     in Computer Vision (EEMCV).
+[41] R. Stiefelhagen, K. Bernardin, R. Bowers, J. S. Garofolo,
+     D. Mostefa, and P. Soundararajan. The clear 2006 evaluation. In
+     CLEAR, 2006.
+[42] A. Torralba and A. Efros. Unbiased look at dataset bias. In CVPR
+     2011.
+[43] B. Wang, G. Wang, K. L. Chan, and L. Wang. Tracklet association
+     with online target-specific metric learning. In CVPR 2014, June
+     2014.
+[44] L. Wen, D. Du, Z. Cai, Z. Lei, M.-C. Chang, H. Qi, J. Lim, M.-H.
+     Yang, and S. Lyu. Detrac: A new benchmark and protocol for
+     multi-object tracking. arXiv:1511.04136, 2015.
+[45] L. Wen, W. Li, J. Yan, Z. Lei, D. Yi, and S. Z. Li. Multiple target
+     tracking based on undirected hierarchical relation hypergraph. In
+     CVPR 2014.
+[46] B. Wu and R. Nevatia. Tracking of multiple, partially occluded
+     humans based on static body part detection. In CVPR 2006, pages
+     951–958, 2006.
+[47] A. R. Zamir, A. Dehghan, and M. Shah. GMCP-Tracker: Global
+     multi-object tracking using generalized minimum clique graphs.
+     In ECCV 2012, volume 2, pages 343–356.
+[48] H. Zhang, A. Geiger, and R. Urtasun. Understanding high-level
+     semantics by modeling traffic patterns. In ICCV 2013.
+[49] L. Zhang, Y. Li, and R. Nevatia. Global data association for multi-
+     object tracking using network flows. In CVPR 2008.
+

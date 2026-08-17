@@ -1,0 +1,1068 @@
+                                                         SUTrack: Towards Simple and Unified Single Object Tracking
+
+                                              Xin Chen1 , Ben Kang1 , Wanting Geng1 , Jiawen Zhu1 , Yi Liu2 , Dong Wang1 * , Huchuan Lu1
+                                                                                    1
+                                                                              Dalian University of Technology,2 Baidu Inc.
+                                            chenxin3131@mail.dlut.edu.cn, kangben@mail.dlut.edu.cn, gengwanting@mail.dlut.edu.cn, jiawen@mail.dlut.edu.cn,
+                                                                     liuyi22@baidu.com, wdice@dlut.edu.cn, lhchan@dlut.edu.cn
+
+
+
+
+arXiv:2412.19138v1 [cs.CV] 26 Dec 2024
+                                                                    Abstract                                                      RGB-Depth Tracking
+
+
+                                           In this paper, we propose a simple yet unified single object                                                            RGB-Thermal Tracking
+
+                                           tracking (SOT) framework, dubbed SUTrack. It consolidates
+                                           five SOT tasks (RGB-based, RGB-Depth, RGB-Thermal,
+                                                                                                            RGB-based Tracking
+                                           RGB-Event, RGB-Language Tracking) into a unified model                                               SUTrack
+                                           trained in a single session. Due to the distinct nature of
+                                           the data, current methods typically design individual archi-                          One Model, One Training, Five Tasks
+                                           tectures and train separate models for each task. This frag-
+                                           mentation results in redundant training processes, repetitive                                                       RGB-Event Tracking
+                                                                                                                        RGB-Language Tracking
+                                           technological innovations, and limited cross-modal knowl-
+                                           edge sharing. In contrast, SUTrack demonstrates that a sin-
+                                           gle model with a unified input representation can effectively
+                                           handle various common SOT tasks, eliminating the need for
+                                           task-specific designs and separate training sessions. Addi-     Figure 1: Our SUTrack unifies five SOT tasks into one model
+                                           tionally, we introduce a task-recognition auxiliary training    with one training session.
+                                           strategy and a soft token type embedding to further enhance
+                                           SUTrack’s performance with minimal overhead. Experiments
+                                           show that SUTrack outperforms previous task-specific coun-
+                                           terparts across 11 datasets spanning five SOT tasks. More-         This fragmentation enables customized designs for each
+                                           over, we provide a range of models catering edge devices        task, making it a prevalent choice. However, several defi-
+                                           as well as high-performance GPUs, striking a good trade-off
+                                                                                                           ciencies persist: First, each task requires training a separate
+                                           between speed and accuracy. We hope SUTrack could serve
+                                           as a strong foundation for further compelling research into     model, resulting in redundant parameters and inefficient use
+                                           unified tracking models. Code and models are available at       of resources. Second, models are trained on task-specific
+                                           github.com/chenxin-dlut/SUTrack.                                datasets, which hinders the sharing of knowledge across all
+                                                                                                           available datasets and increases the risk of overfitting. Third,
+                                                                                                           technological innovations are often repeatedly designed and
+                                                                Introduction                               validated across different tasks, leading to duplicated ef-
+                                         Single object tracking (SOT) is a fundamental task in com-        forts. Although some approaches to unify SOT tasks have
+                                         puter vision, focusing on locating an arbitrary target within     emerged, their level of unification remains limited. For in-
+                                         a video sequence, starting from its initial location. Over the    stance, some approaches (Zhu et al. 2023a; Hong et al. 2024;
+                                         years, to broaden the application scenarios of SOT (Li et al.     Hou et al. 2024) unify only the architectural design, not the
+                                         2018; Bhat et al. 2019; Zhang et al. 2020b; Chen et al. 2021;     model parameters, while others (Wu et al. 2024) address
+                                         Wang et al. 2021a; Ye et al. 2022; Wei et al. 2023; Zheng         only a subset of tasks. This naturally raises the question: Can
+                                         et al. 2024), numerous downstream SOT tasks incorporating         a unified visual model address mainstream SOT tasks?
+                                         auxiliary input modalities have been proposed. These tasks           To explore this question, we propose a simple and uni-
+                                         include RGB-Depth (Zhu et al. 2023b; Yan et al. 2021c),           fied framework for SOT, named SUTrack. SUTrack uni-
+                                         RGB-Thermal (Li et al. 2021, 2019b), RGB-Event (Wang              fies five mainstream SOT tasks: RGB-based, RGB-Depth,
+                                         et al. 2024; Tang et al. 2022), and RGB-Language (Wang            RGB-Thermal, RGB-Event, and RGB-Language tracking. It
+                                         et al. 2021b; Li et al. 2017b) tracking. Existing SOT methods     is based on a straightforward one-stream tracking architec-
+                                         are characterized by fragmentation, with most approaches          ture (Ye et al. 2022; Cui et al. 2022; Chen et al. 2022a). By
+                                         focusing on one or a few specific downstream tasks and de-        making concise improvements to the interface to accommo-
+                                         veloping separate models for each.                                date various modalities, SUTrack achieves unification with
+                                             * Corresponding author.                                       a single model and a single training session. The underly-
+                                         Copyright © 2025, Association for the Advancement of Artificial   ing intuition is that modern general visual models should
+                                         Intelligence (www.aaai.org). All rights reserved.                 inherently be capable of integrating knowledge from differ-
+ent modalities. We simply need to convert these modalities                              Related Work
+into a unified form to train the model, rather than developing    RGB-based Object Tracking
+separate models for each modality.
+   To this end, we convert the RGB, depth, thermal, event,        RGB-based object tracking refers to SOT using only RGB
+and language modalities into a unified token format for in-       data, typically serving as the foundation for downstream
+put into the vision transformer. Specifically, the depth, ther-   SOT tasks. RGB-based object tracking has witnessed signif-
+mal, and event modalities are typically paired with the RGB       icant progress (Tao, Gavves, and Smeulders 2016; Bertinetto
+modality in image format. Therefore, we modify the patch          et al. 2016; Li et al. 2019a; Xu et al. 2020; Mayer et al. 2021,
+embedding layer of the vision transformer from three chan-        2022; Xie et al. 2022; Kim et al. 2022; Song et al. 2022;
+nels to six channels to accommodate channel-concatenated          Gao et al. 2022; Lin et al. 2022) over the years, driven by
+RGB-Depth, RGB-Thermal, or RGB-Event image pairs.                 advancements in deep models (Krizhevsky, Sutskever, and
+These image pairs are converted into token embeddings by          Hinton 2012; He et al. 2016; Carion et al. 2020).
+the modified patch embedding layer and can then be directly          Recently, one-stream transformer-based trackers (Cui
+fed into the transformer. Unlike prevalent methods that em-       et al. 2022; Ye et al. 2022; Chen et al. 2022a) have initi-
+ploy additional branches to receive auxiliary modalities, this    ated a new revolution in RGB-based object tracking. This
+approach is more efficient, adding only 0.06 M parameters         framework more thoroughly utilizes the capabilities of pre-
+and less than 0.7 GFlops compared to a purely RGB-based           trained transformers by jointly performing feature extraction
+tracker. For the language modality, we employ a CLIP (Rad-        and fusion, achieving new leading performance. Building
+ford et al. 2021) text encoder to convert the language input      on these pioneering works, we advance further in this paper
+into a token embedding. We adopt a vision transformer to          by developing a new one-stream unified tracking framework
+process these tokens, followed by a common center-based           through simple modifications to the input interface and train-
+tracking head (Ye et al. 2022) to predict the result.             ing strategy. Our framework not only handles RGB-based
+   Additionally, we introduce a task-recognition auxiliary        object tracking tasks effectively but also performs multi-
+training strategy. Alongside standard tracking supervision,       modal downstream SOT tasks simultaneously, showcasing
+this approach involves classifying the source task of the         the greater potential of the one-stream framework combined
+input data during training. We found that incorporating           with modern pretrained transformer models.
+this task-specific information enhances performance. Impor-
+                                                                  Multi-Modal Object Tracking
+tantly, this strategy is used only during training and does
+not add any overhead during inference. Furthermore, the           To address the challenges faced by RGB-based tracking in
+cropped template and search region can potentially cause          complex or specific scenarios, multi-modal tracking tasks
+confusion regarding token types (template background, tem-        and methods (Liu et al. 2018; Zhang et al. 2021a; Feng et al.
+plate foreground, and search region) (Lin et al. 2024), espe-     2021; Yang et al. 2022) have been proposed. These tasks
+cially for depth, thermal, and event data, which are typically    integrate auxiliary modalities beyond the RGB input, ex-
+less detailed than RGB data. To address this issue, We de-        panding the applicability of tracking algorithms. Common
+velop a soft token type embedding, drawing inspiration from       multi-modal tracking tasks now include RGB-Depth, RGB-
+the token type embedding introduced in LoRAT (Lin et al.          Thermal, RGB-Event, and RGB-Language tracking. By in-
+2024). This enhancement equips the model with more pre-           corporating depth (Yan et al. 2021c), thermal (Li et al. 2021),
+cise token type information.                                      event (Wang et al. 2024), or language (Wang et al. 2021b) in-
+   Experiments demonstrate that our SUTrack method is ef-         formation, multi-modal trackers significantly enhance their
+fective, achieving new state-of-the-art performance across        ability to tackle issues such as occlusions, low lighting, ex-
+11 benchmarks and five SOT tasks. For instance, SUTrack-          treme weather, and target variations.
+B384 attains 74.4% AUC on the RGB-based benchmark La-                Despite their impressive performance, existing multi-
+SOT, surpassing the recent ODTrack-B384 (Zheng et al.             modal methods typically rely on modality-specific designs
+2024) by 1.2% while maintaining a similar model size.             and training, i.e., developing different models for each
+Moreover, when compared to recent multi-modal track-              modality. This situation leads to inefficient use of data, com-
+ers (Hong et al. 2024; Hou et al. 2024), SUTrack consis-          putational resources, and human effort. In contrast, our ap-
+tently outperforms them across all evaluated datasets. It is      proach integrates all multi-modal tracking tasks into a sin-
+worth noting that all these prior methods either train differ-    gle, unified model and training paradigm. With just one
+ent models for each task or cannot cover all five SOT tasks,      training session, this unified model efficiently handles mul-
+whereas our SUTrack handles all tasks with a unified model.       tiple multi-modal tracking tasks and achieves new state-of-
+   In summary, the contributions of this work are two-fold:       the-art performance across these tasks.
+
+ • We propose a simple yet unified SOT framework. It con-         Unified Object Tracking Models
+   solidates five SOT tasks into a unified model and learning     With the advancement of foundational models (Vaswani
+   paradigm. We believe this achievement will significantly       et al. 2017; Dosovitskiy et al. 2020; Liu et al. 2021), it has
+   reduce the research complexity across SOT tasks.               become feasible to use unified frameworks or models (Chen
+ • We present a new family of unified tracking models that        et al. 2022b; Kirillov et al. 2023; Alayrac et al. 2022; Wang
+   strike a good balance between speed and accuracy. Ex-          et al. 2022; Yan et al. 2023; Wang et al. 2023) to ad-
+   periments confirm the effectiveness of these new models.       dress multiple tasks. Recently, several works have emerged
+                                                                                                                           RGB
+                                               Tracking Head                     Task Recognition                        RGB-Depth
+      Result                                                                                                            RGB-Thermal
+                                                                                            A                            RGB-Event
+                                                                                                                        RGB-Language
+
+
+                                                                                                                          : Active only in training
+
+                                                                                                                   A      : Average
+                                              Transformer Encoder
+                                                                                                                   C      : Channel-wise concatenate
+
+                                                                                                                          : Template tokens
+    F + Pt +                                                            + Ps + S
+     B
+                                                                                                                          : Search tokens
+
+                             Multi-modal Patch Embedding                                                                  : Language token
+                                                                                           Text
+                                                                                          Encoder
+       RGB                                                                                                    Pt       Ps : Position embeddings
+                                                                           C
+                                                                                     “An orange cat walking   F        S : Soft token type embeddings
+ RGB/D/T/E                                                                           in the rain.”             B
+
+                 Template                          Search                       Language Description                           Legend
+
+
+Figure 2: Architecture of the proposed SUTrack. SUTrack unifies five SOT tasks (RGB-based, RGB-Depth, RGB-Thermal,
+RGB-Event, RGB-Language Tracking) into a single model. We use a unified token embedding format to represent different
+modalities and train a transformer-based tracking model with these embeddings. In the figure, D/T/E denote depth, thermal,
+and event modalities, respectively.
+
+
+that aim to unify multiple SOT tasks. ViPT (Zhu et al.              help the model better differentiate between tasks.
+2023a) addresses three multi-modal tasks (RGB-Depth,
+RGB-Thermal, and RGB-Event) within a unified frame-                 Unified Modality Representation
+work using prompt learning, but it does not achieve model-          To enable the one-stream transformer model to handle var-
+level unification. Subsequently, SDSTrack (Hou et al. 2024)         ious SOT tasks, we convert the different modality inputs of
+achieves framework-level unification, while un-track (Wu            each task into a unified token embedding form.
+et al. 2024) realizes model-level unification for these three          For the RGB-Depth, RGB-Thermal, and RGB-Event
+tasks. OneTracker (Hong et al. 2024) unifies more tasks             tracking tasks, the RGB data are paired with auxiliary
+within a unified framework but does not achieve model-level         modality data (depth, thermal, and event modalities, collec-
+unification. Despite these significant strides towards SOT          tively referred to as DTE). Instead of converting the RGB
+unification, their level of unification remains incomplete. In      and DTE modalities into separate token embeddings, we
+this paper, our SUTrack, for the first time, integrates all five    bind them together and jointly convert them using a pro-
+common SOT tasks into a single, streamlined model, further          posed multi-modal patch embedding. This approach does
+advancing the unification of SOT tasks.                             not add significant computational overhead to the sub-
+                                                                    sequent network. Specifically, the RGB image IRGB ∈
+                         SUTrack                                    RH×W ×3 and the DTE image IDTE ∈ RH×W ×3 (noting that
+                                                                    DTE data is stored as 3-channel images in current tracking
+The overall framework of SUTrack is illustrated in Fig. 2.
+                                                                    datasets) are concatenated along the channel dimension, re-
+It adopts a streamlined one-stream transformer architec-
+                                                                    sulting in the concatenated image Iconcat ∈ RH×W ×6 , sum-
+ture. First, input data from various modalities (including
+                                                                    marized as follows:
+RGB, depth, thermal, event, and natural language) are con-                                                  
+                                                                                                        I
+verted into a unified embedding form. This unified repre-                                   Iconcat = RGB .                       (1)
+sentation enables the model to be trained to handle multi-                                              IDTE
+ple SOT tasks. Next, positional embeddings and the pro-             Next, Iconcat is divided into fixed-size patches, each with
+posed soft token type embeddings are added to the unified           dimensions P ×P ×6, where P is the patch size. Each
+embeddings, enhancing positional information and provid-            P ×P ×6 patch is then flattened into a one-dimensional vec-
+ing precise prior knowledge about the token type (back-             tor of size 6P 2 . Finally, a linear transformation is applied to
+ground/foreground). The vision transformer encoder then             map the flattened patch vectors into an embedding space, as
+processes and associates these embeddings jointly. The re-          described by the following equation:
+sulting feature embeddings are used to support the final pre-
+                                                                                                E(i) = Wp P(i) + bp ,                                   (2)
+dictions, which are implemented using a center-based track-
+                                                                               (i)
+ing head (Ye et al. 2022). Additionally, we introduce a task-       where E represents the embedding vector of the i-th patch
+recognition prediction, used exclusively during training, to        with dimension D, P(i) denotes the flattened vector of the
+i-th patch, Wp is the weight matrix of dimensions D×6P 2 ,          For the search region, where bounding box information
+and bp is the bias term with dimension D. In this manner, the    is not available, we simply add a search region token type
+RGB-DTE data is transformed into a unified token embed-          embedding Esearch to each multi-modal patch embedding:
+ding representation. For SOT tasks that do not include DTE                            (k)
+data, such as RGB-based and RGB-Language tracking, we                               Eadj = E(k) + Esearch .                (6)
+also use this multi-modal patch embedding by duplicating
+the RGB channels to create a 6-channel input.                    Task-recognition Training Strategy
+   For the language modality in RGB-Language tracking, we        To enhance the model’s ability to differentiate between vari-
+use a language model (CLIP-L (Radford et al. 2021) with          ous tasks, we introduce a task-recognition auxiliary training
+an additional linear layer to adjust dimensions in our imple-    strategy. This approach explicitly teaches the model to iden-
+mentation) as the text encoder to extract a single-token fea-    tify the current task. Specifically, we compute the average
+ture embedding. This embedding is then concatenated with         of all feature embeddings output by the transformer model,
+the multi-modal embeddings and fed into the transformer.         resulting in a single vector Eavg :
+For SOT tasks that do not include the language modality, we                                        N
+substitute with a fixed, nonsensical sentence.                                               1 X (i)
+                                                                                    Eavg =        E       ,                (7)
+                                                                                             N i=1 output
+Soft Token Type Embedding
+LoRAT (Lin et al. 2024) proposes using token type em-            where N denotes the number of output token embeddings,
+                                                                        (i)
+beddings to explicitly annotate type information for token       and Eoutput represents the i-th output token embedding. This
+embeddings, which enhances the distinction between the           vector is then processed by a three-layer perceptron to clas-
+template foreground, template background, and the search         sify the five tasks: RGB-based, RGB-Depth, RGB-Thermal,
+region. However, token embeddings at the edges of the            RGB-Event, and RGB-Language tracking:
+target bounding box often contain both foreground and
+background information, making it inaccurate to classify                             ytask = MLP(Eavg ),                   (8)
+them solely as either template foreground or template back-      where MLP(·) represents the three-layer perceptron used
+ground. To address this issue, this work introduces a soft to-   for task classification, and the output ytask represents the
+ken type embedding method to effectively account for both        predicted probabilities for the five tasks. The predicted
+types in these cases.                                            task probabilities ytask are then used to compute the cross-
+   Specifically, given a template image Itconcat ∈ RH×W ×6       entropy loss against the true task labels ytrue :
+with a bounding box B around the target, we first create
+                                                                                            K
+a mask M ∈ RH×W of the same size as the image. In                                           X      (j)        (j)
+this mask, the pixels inside the bounding box are assigned                      Ltask = −         ytrue log(ytask ),       (9)
+a value of 1, while pixels outside the bounding box are as-                                 j=1
+signed a value of 0:                                                                                                        (j)
+                                                                where K denotes the number of tasks (5 in our case), ytrue
+                          1 if (i, j) is inside B,                                                                   (j)
+                                                                 represents the ground truth label for task j, and ytask de-
+            M(i, j) =                                      (3)
+                          0 otherwise.                           notes the predicted probability for task j. Experimental re-
+Next, we divide the mask M into non-overlapping patches          sults (see Section “Ablation and Analysis”) demonstrate that
+                                               (k)               this explicit task supervision enhances the model’s perfor-
+of size P × P . The k-th patch is denoted as Mpatch . For each
+                                                                 mance. We note that this task-recognition strategy is used
+patch, we compute the average value:                             exclusively during training and does not impact the infer-
+                         1     X                                 ence process.
+               m(k)
+                 avg =                M(i, j),
+                        P 2                                (4)
+                                   (k)
+                           (i,j)∈Mpatch                          Training and Inference
+       (k)
+where mavg represents the average value of the k-th patch,       We train the model by mixing data from all five SOT tasks in
+indicating the degree to which the patch is considered fore-     each batch. This strategy allows the model to handle all five
+ground. Based on this average value, we enhance the multi-       tasks after a single training phase. For tracking predictions,
+modal patch embeddings of the image with the correspond-         following OSTrack (Ye et al. 2022), we use a weighted focal
+ing token type embeddings. Specifically, for the k-th multi-     loss (Law and Deng 2018) for classification and a combina-
+modal patch embedding, we adjust it as follows:                  tion of ℓ1 loss and generalized IoU (Rezatofighi et al. 2019)
+                                                                 loss for regression. For task-recognition predictions, we use
+        (k)
+      Eadj = E(k) + m(k)               (k)
+                     avg · Efg + (1 − mavg ) · Ebg ,      (5)    the cross-entropy loss as described earlier. The overall loss
+       (k)
+                                                                 function is summarized as:
+where Eadj denotes the adjusted embedding for the k-th
+       (k)                                                                L = Lclass + λG LIoU + λL1 LL1 + Ltask ,        (10)
+patch, E represents the original multi-modal patch em-
+bedding, Efg is the foreground token type embedding, and         where Lclass denotes the weighted focal loss used for classi-
+Ebg is the background token type embedding. This adjust-         fication, LIoU represents the generalized IoU loss, LL1 is the
+ment supplements the embeddings with more accurate fore-         ℓ1 regression loss, Ltask is the cross-entropy loss for task-
+ground and background type information.                          recognition, and λG = 2 and λL1 = 5 are the regularization
+        Table 1: Details of SUTrack model variants.                      State-of-the-Art Comparisons
+                                                                         We compare our SUTrack with state-of-the-art (SOTA)
+               Transformer  Search    Template     Params FLOPs Speed
+Model
+                 Encoder   Resolution Resolution    (M)    (G)   (fps)   trackers across 11 benchmarks spanning five tasks: RGB-
+SUTrack-L384    HiViT-L    384×384     192×192 247(+85)    223    12     based, RGB-Depth, RGB-Thermal, RGB-Event, and RGB-
+SUTrack-L224    HiViT-L    224×224     112×112 247(+85)     76    35     Language tracking. We note that SUTrack unifies these SOT
+SUTrack-B384    HiViT-B    384×384     192×192 70(+85)      67    32
+SUTrack-B224    HiViT-B    224×224     112×112 70(+85)      23    55
+                                                                         tasks within a single model. In contrast, other approaches
+SUTrack-T224    HiViT-T    224×224     112×112 22(+85)       6    100    involve training separate models for each task or address-
+                                                                         ing only a subset of these tasks. The methods compared in
+                                                                         this section are generally the latest high-performance ap-
+                                                                         proaches. A more comprehensive comparison with earlier
+parameters. For inference, we adopt a conventional template              methods is available in the appendix. Additionally, while Se-
+update strategy (Yan et al. 2021a), employing two templates:             qTrackv2 (Chen et al. 2024) is contemporaneous with this
+one static and one updated dynamically during tracking. The              work, we include it in the comparison tables for reference
+template update mechanism is governed by a straightfor-                  but do not directly compare it in the main text.
+ward approach, utilizing a fixed interval and a confidence                  RGB-based Tracking. We evaluate our SUTrack on
+threshold to determine when updates occur.                               four large-scale RGB-based tracking benchmarks, includ-
+                                                                         ing the long-term benchmarks LaSOT (Fan et al. 2019)
+                                                                         and LaSOText (Fan et al. 2021), as well as the short-term
+                          Experiments                                    benchmarks TrackingNet (Muller et al. 2018) and GOT-
+                                                                         10k (Huang, Zhao, and Huang 2019). The results are pre-
+Implementation Details
+                                                                         sented in Tab. 2. Compared to trackers using the base model,
+The SUTrack models are implemented using Python 3.8                      our SUTrack-B224 surpasses all previous trackers across
+and PyTorch 1.11. Training is conducted on 4 NVIDIA                      all four benchmarks, with the higher resolution SUTrack-
+A40 GPUs, while inference speed is evaluated on a single                 B384 delivering even better results. Specifically, SUTrack-
+NVIDIA 2080TI GPU.                                                       B384 achieves AUC scores of 74.4% on LaSOT, 86.5% on
+                                                                         TrackingNet, and an AO score of 79.3% on GOT-10k, sur-
+   Model. We develop five variants of SUTrack models to                  passing the previous best tracker, ODTrack (Zheng et al.
+strike a trade-off between speed and accuracy, each utilizing            2024), by 1.2%, 1.4%, and 2.3% points, respectively. On
+different transformer encoders and input resolutions, as de-             LaSOText , SUTrack-B224 matches the performance of the
+tailed in Tab. 1. We adopt HiViT-L (Zhang et al. 2023) as the            previous best tracker, LoRAT-B378, achieving an AUC
+transformer encoder for SUTrack-L384 and L224, HiViT-                    score of 53.1%. When compared to trackers using large
+B for SUTrack-B384 and B224, and HiViT-T for SUTrack-                    models, SUTrack-L384 and L224 also demonstrate com-
+T224. The transformer encoders are initialized with the Fast-            petitive performance, setting new SOTA results on LaSOT,
+iTPN (Tian et al. 2024) pre-trained parameters. In addition,             TrackingNet, and GOT-10k, while achieving the second-best
+we present the model parameters, FLOPs, and inference                    performance on LaSOText .
+speed in Tab. 1. For the parameters, a subscript of +85 de-                 Efficient RGB-based Tracking. We develop the SUTrack-
+notes those specific to the text encoder CLIP-L, which can               T224 model for edge devices with limited computational re-
+be omitted for tasks that do not involve language processing.            sources, and compare its performance with SOTA efficient
+More details of our models are provided in appendix.                     trackers. The results are detailed in Tab. 3, which also in-
+   Training. Our training data comprises commonly used                   cludes the running speeds on both the Intel Core i9-9900K
+datasets for five SOT tasks, including COCO (Lin et al.                  @ 3.60GHz CPU and the NVIDIA Jetson AGX Xavier edge
+2014), LaSOT (Fan et al. 2019), GOT-10k (Huang, Zhao,                    device. Our method not only achieves real-time speeds on
+and Huang 2019), TrackingNet (Muller et al. 2018), VAST-                 edge devices (with the real-time line defined as 20 fps by
+Track (Peng et al. 2024), DepthTrack (Yan et al. 2021c),                 the VOT challenge (Kristan et al. 2020)) but also signifi-
+VisEvent (Wang et al. 2024), LasHeR (Li et al. 2021), and                cantly outperforms previous efficient trackers. Specifically,
+TNL2K (Wang et al. 2021b). In each batch, we sample and                  SUTrack-T224 surpasses the previous best performances by
+mix data from these datasets, with RGB data being sam-                   5%, 6.6%, 2.7%, and 7.6% on LaSOT, LaSOText , Track-
+pled at twice the rate of multi-modal data. The template                 ingNet, and GOT-10K, respectively.
+and search images are generated by expanding the target                     RGB-Depth Tracking. For the RGB-Depth tracking task,
+bounding boxes by factors of 2 and 4, respectively. We train             our SUTrack models set new state-of-the-art performance
+the model with AdamW (Loshchilov and Hutter 2018) opti-                  on both the VOT-RGBD22 (Kristan et al. 2023) and Depth-
+mizer. The model is trained for a total of 180 epochs, with              Track (Yan et al. 2021c) benchmarks. Specifically, on
+100, 000 image pairs per epoch. More details are provided                the VOT-RGBD22 benchmark, both SUTrack-L384 and
+in appendix.                                                             SUTrack-B384 achieve an EAO score of 76.6%, surpassing
+   Inference. The online template update interval is set to              the previous best, SDSTrack (Hou et al. 2024), by 3.8%. On
+25, with an update confidence threshold of 0.7 by default.               the DepthTrack benchmark, SUTrack-L384 achieves an F-
+A Hanning window penalty is applied to incorporate posi-                 score of 66.4%, outperforming SDSTrack by 4.5%.
+tional prior information in tracking, following standard prac-              RGB-Thermal Tracking. On the LasHeR (Li et al. 2021)
+tices (Chen et al. 2021; Ye et al. 2022).                                benchmark, both SUTrack-L384 and SUTrack-L224 achieve
+Table 2: State-of-the-art comparisons on four large-scale benchmarks. Methods employing the large model and the base model
+are compared separately. The number in the method name represents the resolution of the search region. The top two results are
+highlight with bold and underlined fonts, respectively.
+
+                                                         LaSOT                                    LaSOText                       TrackingNet                GOT-10k
+   Method
+                                               AUC       PN orm             P          AUC         PN orm      P          AUC       PN orm   P       AO     SR0.5 SR0.75
+   SUTrack-B384                                 74.4          83.9     81.9            52.9         63.6      60.1        86.5      90.7    86.8     79.3   88.0    80.0
+   SUTrack-B224                                 73.2          83.4     80.5            53.1         64.2      60.5        85.7      90.3    85.1     77.9   87.5    78.5
+   ODTrack-B384 (Zheng et al. 2024)             73.2          83.2     80.6            52.4         63.9      60.1        85.1      90.1    84.9     77.0   87.9    75.1
+   LoRAT-B378 (Lin et al. 2024)                 72.9          81.9     79.1            53.1         64.8      60.6        84.2      88.4    83.0     73.7   82.6    72.9
+   ARTrackV2-256 (Bai et al. 2024)              71.6          80.2     77.2            50.8         61.9      57.7        84.9      89.3    84.5     75.9   85.4    72.7
+   AQATrack-256 (Xie et al. 2024)               71.4          81.9     78.6            51.2         62.2      58.9        83.8      88.6    83.1     73.8   83.2    72.1
+   OneTracker-384 (Hong et al. 2024)            70.5          79.9     76.5             -            -         -          83.7      88.4    82.7      -      -       -
+   EVPTrack-224 (Shi et al. 2024)               70.4          80.9     77.2            48.7         59.5      55.1        83.5      88.3     -       73.3   83.6    70.7
+   MixViT-288 (Cui et al. 2024)                 69.6          79.9     75.9             -            -         -          83.5      88.3    83.5     72.5   82.4    69.9
+   DropTrack-224 (Wu et al. 2023)               71.8          81.8     78.1            52.7         63.9      60.2         -         -       -       75.9   86.8    72.0
+   ROMTrack-384 (Cai et al. 2023)               71.4          81.4     78.2            51.3         62.4      58.6        84.1      89.0    83.7     74.2   84.3    72.4
+   VideoTrack-256 (Xie et al. 2023)             70.2           -       76.4             -            -         -          83.8      88.7    83.1     72.9   81.9    69.8
+   CiteTracker-384 (Li et al. 2023)             69.7          78.6     75.7             -            -         -          84.5      89.0    84.2     74.7   84.3    73.0
+   Trackers with larger models
+   SUTrack-L384                                 75.2          84.9     83.2            53.6         64.2      60.5        87.7      91.7    88.7     81.5   89.5    83.3
+   SUTrack-L224                                 73.5          83.3     80.9            54.0         65.3      61.7        86.5      90.9    86.7     81.0   90.4    82.4
+   LoRAT-L378 (Lin et al. 2024)                 75.1          84.1     82.0            56.6         69.0      65.1        85.6      89.7    85.4     77.5   86.2    78.1
+   ODTrack-L384 (Zheng et al. 2024)             74.0          84.2     82.3            53.9         65.4      61.7        86.1      91.0    86.7     78.2   87.2    77.3
+   ARTrackV2-L384 (Bai et al. 2024)             73.6          82.8     81.1            53.4         63.7      60.2        86.1      90.4    86.2     79.5   87.8    79.6
+   ARTrack-L384 (Wei et al. 2023)               73.1          82.2     80.3            52.8         62.9      59.7        85.6      89.6    86.0     78.5   87.4    77.8
+   MixViT-L384 (Cui et al. 2024)                72.4          82.2     80.1             -            -         -          85.4      90.2    85.7     75.7   85.3    75.1
+   SeqTrack-L384 (Chen et al. 2023)             72.5          81.5     79.3            50.7         61.6      57.5        85.5      89.8    85.8     74.8   81.9    72.2
+   GRM-L320 (Gao, Zhou, and Zhang 2023)         71.4          81.2     77.9             -            -         -          84.4      88.9    84.0      -      -       -
+   TATrack-L384 (He et al. 2023)                71.1          79.1     76.1             -            -         -          85.0      89.3    84.5      -      -       -
+   CTTrack-L320 (Song et al. 2023)              69.8          79.7     76.2             -            -         -          84.9      89.1    83.5     72.8   81.3    71.5
+
+
+                      Table 3: State-of-the-art comparisons of efficient tracking on four large-scale benchmarks.
+
+                                            LaSOT                           LaSOText                          TrackingNet                   GOT-10k           Speed (fps)
+   Method
+                                     AUC    PN orm      P            AUC     PN orm           P        AUC       PN orm   P           AO    SR0.5 SR0.75     CPU AGX
+   SUTrack-T224                      69.6    79.3      75.4          50.2       61.1     57.0          82.7        87.2   80.8       72.7   82.1   70.5       23     34
+   MixformerV2-S (Cui et al. 2023)   60.6    69.9      60.4          43.6        -       46.2          75.8        81.1   70.4        -      -      -         30      -
+   HiT (Kang et al. 2023)            64.6    73.3      68.1           -          -        -            80.0        84.4   77.3       64.0   72.1   58.1       33     61
+   FEAR-L (Borsuk et al. 2022)       57.9     -        60.9           -          -        -             -           -      -         64.5   74.6    -          -      -
+   FEAR-XS (Borsuk et al. 2022)      53.5     -        54.5           -          -        -             -           -      -         61.9   72.2    -         60     38
+   HCAT (Chen et al. 2022c)          59.3    68.7      61.0           -          -        -            76.6        82.6   72.9       65.1   76.5   56.7       45     55
+   E.T.Track (Blatter et al. 2023)   59.1     -         -             -          -        -            75.0        80.3   70.6        -      -      -         47     20
+   LightTrack (Yan et al. 2021b)     53.8     -        53.7           -          -        -            72.5        77.8   69.5       61.1   71.0    -         41     36
+   ATOM (Danelljan et al. 2019)      51.5    57.6      50.5           -          -        -            70.3        77.1   64.8       55.6   63.4   40.2       18     22
+   ECO (Danelljan et al. 2017)       32.4    33.8      30.1           -          -        -            55.4        61.8   49.2       31.6   30.9   11.1       15     39
+
+
+
+an AUC score of 61.9%, surpassing the previous best, One-                                         demonstrates competitive performance despite not using the
+Tracker, by 8.1% points. On the RGBT234 (Li et al. 2019b)                                         OTB99 training set, which other algorithms rely on.
+benchmark, SUTrack-L224 obtains an AUC score of 70.8%,
+exceeding the performance of OneTracker by 6.6% points.                                           Ablation and Analysis.
+These results highlight the significant performance advan-                                        The results of the ablation study are presented in Tab.8,
+tage of our SUTrack model for RGB-Thermal tracking.                                               where SUTrack-B224 serves as the baseline model, as
+   RGB-Event Tracking. SUTrack-L224, L384, and B384                                               shown in row #1.
+secure the top three positions on the RGB-Event tracking                                             Multi-Task v.s. Single-Task. In Tab.8 (#2), we train sep-
+benchmark, VisEvent (Wang et al. 2024). Notably, SUTrack-                                         arate models for each SOT task. Compared to our multi-
+L224 attains the highest AUC score of 64.0%, surpassing the                                       task unified model, single-task models show inferior perfor-
+previous best, OneTracker, by 3.2 % points.                                                       mance across all tasks. The decline is particularly notable
+   RGB-Language Tracking. Our five SUTrack models take                                            for RGB-Depth, RGB-Thermal, and RGB-Event tracking,
+the top five spots on the RGB-Language tracking bench-                                            where the training data is relatively small. This underscores
+mark, TNL2K (Wang et al. 2021b). SUTrack-L384 achieves                                            the benefit of multi-task unification, which leverages shared
+the highest AUC score of 67.9%, significantly surpassing                                          knowledge across tasks to boost overall performance.
+the previous best, OneTracker, by 9.9 % points. On the                                               Zero-Shot Performance. In Tab. 8 (#3), we evaluate the
+small-scale OTB99 (Li et al. 2017b) benchmark, SUTrack                                            zero-shot performance of the model by training it on all
+   Table 4: SOTA comparisons on RGB-Depth tracking.                                     Table 6: SOTA comparisons on RGB-Event tracking.
+
+                                        VOT-RGBD22              DepthTrack                                                                   VisEvent
+ Method                                                                                  Method
+                                       EAO Acc. Rob.        F-score Re     Pr                                                             AUC         P
+ SUTrack-L384                          76.6   83.5   92.2    66.4     66.4    66.5       SUTrack-L384                                     63.8          80.5
+ SUTrack-L224                          76.4   83.4   91.9    64.3     64.6    64.0       SUTrack-L224                                     64.0          80.9
+ SUTrack-B384                          76.6   83.9   91.4    64.4     64.2    64.6       SUTrack-B384                                     63.4          79.8
+ SUTrack-B224                          76.5   82.8   91.8    65.1     65.7    64.5       SUTrack-B224                                     62.7          79.9
+ SUTrack-T224                          68.1   81.0   83.9    61.7     62.1    61.2       SUTrack-T224                                     58.8          75.7
+ SeqTrackv2-L384 (Chen et al. 2024)    74.8   82.6   91.0    62.3     62.6    62.5
+                                                                                         SeqTrackv2-L384 (Chen et al. 2024)               63.4          80.0
+ SeqTrackv2-B256 (Chen et al. 2024)    74.4   81.5   91.0    63.2     63.4    62.9
+ OneTracker (Hong et al. 2024)         72.7   81.9   87.2    60.9     60.4    60.7       SeqTrackv2-B256 (Chen et al. 2024)               61.2          78.2
+ SDSTrack (Hou et al. 2024)            72.8   81.2   88.3    61.9     60.9    61.4       OneTracker (Hong et al. 2024)                    60.8          76.7
+ Un-Track (Wu et al. 2024)             72.1   82.0   86.9    61.0     60.8    61.1       SDSTrack (Hou et al. 2024)                       59.7          76.7
+ ViPT (Zhu et al. 2023a)               72.1   81.5   87.1    59.4     59.6    59.2       Un-Track (Wu et al. 2024)                        58.9          75.5
+ ProTrack (Yang et al. 2022)           65.1   80.1   80.2    57.8     57.3    58.3       ViPT (Zhu et al. 2023a)                          59.2          75.8
+ SPT (Zhu et al. 2023b)                65.1   79.8   85.1    53.8     54.9    52.7       ProTrack (Yang et al. 2022)                      47.1          63.2
+ DeT (Yan et al. 2021c)                65.7   76.0   84.5    53.2     50.6    56.0       OSTrack E (Ye et al. 2022)                       53.4          69.5
+ DAL (Qian et al. 2021)                 -      -      -      42.9     36.9    51.2       SiamRCNN E (Voigtlaender et al. 2020)            49.9          65.9
+                                                                                         TransT E (Chen et al. 2021)                      47.4          65.0
+
+  Table 5: SOTA comparisons on RGB-Thermal tracking.
+                                                                                      Table 7: SOTA comparisons on RGB-Language tracking.
+                                           LasHeR               RGBT234
+  Method
+                                         AUC      P            MSR   MPR
+                                                                                                                              TNL2K                OTB99
+  SUTrack-L384                           61.9        76.9      70.3          93.7      Method
+                                                                                                                            AUC     P            AUC     P
+  SUTrack-L224                           61.9        77.0      70.8          94.6
+  SUTrack-B384                           60.9        75.8      69.2          92.1      SUTrack-L384                         67.9   72.1          71.2      93.1
+  SUTrack-B224                           59.9        74.5      69.5          92.2      SUTrack-L224                         66.7   70.3          72.7      94.4
+  SUTrack-T224                           53.9        66.7      63.8          85.9      SUTrack-B384                         65.6   69.3          69.7      91.2
+  SeqTrackv2-L384 (Chen et al. 2024)     61.0        76.7      68.0          91.3      SUTrack-B224                         65.0   67.9          70.8      93.4
+  SeqTrackv2-B256 (Chen et al. 2024)     55.8        70.4      64.7          88.0      SUTrack-T224                         60.9   62.3          67.4      88.6
+  OneTracker (Hong et al. 2024)          53.8        67.2      64.2          85.7      SeqTrackv2-L384 (Chen et al. 2024)   62.4   66.1          71.4      93.6
+  SDSTrack (Hou et al. 2024)             53.1        66.5      62.5          84.8      SeqTrackv2-B256 (Chen et al. 2024)   57.5   59.7          71.2      93.9
+  Un-Track (Wu et al. 2024)               -           -        62.5          84.2      OneTracker (Hong et al. 2024)        58.0   59.1          69.7      91.5
+  ViPT (Zhu et al. 2023a)                52.5        65.1      61.7          83.5      JointNLT (Zhou et al. 2023)          56.9   58.1          65.3      85.6
+  ProTrack (Yang et al. 2022)            42.0        53.8      59.9          79.5      DecoupleTNL(Ma and Wu 2023)          56.7   56.0          73.8      94.8
+  APFNet (Xiao et al. 2022)              36.2        50.0      57.9          82.7      Zhao et al. (Zhao et al. 2023)       56.0    -            69.9      91.2
+  JMMAC (Zhang et al. 2021a)              -           -        57.3          79.0      Li et al.(Li et al. 2022)            44.0   45.0          69.0      91.0
+  CMPP (Wang et al. 2020)                 -           -        57.5          82.3      TNL2K-2 (Wang et al. 2021b)          42.0   42.0          68.0      88.0
+  CAT (Li et al. 2020)                   31.4        45.0      56.1          80.4      SNLT (Feng et al. 2021)              27.6   41.9          66.6      80.4
+  HMFT (Zhang et al. 2022)               31.3        43.6       -             -        TransVG (Deng et al. 2021)           26.1   28.9           -         -
+  MaCNet (Zhang et al. 2020a)             -           -        55.4          79.0      Feng et al. (Feng et al. 2019)       25.0   27.0          67.0      73.0
+  FANet (Zhu et al. 2020)                30.9        44.1      55.3          78.7      RTTNLD (Feng et al. 2020)            25.0   27.0          61.0      79.0
+  DAFNet (Gao et al. 2019)                -           -        54.4          79.6
+
+
+
+
+tasks’ data except for the task being assessed. Although the                         (#6), we explore an alternative, more computationally inten-
+results indicate a significant drop in performance, the model                        sive method: applying standard patch embedding separately
+exhibits some zero-shot generalization capabilities. Notably,                        to RGB and DTE modalities, and then concatenating them
+for specific tasks such as RGB-Depth and RGB-Thermal,                                along the spatial dimension. This approach yields higher
+the performance is comparable to or even exceeds that of                             performance, highlighting the potential of SUTrack. How-
+the single-task models reported in #2.                                               ever, it results in nearly double the computational load. For
+   Task-recognition Training Strategy. Tab. 8 (#4) presents                          efficiency, we have chosen to use our default multi-modal
+the results after omitting the task-recognition auxiliary train-                     patch embedding method.
+ing strategy. This results in a decrease in performance com-                            Language Modality Combination. In Tab. 8 (#7 and #8),
+pared to our default method. The potential reason for this is                        we investigate two alternative methods for combining lan-
+that explicit task supervision helps the model differentiate                         guage features with image features: one through multiplica-
+between data types, enabling it to better learn the specific                         tion and the other through addition. Both methods result in
+characteristics of each task.                                                        lower performance compared to our default approach.
+   Data Ratio. In multi-task joint training, we sample RGB
+data at twice the rate of multi-modal data. The results of                              Token Type Embedding. In Tab. 8 (#9 and #10), we com-
+uniform sampling, as shown in Tab. 8 (#5), reveal a drop in                          pare our soft token type embedding with results from both
+performance. This is due to the limited diversity of multi-                          the absence of token type embedding and the original hard
+modal datasets, where an excessive proportion of such data                           token type embedding method (Lin et al. 2024). Our soft to-
+can hinder model robustness. We look forward to the avail-                           ken type embedding achieves superior performance by pro-
+ability of larger-scale multi-modal datasets in the future.                          viding more precise token type information, which aids the
+   Depth/Thermal/Event Modality Representation. We use                               model in distinguishing between template background, fore-
+multi-modal patch embedding to jointly represent RGB and                             ground, and search region tokens.
+Depth/Thermal/Event (DTE) modality image pairs. In Tab. 8                               More ablation studies are provided in appendix.
+Table 8: Ablation Study. ∆ denotes the performance change                    in dimensions D ×(P 2 ×6). We then divide these expanded
+(averaged over benchmarks) compared with the baseline.                       parameters by 2 to maintain a numerical range consistent
+                                                                             with the original pre-trained model. The adjusted param-
+ #          Method            LaSOT VOT-RGBD22 LasHeR VisEvent TNL2K ∆
+                                                                             eters are then loaded into our model. The dimensions D
+ 1          Baseline           73.2    76.5     59.9   62.7   65.0     –
+ 2 Multi-Task → Single-Task    72.7    57.0     50.1   56.7   61.8    -7.8
+                                                                             varies depending on the encoder model used. For SUTrack-
+ 3  Multi-Task → Zero-Shot     58.2    62.3     49.1   50.1   58.8   -11.8   L, SUTrack-B, and SUTrack-T, D is set to 768, 512, and
+ 4   W/o Task Recognition      72.6    76.5     59.8   62.5   63.9    -0.4
+ 5  More RGB → Uniform         71.6    75.8     59.2   62.0   64.3    -0.9   384, respectively. For the text encoder, we use the pre-
+ 6  Separate Representation    72.0    78.2     61.2   65.2   65.2   +0.9    trained CLIP-L’s text encoder (Radford et al. 2021), aug-
+ 7      Concat → Mul           63.8    58.0     48.6   54.0   54.0   -11.8
+ 8      Concat → Add           73.0    76.4     60.0   62.4   64.9    -0.3   mented with a linear layer to align its dimensions with those
+ 9 W/o Token Type Embedding    72.4    76.2     59.4   61.5   64.6    -0.6   of the transformer encoder. The CLIP-L model is kept frozen
+ 10       Soft → Hard          72.7    76.3     59.8   62.4   64.7    -0.3
+                                                                             during training to preserve the knowledge gained from its
+                                                                             pre-trained language data. For SOT tasks that do not include
+                                                                             the language modality, we use the padding token from CLIP
+                              Conclusion                                     as a fixed, nonsensical sentence in place of the language de-
+This work proposes a simple yet unified SOT framework,                       scription. The architecture of the tracking head follows that
+i.e., SUTrack, which integrates five SOT tasks into a unified                of OSTrack (Ye et al. 2022). The task-recognition head is
+model trained in one session. SUTrack shows that a single                    implemented as a three-layer perceptron with a hidden di-
+model with a unified input representation is capable of man-                 mension of 256.
+aging diverse SOT tasks, eliminating the necessity for sep-
+arate task-specific models or training processes. Extensive                  Training
+experiments demonstrate that SUTrack is effective, achiev-
+                                                                             Here, we provide more details of the training of SUTrack.
+ing competitive performance across all five SOT tasks. We
+                                                                             The template and search images are generated by expand-
+hope SUTrack could serve as a solid foundation for future
+                                                                             ing the target bounding boxes by factors of 2 and 4, re-
+research on unified single object tracking.
+                                                                             spectively. Data augmentation is performed using horizon-
+                                                                             tal flipping and brightness jittering. We train the model with
+                               Appendix                                      AdamW (Loshchilov and Hutter 2018) optimizer. The learn-
+In this appendix, we provide additional content to comple-                   ing rate is set to 1e−5 for the transformer, 1e−4 for the re-
+ment the main manuscript:                                                    maining unfrozen modules, and the weight decay is set to
+ • More implementation details.                                              1e−4. The model is trained for a total of 180 epochs, with
+ • Introduction of benchmarks.                                               100, 000 image pairs per epoch. The learning rate is reduced
+                                                                             by a factor of 10 after 144 epochs.
+ • Unification comparison.
+ • Additional state-of-the-art comparisons.                                              Introduction of Benchmarks
+ • Additional ablation study.
+                                                                             In this section, we provide detailed descriptions of the
+ • Limitation.                                                               benchmarks used for evaluation.
+             More Implementation Details                                     RGB-based Tracking Benchmarks
+This section provides the implementation details that are                       LaSOT. LaSOT (Fan et al. 2019) is a large-scale, long-
+omitted from the main manuscript due to space constraints.                   term tracking dataset. Its test set comprises 280 videos with
+                                                                             an average length of 2,448 frames. The evaluated metrics
+Devices                                                                      include Success (AUC) and Precision (P and PNorms ) scores,
+The training of SUTrack are conducted on Intel Xeon Gold                     with AUC being the primary metric.
+6330 CPU @ 2.00GHz with 512 GB RAM and 4 NVIDIA                                 LaSOText . LaSOText (Fan et al. 2021) is an extension of
+A40 GPUs with 48GB memory. The speed in Tab.1 of the                         the long-term LaSOT dataset. It comprises 150 video se-
+main manuscript is measured on Intel Core i9-9900K CPU                       quences across 15 new object classes. The evaluation met-
+@ 3.60GHz with 64 GB RAM and a single 2080 TI GPU.                           rics are consistent with those used for the LaSOT dataset.
+The speeds reported in Tab. 3 of the main manuscript are                        TrackingNet. TrackingNet (Muller et al. 2018) is a large-
+measured on an Intel Core i9-9900K @ 3.60GHz CPU and                         scale short-term tracking dataset that encompasses a wide
+an NVIDIA Jetson AGX Xavier edge device, respectively.                       range of object classes and scenes. The test set consists of
+                                                                             511 sequences. We submit the tracking results of our SU-
+Model                                                                        Track to the official online evaluation server to obtain the
+Here, we provide more details of our SUTrack model. For                      Success (AUC) and Precision (P and PN orm ) scores.
+the multi-modal patch embedding, the weight matrix Wp                           GOT-10k. GOT-10k (Huang, Zhao, and Huang 2019) is a
+has dimensions D ×(P 2 ×6), whereas the corresponding                        large-scale short-term tracking dataset. Its test set consists
+weight matrix in the pre-trained model (Tian et al. 2024) has                of 180 videos that cover a broad spectrum of common track-
+dimensions D ×(P 2 ×3). To align the pre-trained model’s                     ing challenges. We submit the tracking results to the offi-
+parameters with Wp , we first expand the pre-trained param-                  cial evaluation server. The evaluated metrics include Aver-
+eters by repeating them along the last dimension, resulting                  age Overlap (AO) and Success Rates (SR0.5 and SR0.75 ).
+                                             Table 9: Comparison of unification levels and unified tasks.
+
+                                               Unification                                                               Task
+  Method
+                                      Framework-level    Model-level                 RGB-based     RGB-Depth        RGB-Thermal       RGB-Event   RGB-Language
+                                            √               √                           √             √                 √                √             √
+  SUTrack
+                                              √                    √                                    √                  √              √               √
+  SeqTrackv2 (Chen et al. 2024)               √                                         √               √                  √              √               √
+  OneTracker (Hong et al. 2024)               √                                                         √                  √              √
+  SDSTrack (Hou et al. 2024)                  √                    √                                    √                  √              √
+  UnTrack (Wu et al. 2024)                    √                                                         √                  √              √
+  ViPT (Zhu et al. 2023a)                     √                                                         √                  √              √
+  ProTrack (Yang et al. 2022)
+
+
+
+  Table 10: SOTA comparisons on RGB-Depth tracking.                                          Table 11: SOTA comparisons on RGB-Thermal tracking.
+
+                                       VOT-RGBD22              DepthTrack                                                            LasHeR         RGBT234
+ Method                                                                                       Method
+                                      EAO Acc. Rob.        F-score Re     Pr                                                       AUC      P      MSR   MPR
+ SUTrack-L384                         76.6   83.5   92.2    66.4       66.4   66.5            SUTrack-L384                         61.9   76.9     70.3       93.7
+ SUTrack-L224                         76.4   83.4   91.9    64.3       64.6   64.0            SUTrack-L224                         61.9   77.0     70.8       94.6
+ SUTrack-B384                         76.6   83.9   91.4    64.4       64.2   64.6            SUTrack-B384                         60.9   75.8     69.2       92.1
+ SUTrack-B224                         76.5   82.8   91.8    65.1       65.7   64.5            SUTrack-B224                         59.9   74.5     69.5       92.2
+ SUTrack-T224                         68.1   81.0   83.9    61.7       62.1   61.2            SUTrack-T224                         53.9   66.7     63.8       85.9
+ SeqTrackv2-L384 (Chen et al. 2024)   74.8   82.6   91.0    62.3       62.6   62.5            SeqTrackv2-L384 (Chen et al. 2024)   61.0   76.7     68.0       91.3
+ SeqTrackv2-B256 (Chen et al. 2024)   74.4   81.5   91.0    63.2       63.4   62.9            SeqTrackv2-B256 (Chen et al. 2024)   55.8   70.4     64.7       88.0
+ OneTracker (Hong et al. 2024)        72.7   81.9   87.2    60.9       60.4   60.7            OneTracker (Hong et al. 2024)        53.8   67.2     64.2       85.7
+ SDSTrack (Hou et al. 2024)           72.8   81.2   88.3    61.9       60.9   61.4            SDSTrack (Hou et al. 2024)           53.1   66.5     62.5       84.8
+ Un-Track (Wu et al. 2024)            72.1   82.0   86.9    61.0       60.8   61.1            Un-Track (Wu et al. 2024)             -      -       62.5       84.2
+ ViPT (Zhu et al. 2023a)              72.1   81.5   87.1    59.4       59.6   59.2            ViPT (Zhu et al. 2023a)              52.5   65.1     61.7       83.5
+ ProTrack (Yang et al. 2022)          65.1   80.1   80.2    57.8       57.3   58.3            ProTrack (Yang et al. 2022)          42.0   53.8     59.9       79.5
+ SPT (Zhu et al. 2023b)               65.1   79.8   85.1    53.8       54.9   52.7            OSTrack (Ye et al. 2022)             41.2   51.5     54.9       72.9
+ SBT-RGBD (Xie et al. 2022)           70.8   80.9   86.4     -          -      -              TransT (Chen et al. 2021)            39.4   52.4
+ OSTrack (Ye et al. 2022)             67.6   80.3   83.3    52.9       52.2   53.6            APFNet (Xiao et al. 2022)            36.2   50.0     57.9       82.7
+                                                                                              JMMAC (Zhang et al. 2021a)            -      -       57.3       79.0
+ DeT (Yan et al. 2021c)               65.7   76.0   84.5    53.2       50.6   56.0
+                                                                                              CMPP (Wang et al. 2020)               -      -       57.5       82.3
+ DMTrack (Kristan et al. 2023)        65.8   75.8   85.1     -          -      -
+                                                                                              STARK (Yan et al. 2021a)             36.1   44.9
+ DDiMP (Kristan et al. 2020)           -      -      -      48.5       56.9   50.3
+                                                                                              mfDiMP (Zhang et al. 2019)           34.3   44.7     42.8       64.6
+ STARK-RGBD (Yan et al. 2021a)        64.7   80.3   79.8     -          -      -              DAPNet (Zhu et al. 2019)             31.4   43.1      -          -
+ KeepTrack (Mayer et al. 2021)        60.6   75.3   79.7     -          -      -              CAT (Li et al. 2020)                 31.4   45.0     56.1       80.4
+ DRefine (Kristan et al. 2021)        59.2   77.5   76.0     -          -      -              HMFT (Zhang et al. 2022)             31.3   43.6      -          -
+ DAL (Qian et al. 2021)                -      -      -      42.9       36.9   51.2            MaCNet (Zhang et al. 2020a)           -      -       55.4       79.0
+ ATCAIS (Kristan et al. 2020)         55.9   76.1   73.9    47.6       45.5   50.0            FANet (Zhu et al. 2020)              30.9   44.1     55.3       78.7
+ LTMU-B (Dai et al. 2020)              -      -      -      46.0       41.7   51.2            DAFNet (Gao et al. 2019)              -      -       54.4       79.6
+ GLGS-D (Kristan et al. 2020)          -      -      -      45.3       36.9   58.4            SGT (Li et al. 2017a)                25.1   36.5     47.2       72.0
+ LTDSEd (Kristan et al. 2019)          -      -      -      40.5       38.2   43.0
+ Siam-LTD (Kristan et al. 2020)        -      -      -      37.6       34.2   41.8
+ SiamM-Ds (Kristan et al. 2019)        -      -      -      33.6       26.4   46.3
+ CA3DMS (Liu et al. 2018)              -      -      -      22.3       22.8   21.8
+ DiMP (Bhat et al. 2019)              54.3   70.3   73.1     -          -      -            RGB-Depth Tracking Benchmarks.
+ ATOM (Danelljan et al. 2019)         50.5   59.8   68.8     -          -      -
+                                                                                               DepthTrack. DepthTrack (Yan et al. 2021c) is a compre-
+                                                                                            hensive benchmark for long-term RGB-Depth tracking. The
+                                                                                            test set consists of 50 videos, each annotated with 15 per-
+                                                                                            frame attributes. The primary evaluation metric is the F-
+   VOT. VOT2020 (Kristan et al. 2020) and VOT2022 (Kris-                                    score, which is commonly used in long-term tracking tasks.
+tan et al. 2023) comprises 60 challenging videos, respec-                                      VOT-RGBD22. VOT-RGBD2022 (Kristan et al. 2023) is
+tively. They employ an anchor-based evaluation method,                                      a recent tracking benchmark consisting of 127 RGB-Depth
+running a tracker from numerous starting frames. The pri-                                   sequences. The evaluation protocol uses an anchor-based
+mary metric used is expected average overlap (EAO), which                                   method similar to that employed by VOT2020. The primary
+simultaneously assesses the tracker’s accuracy and robust-                                  performance metric is expected average overlap (EAO).
+ness. Trackers can submit either mask predictions or bound-
+ing box predictions for evaluation.                                                         RGB-Thermal Tracking Benchmarks
+   NFS. The NFS (Kiani Galoogahi et al. 2017) dataset                                          LasHeR. LasHeR (Li et al. 2021) is a highly diverse and
+is a small-scale benchmark consisting of 100 challenging                                    comprehensive benchmark for RGB-Thermal tracking. Its
+videos, primarily featuring fast-moving targets. The main                                   test set contains 245 testing video sequences. The evaluated
+evaluation metric is the Success (AUC) score.                                               metrics include AUC and Precision (P) scores.
+                                                                                               RGBT234. RGBT234 (Li et al. 2019b) is a substantial
+   UAV123. UAV123 (Mueller, Smith, and Ghanem 2016)                                         RGB-Thermal tracking benchmark featuring 234 videos that
+is a small-scale tracking benchmark that includes 123 low-                                  include visible and thermal infrared pairs. The evaluated
+altitude aerial videos. The primary evaluation metric is the                                metrics include Maximum Success Rate(MSR) and Maxi-
+Success (AUC) score.                                                                        mum Precision Rate(MPR) scores.
+  Table 12: SOTA comparisons on RGB-Event tracking.                  Table 13: SOTA comparisons on RGB-Language tracking.
+
+                                                      VisEvent                                                TNL2K          OTB99
+    Method                                                             Method
+                                                   AUC         P                                            AUC     P      AUC     P
+    SUTrack-L384                                   63.8      80.5      SUTrack-L384                         67.9    72.1   71.2   93.1
+    SUTrack-L224                                   64.0      80.9      SUTrack-L224                         66.7    70.3   72.7   94.4
+    SUTrack-B384                                   63.4      79.8      SUTrack-B384                         65.6    69.3   69.7   91.2
+    SUTrack-B224                                   62.7      79.9      SUTrack-B224                         65.0    67.9   70.8   93.4
+    SUTrack-T224                                   58.8      75.7      SUTrack-T224                         60.9    62.3   67.4   88.6
+    SeqTrackv2-L384 (Chen et al. 2024)             63.4      80.0      SeqTrackv2-L384 (Chen et al. 2024)   62.4    66.1   71.4   93.6
+    SeqTrackv2-B256 (Chen et al. 2024)             61.2      78.2      SeqTrackv2-B256 (Chen et al. 2024)   57.5    59.7   71.2   93.9
+    OneTracker (Hong et al. 2024)                  60.8      76.7      OneTracker (Hong et al. 2024)        58.0    59.1   69.7   91.5
+    SDSTrack (Hou et al. 2024)                     59.7      76.7      JointNLT (Zhou et al. 2023)          56.9    58.1   65.3   85.6
+    Un-Track (Wu et al. 2024)                      58.9      75.5      DecoupleTNL(Ma and Wu 2023)          56.7    56.0   73.8   94.8
+    ViPT (Zhu et al. 2023a)                        59.2      75.8      Zhao et al. (Zhao et al. 2023)       56.0     -     69.9   91.2
+    ProTrack (Yang et al. 2022)                    47.1      63.2      CapsuleTNL (Ma and Wu 2021)           -       -     71.1   92.4
+    OSTrack E (Ye et al. 2022)                     53.4      69.5
+                                                                       Li et al.(Li et al. 2022)            44.0    45.0   69.0   91.0
+    SiamRCNN E (Voigtlaender et al. 2020)          49.9      65.9
+                                                                       TNL2K-2 (Wang et al. 2021b)          42.0    42.0   68.0   88.0
+    TransT E (Chen et al. 2021)                    47.4      65.0
+                                                                       SNLT (Feng et al. 2021)              27.6    41.9   66.6   80.4
+    LTMU E (Dai et al. 2020)                       45.9      65.5
+    PrDiMP E (Danelljan, Gool, and Timofte 2020)   45.3      64.4      GTI (Yang et al. 2020)                -       -     58.1   73.2
+    STARK E (Yan et al. 2021a)                     44.6      61.2      TransVG (Deng et al. 2021)           26.1    28.9    -      -
+    MDNet E (Nam and Han 2016)                     42.6      66.1      Feng et al. (Feng et al. 2019)       25.0    27.0   67.0   73.0
+    SiamCar E (Yan et al. 2021a)                   42.0      59.9      RTTNLD (Feng et al. 2020)            25.0    27.0   61.0   79.0
+    VITAL E (Song et al. 2018)                     41.5      64.9      Wang et al. (Wang et al. 2018)        -       -     65.8   89.1
+    ATOM E (Danelljan et al. 2019)                 41.2      60.8      TNLS (Li et al. 2017b)                -       -     55.3   72.3
+    SiamBAN E (Chen et al. 2020)                   40.5      59.1      OneStage-BERT (Yang et al. 2019)     19.8     -     24.6   32.2
+    SiamMask E (Wang et al. 2019)                  36.9      56.2      LBYL-BERT (Yang et al. 2019)         18.3     -     20.7   26.0
+
+
+                                                                                 VOT2020 Bounding-box Evaluation
+RGB-Event Tracking Benchmarks
+                                                                     0.3
+   VisEvent. VisEvent (Wang et al. 2024) is an extensive
+RGB-Event tracking benchmark based on data collected                0.25
+from real-world environments. Its test set comprises 320
+videos, and the evaluated metrics include AUC and Preci-             0.2
+sion (P) scores.
+                                                                    0.15
+
+RGB-Language Tracking benchmarks.                                                 VOT2022 Bounding-box Evaluation
+
+   TNL2K. TNL2K (Wang et al. 2021b) is a large-scale                0.55
+benchmark for RGB-language tracking. The test set contains
+700 videos, each accompanied by language annotations and            0.45
+
+bounding box annotations to indicate the target. The perfor-
+                                                                    0.35
+mance is evaluated using AUC and Precision (P) scores.
+   OTB99. OTB99 (Li et al. 2017b) is a small-scale bench-           0.25
+mark for RGB-language tracking, derived by supplementing
+language annotations to the OTB100 dataset. The evaluation                 Figure 3: EAO rank plots on VOT2020 and VOT2022.
+metrics include AUC and Precision (P) scores.
+
+                   Unification Comparison                           and benchmarks.
+As discussed in the main manuscript, while some ap-
+proaches (Yang et al. 2022; Zhu et al. 2023a; Wu et al. 2024;       Comparisons with more methods
+Hou et al. 2024; Hong et al. 2024; Chen et al. 2024) have
+emerged to unify SOT tasks, their level of unification re-          In the “State-of-the-Art Comparisons” section of the main
+mains limited. These methods either train separate models           manuscript, the methods compared are generally the lat-
+for each task or address only a subset of the tasks. In Tab. 9,     est high-performance approaches. Here, we provide more
+we compare the unification levels and the range of tasks cov-       comprehensive comparisons including earlier methods in
+ered by our SUTrack method with those of other methods.             Tab. 10, Tab. 11, Tab. 12, Tab. 13, and Tab. 15. These
+Framework-level unification refers to unifying the frame-           additional results further validate the effectiveness of our
+work across various tasks, while model-level unification in-        method, which continues to achieve state-of-the-art perfor-
+volves unifying the model parameters as well. Our SUTrack           mance.
+is the only method that achieves both framework-level and
+model-level unification while supporting all five SOT tasks.        Comparisons on NFS and UAV123
+                                                                    We provide SOTA comparisons on two additional small-
+   Additional State-of-the-Art Comparisons                          scale benchmarks: NFS (Kiani Galoogahi et al. 2017) and
+In this section, we provide additional state-of-the-art             UAV123 (Mueller, Smith, and Ghanem 2016). Tab. 14
+(SOTA) comparisons, including more compared methods                 shows that our SUTrack models also achieve competitive re-
+Table 14: SOTA comparisons on NFS and UAV123 bench-
+marks in AUC score.
+
+    Method                             NFS        UAV123
+    SUTrack-L384                       70.3         70.6
+    SUTrack-L224                       69.8         70.9
+    SUTrack-B384                       69.3         70.4
+    SUTrack-B224                       71.3         71.7
+    SUTrack-T224                       68.4         69.4
+    ARTrackV2-L384 (Bai et al. 2024)   68.4         71.7
+    LoRAT-L378 (Lin et al. 2024)       66.7         72.5
+    ARTrack-L384 (Wei et al. 2023)     67.9         71.2
+    SeqTrack-L384 (Chen et al. 2023)   66.2         68.5
+    OSTrack (Ye et al. 2022)           66.5         70.7
+    SimTrack (Chen et al. 2022a)        -           71.2
+    STARK (Yan et al. 2021a)           66.2         68.2
+    TransT (Chen et al. 2021)          65.7         69.1
+    TrDiMP (Wang et al. 2021a)         66.5         67.5
+    DiMP (Bhat et al. 2019)            61.8         64.3
+    Ocean (Zhang et al. 2020b)         49.4         57.4
+    ATOM (Danelljan et al. 2019)       58.3         63.2              SUTrack   ODTrack   LoRAT   ARTrack   SeqTrack   OSTrack   SimTrack
+
+    ECO (Danelljan et al. 2017)        52.2         53.5
+    RT-MDNet (Jung et al. 2018)        43.3         52.8           Figure 4: AUC scores of different attributes on LaSOT.
+    SiamFC(Bertinetto et al. 2016)     37.7         46.8
+
+
+                                                                 tasks: RGB-Depth, RGB-Thermal, RGB-Event, and RGB-
+sults, matching or surpassing the most recent trackers, AR-      Language tracking. Specifically, we remove the auxiliary
+TrackV2 (Bai et al. 2024) and LORAT (Lin et al. 2024).           modality input and use only the RGB modality for tracking.
+                                                                 The results shown in #2 of Tab. 16 indicate a decline in per-
+Comparisons on VOT2020 and VOT2022                               formance, confirming that our default model effectively uti-
+We evaluate our models on VOT2020 (Kristan et al. 2020)          lizes auxiliary modalities to enhance tracking performance.
+and VOT2022 (Kristan et al. 2023) benchmarks by submit-
+ting the bounding boxes using their protocol. The compared       Token for Task-recognition
+methods are also based on bounding box predictions. For          As discussed in the main manuscript, we compute the av-
+methods with multiple models, we report the performance          erage of all feature embeddings output by the transformer
+of their best-performing official model. As shown in Fig. 3,     model to produce a single vector for the task-recognition
+our SUTrack achieves the highest EAO scores of 34.8% and         prediction. We also explore two alternatives: using the text
+63.3% on VOT2020 and VOT2022, respectively.                      token embedding or an additional task token embedding for
+                                                                 this prediction. The results, shown in #4 and #5 of Tab. 16,
+Attribute-based Comparisons on LaSOT                             indicate that these methods perform slightly inferior to our
+In Fig.4, we present the attribute-based evaluation results on   default averaging approach. A potential reason is that the de-
+LaSOT(Fan et al. 2019). Our SUTrack model achieves the           fault averaging method offers more direct supervision for all
+best performance in most attributes, particularly excelling in   feature embeddings. Moreover, all these methods perform
+background clutter, deformation, illumination variation, and     better than the approach in Tab. 16 (#3) that does not use
+rotation, which require robust appearance modeling. This         the task-recognition training strategy, validating the effec-
+underscores SUTrack’s strong capabilities as a foundational      tiveness of this strategy.
+unified tracking model. However, we observe that SUTrack         Initialization of the multi-modal patch embedding
+performs less effectively in motion-related attributes, such
+as fast motion. This is due to two factors: first, we use a
+                                                                 parameters
+relatively small search region, and second, we have not inte-    As described in the “More Implementation Details” section
+grated advanced motion and temporal information modeling         of this appendix, we divide the pre-trained patch embedding
+techniques (Zheng et al. 2024; Bai et al. 2024). We plan to      parameters by a factor of two, and load them into the first
+investigate this in future work.                                 three and last three channels of the multi-modal patch em-
+                                                                 bedding in the SUTrack model. This ensures that the output
+              Additional Ablation Study                          value range remains consistent with the pre-trained model.
+                                                                 We refer to this approach as the half-copy method. Addi-
+In this section, we provide additional ablation studies. We      tionally, we explore two alternatives: i) Full-copy method:
+use SUTrack as the baseline model, and its results are re-       We load the pre-trained patch embedding parameters into the
+ported in Tab. 16 (#1).                                          first three and last three channels of the multi-modal patch
+                                                                 embedding without dividing them by two. The results are re-
+Auxiliary Modality                                               ported in Tab. 16 (#6). ii) Single-copy method: We load the
+We conduct experiments to investigate the impact of aux-         pre-trained patch embedding parameters into only the first
+iliary modalities on performance in four multi-modal SOT         three channels of the multi-modal patch embedding, while
+Table 15: State-of-the-art comparisons on four large-scale benchmarks. Methods employing the large model and the base model
+are compared separately. The top two results are highlight with bold and underlined fonts, respectively.
+
+                                              LaSOT               LaSOText             TrackingNet              GOT-10k
+   Method
+                                          AUC PN orm     P     AUC PN orm     P     AUC PN orm     P     AO     SR0.5 SR0.75
+   SUTrack-B384                           74.4   83.9   81.9   52.9   63.6   60.1   86.5   90.7   86.8   79.3   88.0   80.0
+   SUTrack-B224                           73.2   83.4   80.5   53.1   64.2   60.5   85.7   90.3   85.1   77.9   87.5   78.5
+   ODTrack-B384 (Zheng et al. 2024)       73.2   83.2   80.6   52.4   63.9   60.1   85.1   90.1   84.9   77.0   87.9   75.1
+   LoRAT-B378 (Lin et al. 2024)           72.9   81.9   79.1   53.1   64.8   60.6   84.2   88.4   83.0   73.7   82.6   72.9
+   ARTrackV2-384 (Bai et al. 2024)        73.0   82.0   79.6   52.9   63.4   59.1   85.7   89.8   85.5   77.5   86.0   75.5
+   AQATrack-256 (Xie et al. 2024)         71.4   81.9   78.6   51.2   62.2   58.9   83.8   88.6   83.1   73.8   83.2   72.1
+   OneTracker-384 (Hong et al. 2024)      70.5   79.9   76.5    -      -      -     83.7   88.4   82.7    -      -       -
+   EVPTrack-224 (Shi et al. 2024)         70.4   80.9   77.2   48.7   59.5   55.1   83.5   88.3    -     73.3   83.6   70.7
+   MixViT-288 (Cui et al. 2024)           69.6   79.9   75.9    -      -      -     83.5   88.3   83.5   72.5   82.4   69.9
+   DropTrack-224 (Wu et al. 2023)         71.8   81.8   78.1   52.7   63.9   60.2    -      -      -     75.9   86.8   72.0
+   ROMTrack-384 (Cai et al. 2023)         71.4   81.4   78.2   51.3   62.4   58.6   84.1   89.0   83.7   74.2   84.3   72.4
+   ARTrack-384 (Wei et al. 2023)          72.6   81.7   79.1   51.9   62.0   58.5   85.1   89.1   84.8   75.5   84.3   74.3
+   VideoTrack-256 (Xie et al. 2023)       70.2    -     76.4    -      -      -     83.8   88.7   83.1   72.9   81.9   69.8
+   SeqTrack-B384 (Chen et al. 2023)       71.5   81.1   77.8   50.5   61.6   57.5   83.9   88.8   83.6   74.5   84.3   71.4
+   GRM-B256 (Gao, Zhou, and Zhang 2023)   69.9   79.3   75.8    -      -      -     84.0   88.7   83.3   73.4   82.9   70.4
+   CiteTracker-384 (Li et al. 2023)       69.7   78.6   75.7    -      -      -     84.5   89.0   84.2   74.7   84.3   73.0
+   TATrack-B224 (He et al. 2023)          69.4   78.2   74.1    -      -      -     83.5   88.3   81.8   73.0   83.3   68.5
+   CTTrack-B320 (Song et al. 2023)        67.8   77.8   74.0    -      -      -     82.5   87.1   80.3   71.3   80.7   70.3
+   OSTrack-384 (Ye et al. 2022)           71.1   81.1   77.6   50.5   61.3   57.6   83.9   88.5   83.2   73.7   83.2   70.8
+   SimTrack-B224 (Chen et al. 2022a)      69.3   78.5    -      -      -      -     82.3   86.5    -     68.6   78.9   62.4
+   RTS (Paul et al. 2022)                 69.7   76.2   73.7    -      -      -     81.6   86.0   79.4    -      -       -
+   SwinTrack (Lin et al. 2022)            71.3    -     76.5   49.1    -     55.6   84.0    -     82.8   72.4    -     67.8
+   Mixformer-22k (Cui et al. 2022)        69.2   78.7   74.7    -      -      -     83.1   88.1   81.6   70.7   80.0   67.8
+   AiATrack (Gao et al. 2022)             69.0   79.4   73.8   47.7   55.6   55.4   82.7   87.8   80.4   69.6   63.2   80.0
+   UTT (Ma et al. 2022)                   64.6    -     67.2    -      -      -     79.7    -     77.0   67.2   76.3   60.5
+   CSWinTT (Song et al. 2022)             66.2   75.2   70.9    -      -      -     81.9   86.7   79.5   69.4   78.9   65.4
+   SLT (Kim et al. 2022)                  66.8   75.5    -      -      -      -     82.8   87.5   81.4   67.5   76.5   60.3
+   SBT (Xie et al. 2022)                  66.7    -     71.1    -      -      -      -      -      -     70.4   80.8   64.7
+   ToMP (Mayer et al. 2022)               68.5   79.2   73.5   45.9    -      -     81.5   86.4   78.9    -      -       -
+   KeepTrack (Mayer et al. 2021)          67.1   77.2   70.2   48.2    -      -      -      -      -      -      -       -
+   STARK (Yan et al. 2021a)               67.1   77.0    -      -      -      -     82.0   86.9    -     68.8   78.1   64.1
+   TransT (Chen et al. 2021)              64.9   73.8   69.0    -      -      -     81.4   86.7   80.3   67.1   76.8   60.9
+   TrDiMP (Wang et al. 2021a)             63.9    -     61.4    -      -      -     78.4   83.3   73.1   68.8   80.5   59.7
+   AutoMatch (Zhang et al. 2021b)         58.3    -     59.9    -      -      -     76.0    -     72.6   65.2   76.6   54.3
+   DSTrpn (Shen et al. 2021)              43.4   54.4    -      -      -      -     64.9    -     58.9    -      -       -
+   SiamAttn (Yu et al. 2020)              56.0   64.8    -      -      -      -     75.2   81.7    -      -      -       -
+   SiamBAN (Chen et al. 2020)             51.4   59.8    -      -      -      -      -      -      -      -      -       -
+   Ocean (Zhang et al. 2020b)             56.0   65.1   56.6    -      -      -      -      -      -     61.1   72.1   47.3
+   SiamR-CNN (Voigtlaender et al. 2020)   64.8   72.2    -      -      -      -     81.2   85.4   80.0   64.9   72.8   59.7
+   DiMP (Bhat et al. 2019)                56.9   65.0   56.7   39.2   47.6   45.1   74.0   80.1   68.7   61.1   71.7   49.2
+   SiamPRN++ (Li et al. 2019a)            49.6   56.9   49.1   34.0   41.6   39.6   73.3   80.0   69.4   51.7   61.6   32.5
+   ATOM (Danelljan et al. 2019)           51.5   57.6   50.5   37.6   45.9   43.0   70.3   77.1   64.8   55.6   63.4   40.2
+   MDNet (Nam and Han 2016)               39.7   46.0   37.3   27.9   34.9   31.8   60.6   70.5   56.5   29.9   30.3    9.9
+   Trackers with larger models
+   SUTrack-L384                           75.2   84.9   83.2   53.6   64.2   60.5   87.7   91.7   88.7   81.5   89.5   83.3
+   SUTrack-L224                           73.5   83.3   80.9   54.0   65.3   61.7   86.5   90.9   86.7   81.0   90.4   82.4
+   LoRAT-L378 (Lin et al. 2024)           75.1   84.1   82.0   56.6   69.0   65.1   85.6   89.7   85.4   77.5   86.2   78.1
+   ODTrack-L384 (Zheng et al. 2024)       74.0   84.2   82.3   53.9   65.4   61.7   86.1   91.0   86.7   78.2   87.2   77.3
+   ARTrackV2-L384 (Bai et al. 2024)       73.6   82.8   81.1   53.4   63.7   60.2   86.1   90.4   86.2   79.5   87.8   79.6
+   ARTrack-L384 (Wei et al. 2023)         73.1   82.2   80.3   52.8   62.9   59.7   85.6   89.6   86.0   78.5   87.4   77.8
+   MixViT-L384 (Cui et al. 2024)          72.4   82.2   80.1    -      -      -     85.4   90.2   85.7   75.7   85.3   75.1
+   SeqTrack-L384 (Chen et al. 2023)       72.5   81.5   79.3   50.7   61.6   57.5   85.5   89.8   85.8   74.8   81.9   72.2
+   GRM-L320 (Gao, Zhou, and Zhang 2023)   71.4   81.2   77.9    -      -      -     84.4   88.9   84.0    -      -      -
+   TATrack-L384 (He et al. 2023)          71.1   79.1   76.1    -      -      -     85.0   89.3   84.5    -      -      -
+   CTTrack-L320 (Song et al. 2023)        69.8   79.7   76.2    -      -      -     84.9   89.1   83.5   72.8   81.3   71.5
+   UNINEXT-L (Yan et al. 2023)            72.4   80.7   78.9   54.4   61.8   61.4   85.1   88.2   84.7    -      -      -
+   Mixformer-L320 (Cui et al. 2022)       70.1   79.9   76.3    -      -      -     83.9   88.9   83.1    -      -      -
+   Unicorn (Yan et al. 2022)              68.5    -      -      -      -      -     83.0   86.4   82.2    -      -      -
+   SimTrack-L224 (Chen et al. 2022a)      70.5   79.7    -      -      -      -     83.4   87.4    -     69.8   78.8   66.0
+Table 16: Ablation Study. ∆ denotes the performance                        Borsuk, V.; Vei, R.; Kupyn, O.; Martyniuk, T.; Krashenyi,
+change (averaged over benchmarks) compared with the                        I.; and Matas, J. 2022. FEAR: Fast, Efficient, Accurate and
+baseline.                                                                  Robust Visual Tracker. In ECCV, 644–663.
+ #         Method            LaSOT VOT-RGBD22 LasHeR VisEvent TNL2K ∆
+                                                                           Cai, Y.; Liu, J.; Tang, J.; and Wu, G. 2023. Robust Object
+ 1         Baseline           73.2    76.5     59.9   62.7   65.0    –
+                                                                           Modeling for Visual Tracking. In ICCV, 9589–9600.
+ 2 Multi-Modal → RGB-only      –      74.9     51.5   58.4   64.6   -3.7   Carion, N.; Massa, F.; Synnaeve, G.; Usunier, N.; Kirillov,
+ 3 W/o Task Recognition       72.6    76.5     59.8   62.5   63.9   -0.4
+ 4        Text Token          72.9    76.1     59.8   62.6   64.8   -0.2   A.; and Zagoruyko, S. 2020. End-to-End Object Detection
+ 5        Task Token          73.0    76.7     60.0   62.4   64.9   -0.1   with Transformers. In ECCV, 213–229.
+ 6 Half-Copy → Full-Copy      72.9    75.8     60.1   62.1   64.7   -0.3
+ 7 Half-Copy → Single-Copy    73.2    77.3     59.2   62.1   64.7   -0.2   Chen, B.; Li, P.; Bai, L.; Qiao, L.; Shen, Q.; Li, B.; Gan,
+                                                                           W.; Wu, W.; and Ouyang, W. 2022a. Backbone is All Your
+                                                                           Need: A Simplified Architecture for Visual Object Tracking.
+the last three channels are randomly initialized. The exper-               In ECCV, 375–392.
+imental results are shown in Tab. 16 (#7). The results show                Chen, T.; Saxena, S.; Li, L.; Lin, T.-Y.; Fleet, D. J.; and Hin-
+that our default half-copy method delivers the best perfor-                ton, G. E. 2022b. A Unified Sequence Interface for Vision
+mance, confirming its effectiveness.                                       Tasks. In NeurIPS, 31333–31346.
+                              Limitation                                   Chen, X.; Kang, B.; Wang, D.; Li, D.; and Lu, H. 2022c.
+                                                                           Efficient Visual Tracking via Hierarchical Cross-Attention
+One limitation of SUTrack is that, although it addresses a                 Transformer. In ECCVW, 461–477.
+wide range of existing SOT tasks, its generalization to po-
+tential new SOT tasks is unknown. In our ablation studies,                 Chen, X.; Kang, B.; Zhu, J.; Wang, D.; Peng, H.; and Lu, H.
+we demonstrate that SUTrack possesses some zero-shot gen-                  2024. Unified Sequence-to-Sequence Learning for Single-
+eralization ability on the current SOT tasks, but its capacity             and Multi-Modal Visual Object Tracking. arXiv preprint
+to handle new tasks that may arise in the future remains un-               arXiv:2304.14394.
+certain. A potential solution to this limitation could be the              Chen, X.; Peng, H.; Wang, D.; Lu, H.; and Hu, H. 2023.
+development of continual learning methods to enhance SU-                   SeqTrack: Sequence to Sequence Learning for Visual Object
+Track’s lifelong learning capabilities.                                    Tracking. In CVPR, 14572–14581.
+   Additionally, recent tracking algorithms (Zheng et al.                  Chen, X.; Yan, B.; Zhu, J.; Wang, D.; Yang, X.; and Lu, H.
+2024; Bai et al. 2024) have demonstrated that incorporat-                  2021. Transformer Tracking. In CVPR, 8126–8135.
+ing more temporal and motion information can significantly
+enhance the performance of base trackers. However, since                   Chen, Z.; Zhong, B.; Li, G.; Zhang, S.; and Ji, R. 2020.
+this work focuses on providing a foundational unified track-               Siamese Box Adaptive Network for Visual Tracking. In
+ing model, we have not yet explored techniques for mod-                    CVPR, 6668–6677.
+eling temporal and motion information. Consequently, the                   Cui, Y.; Jiang, C.; Wang, L.; and Wu, G. 2022. MixFormer:
+model’s full potential may not have been fully realized.                   End-to-End Tracking with Iterative Mixed Attention. In
+                                                                           CVPR, 13608–13618.
+                              References                                   Cui, Y.; Jiang, C.; Wang, L.; and Wu, G. 2024. MixFormer:
+Alayrac, J.-B.; Donahue, J.; Luc, P.; Miech, A.; Barr, I.; Has-            End-to-End Tracking with Iterative Mixed Attention. IEEE
+son, Y.; Lenc, K.; Mensch, A.; Millican, K.; Reynolds, M.;                 TPAMI, 0–18.
+Ring, R.; Rutherford, E.; Cabi, S.; Han, T.; Gong, Z.; Saman-              Cui, Y.; Song, T.; Wu, G.; and Wang, L. 2023. Mix-
+gooei, S.; Monteiro, M.; Menick, J. L.; Borgeaud, S.; Brock,               FormerV2: Efficient Fully Transformer Tracking. In
+A.; Nematzadeh, A.; Sharifzadeh, S.; Bińkowski, M. a.; Bar-               NeurIPS, 58736–58751.
+reira, R.; Vinyals, O.; Zisserman, A.; and Simonyan, K.
+2022. Flamingo: a Visual Language Model for Few-Shot                       Dai, K.; Zhang, Y.; Wang, D.; Li, J.; Lu, H.; and Yang, X.
+Learning. In NeurIPS, 23716–23736.                                         2020. High-Performance Long-Term Tracking with Meta-
+                                                                           Updater. In CVPR, 6298–6305.
+Bai, Y.; Zhao, Z.; Gong, Y.; and Wei, X. 2024. ARTrackV2:
+Prompting Autoregressive Tracker Where to Look and How                     Danelljan, M.; Bhat, G.; Khan, F. S.; and Felsberg, M. 2017.
+to Describe. In CVPR, 19048–19057.                                         ECO: Efficient Convolution Operators for Tracking. In
+                                                                           CVPR, 6638–6646.
+Bertinetto, L.; Valmadre, J.; Henriques, J. F.; Vedaldi, A.;
+and Torr, P. H. S. 2016. Fully-Convolutional Siamese Net-                  Danelljan, M.; Bhat, G.; Khan, F. S.; and Felsberg, M. 2019.
+works for Object Tracking. In ECCV, 850–865.                               ATOM: Accurate Tracking by Overlap Maximization. In
+Bhat, G.; Danelljan, M.; Gool, L. V.; and Timofte, R. 2019.                CVPR, 4660–4669.
+Learning Discriminative Model Prediction for Tracking. In                  Danelljan, M.; Gool, L. V.; and Timofte, R. 2020. Proba-
+ICCV, 6182–6191.                                                           bilistic regression for visual tracking. In CVPR, 7183–7192.
+Blatter, P.; Kanakis, M.; Danelljan, M.; and Van Gool, L.                  Deng, J.; Yang, Z.; Chen, T.; Zhou, W.; and Li, H. 2021.
+2023. Efficient Visual Tracking with Exemplar Transform-                   TransVG: End-to-End Visual Grounding with Transformers.
+ers. In WACV, 1571–1581.                                                   In ICCV, 1769–1779.
+Dosovitskiy, A.; Beyer, L.; Kolesnikov, A.; Weissenborn,          Kiani Galoogahi, H.; Fagg, A.; Huang, C.; Ramanan, D.; and
+D.; Zhai, X.; Unterthiner, T.; Dehghani, M.; Minderer, M.;        Lucey, S. 2017. Need for speed: A benchmark for higher
+Heigold, G.; Gelly, S.; et al. 2020. An Image is Worth 16x16      frame rate object tracking. In ICCV, 1125–1134.
+Words: Transformers for Image Recognition at Scale. In            Kim, M.; Lee, S.; Ok, J.; Han, B.; and Cho, M. 2022. To-
+ICLR.                                                             wards Sequence-Level Training for Visual Tracking. In
+Fan, H.; Bai, H.; Lin, L.; Yang, F.; Chu, P.; Deng, G.; Yu,       ECCV, 534–551.
+S.; Huang, M.; Liu, J.; Xu, Y.; et al. 2021. LaSOT: A             Kirillov, A.; Mintun, E.; Ravi, N.; Mao, H.; Rolland, C.;
+High-Quality Large-Scale Single Object Tracking Bench-            Gustafson, L.; Xiao, T.; Whitehead, S.; Berg, A. C.; Lo, W.-
+mark. IJCV, 439–461.                                              Y.; et al. 2023. Segment Anything. In ICCV, 4015–4026.
+Fan, H.; Lin, L.; Yang, F.; Chu, P.; Deng, G.; Yu, S.; Bai,       Kristan, M.; Leonardis, A.; Matas, J.; Felsberg, M.;
+H.; Xu, Y.; Liao, C.; and Ling, H. 2019. LaSOT: A High-           Pflugfelder, R.; Kämäräinen, J.-K.; Chang, H. J.; Danelljan,
+Quality Benchmark for Large-Scale Single Object Tracking.         M.; Zajc, L. Č.; Lukežič, A.; et al. 2023. The Tenth Visual
+In CVPR, 5374–5383.                                               Object Tracking VOT2022 Challenge Results. In ECCVW,
+Feng, Q.; Ablavsky, V.; Bai, Q.; Li, G.; and Sclaroff, S. 2020.   431–460. Springer.
+Real-Time Visual Object Tracking with Natural Language            Kristan, M.; Leonardis, A.; Matas, J.; Felsberg, M.;
+Description. In WACV, 700–709.                                    Pflugfelder, R.; Kämäräinen, J.-K.; Danelljan, M.; Zajc,
+Feng, Q.; Ablavsky, V.; Bai, Q.; and Sclaroff, S. 2019. Ro-       L. Č.; Lukežič, A.; Drbohlav, O.; et al. 2020. The Eighth
+bust Visual Object Tracking with Natural Language Region          Visual Object Tracking VOT2020 Challenge Results. In
+Proposal Network. arXiv preprint arXiv:1912.02048.                ECCV, 547–601.
+Feng, Q.; Ablavsky, V.; Bai, Q.; and Sclaroff, S. 2021.           Kristan, M.; Matas, J.; Leonardis, A.; Felsberg, M.;
+Siamese Natural Language Tracker: Tracking by Natural             Pflugfelder, R.; Kamarainen, J.-K.; Cehovin Zajc, L.; Dr-
+Language Descriptions with Siamese Trackers. In CVPR,             bohlav, O.; Lukezic, A.; Berg, A.; et al. 2019. The seventh
+5851–5860.                                                        visual object tracking VOT2019 challenge results. In IC-
+Gao, S.; Zhou, C.; Ma, C.; Wang, X.; and Yuan, J. 2022.           CVW, 0–0.
+AiATrack: Attention in Attention for Transformer Visual           Kristan, M.; Matas, J.; Leonardis, A.; Felsberg, M.;
+Tracking. In ECCV, 146–164.                                       Pflugfelder, R.; Kämäräinen, J.-K.; Chang, H. J.; Danelljan,
+Gao, S.; Zhou, C.; and Zhang, J. 2023. Generalized Rela-          M.; Cehovin, L.; Lukežič, A.; et al. 2021. The ninth visual
+tion Modeling for Transformer Tracking. In CVPR, 18686–           object tracking vot2021 challenge results. In ICCVW, 2711–
+18695.                                                            2738.
+Gao, Y.; Li, C.; Zhu, Y.; Tang, J.; He, T.; and Wang, F.          Krizhevsky, A.; Sutskever, I.; and Hinton, G. E. 2012. Im-
+2019. Deep Adaptive Fusion Network for High Performance           agenet Classification with Deep Convolutional Neural Net-
+RGBT Tracking. In ICCVW, 1–8.                                     works. In NeurIPS.
+He, K.; Zhang, C.; Xie, S.; Li, Z.; and Wang, Z. 2023.            Law, H.; and Deng, J. 2018. CornerNet: Detecting Objects
+Target-Aware Tracking with Long-Term Context Attention.           as Paired Keypoints. In ECCV, 734–750.
+In AAAI, 773–780.                                                 Li, B.; Wu, W.; Wang, Q.; Zhang, F.; Xing, J.; and Yan, J.
+He, K.; Zhang, X.; Ren, S.; and Sun, J. 2016. Deep Residual       2019a. SiamRPN++: Evolution of Siamese Visual Tracking
+Learning for Image Recognition. In CVPR, 770–778.                 with Very Deep Networks. In CVPR, 4282–4291.
+Hong, L.; Yan, S.; Zhang, R.; Li, W.; Zhou, X.; Guo, P.;          Li, B.; Yan, J.; Wu, W.; Zhu, Z.; and Hu, X. 2018. High
+Jiang, K.; Chen, Y.; Li, J.; Chen, Z.; and Zhang, W. 2024.        Performance Visual Tracking with Siamese Region Proposal
+OneTracker: Unifying Visual Object Tracking with Founda-          Network. In CVPR, 8971–8980.
+tion Models and Efficient Tuning. In CVPR, 19079–19091.           Li, C.; Liang, X.; Lu, Y.; Zhao, N.; and Tang, J. 2019b.
+Hou, X.; Xing, J.; Qian, Y.; Guo, Y.; Xin, S.; Chen, J.; Tang,    RGB-T Object Tracking: Benchmark and Baseline. PR,
+K.; Wang, M.; Jiang, Z.; Liu, L.; and Liu, Y. 2024. SD-           106977.
+STrack: Self-Distillation Symmetric Adapter Learning for          Li, C.; Liu, L.; Lu, A.; Ji, Q.; and Tang, J. 2020. Challenge-
+Multi-Modal Visual Object Tracking. In CVPR, 26551–               Aware RGBT Tracking. In ECCV, 222–237.
+26561.                                                            Li, C.; Xue, W.; Jia, Y.; Qu, Z.; Luo, B.; Tang, J.; and Sun, D.
+Huang, L.; Zhao, X.; and Huang, K. 2019. GOT-10k: A               2021. LasHeR: A Large-Scale High-Diversity Benchmark
+Large High-Diversity Benchmark for Generic Object Track-          for RGBT Tracking. IEEE TIP, 392–404.
+ing in the Wild. IEEE TPAMI, 1562–1577.                           Li, C.; Zhao, N.; Lu, Y.; Zhu, C.; and Tang, J. 2017a.
+Jung, I.; Son, J.; Baek, M.; and Han, B. 2018. Real-Time          Weighted sparse representation regularized graph learning
+MDNet. In ECCV, 83–98.                                            for RGB-T object tracking. In ACMMM, 1856–1864.
+Kang, B.; Chen, X.; Wang, D.; Peng, H.; and Lu, H. 2023.          Li, X.; Huang, Y.; He, Z.; Wang, Y.; Lu, H.; and Yang, M.-
+Exploring Lightweight Hierarchical Vision Transformers for        H. 2023. CiteTracker: Correlating Image and Text for Visual
+Efficient Visual Tracking. In ICCV, 9612–9621.                    Tracking. In ICCV, 9974–9983.
+Li, Y.; Yu, J.; Cai, Z.; and Pan, Y. 2022. Cross-Modal Tar-         Qian, Y.; Yan, S.; Lukežič, A.; Kristan, M.; Kämäräinen, J.-
+get Retrieval for Tracking by Natural Language. In CVPR,            K.; and Matas, J. 2021. DAL: A Deep Depth-Aware Long-
+4931–4940.                                                          term Tracker. In ICPR, 7825–7832.
+Li, Z.; Tao, R.; Gavves, E.; Snoek, C. G.; and Smeulders,           Radford, A.; Kim, J. W.; Hallacy, C.; Ramesh, A.; Goh, G.;
+A. W. 2017b. Tracking by Natural Language Specification.            Agarwal, S.; Sastry, G.; Askell, A.; Mishkin, P.; Clark, J.;
+In CVPR, 6495–6503.                                                 et al. 2021. Learning Transferable Visual Models from Nat-
+Lin, L.; Fan, H.; Xu, Y.; and Ling, H. 2022. SwinTrack: A           ural Language Supervision. In ICML, 8748–8763.
+Simple and Strong Baseline for Transformer Tracking. In             Rezatofighi, H.; Tsoi, N.; Gwak, J.; Sadeghian, A.; Reid,
+NeurIPS.                                                            I. D.; and Savarese, S. 2019. Generalized Intersection Over
+Lin, L.; Fan, H.; Zhang, Z.; Wang, Y.; Xu, Y.; and Ling,            Union: A Metric and a Loss for Bounding Box Regression.
+H. 2024. Tracking Meets LoRA: Faster Training, Larger               In CVPR, 658–666.
+Model, Stronger Performance. In ECCV.                               Shen, J.; Liu, Y.; Dong, X.; Lu, X.; Khan, F. S.; and Hoi,
+Lin, T.-Y.; Maire, M.; Belongie, S. J.; Bourdev, L. D.; Gir-        S. C. 2021. Distilled Siamese Networks for Visual Tracking.
+shick, R. B.; Hays, J.; Perona, P.; Ramanan, D.; Dollár, P.;       IEEE TPAMI, 8896–8909.
+and Zitnick, C. L. 2014. Microsoft COCO: Common Ob-                 Shi, L.; Zhong, B.; Liang, Q.; Li, N.; Zhang, S.; and Li, X.
+jects in Context. In ECCV, 740–755.                                 2024. Explicit Visual Prompts for Visual Object Tracking.
+Liu, Y.; Jing, X.-Y.; Nie, J.; Gao, H.; Liu, J.; and Jiang, G.-P.   In AAAI, 4838–4846.
+2018. Context-Aware Three-Dimensional Mean-Shift with               Song, Y.; Ma, C.; Wu, X.; Gong, L.; Bao, L.; Zuo, W.; Shen,
+Occlusion Handling for Robust Object Tracking in RGB-D              C.; Lau, R. W.; and Yang, M.-H. 2018. VITAL: VIsual
+Videos. IEEE TMM, 664–677.                                          Tracking via Adversarial Learning. In CVPR, 8990–8999.
+Liu, Z.; Lin, Y.; Cao, Y.; Hu, H.; Wei, Y.; Zhang, Z.; Lin,         Song, Z.; Luo, R.; Yu, J.; Chen, Y.-P. P.; and Yang, W. 2023.
+S.; and Guo, B. 2021. Swin Transformer: Hierarchical Vi-            Compact Transformer Tracker with Correlative Masked
+sion Transformer Using Shifted Windows. In ICCV, 10012–             Modeling. In AAAI, 2321–2329.
+10022.                                                              Song, Z.; Yu, J.; Chen, Y.-P. P.; and Yang, W. 2022. Trans-
+Loshchilov, I.; and Hutter, F. 2018. Decoupled Weight De-           former Tracking with Cyclic Shifting Window Attention. In
+cay Regularization. In ICLR, 1–9.                                   CVPR, 8791–8800.
+Ma, D.; and Wu, X. 2021. Capsule-based Object Tracking              Tang, C.; Wang, X.; Huang, J.; Jiang, B.; Zhu, L.; Zhang, J.;
+with Natural Language Specification. In ACM MM, 1948–               Wang, Y.; and Tian, Y. 2022. Revisiting Color-Event based
+1956.                                                               Tracking: A Unified Network, Dataset, and Metric. arXiv
+Ma, D.; and Wu, X. 2023. Tracking by Natural Language               preprint arXiv:2211.11010.
+Specification with Long Short-term Context Decoupling. In           Tao, R.; Gavves, E.; and Smeulders, A. W. M. 2016. Siamese
+ICCV, 14012–14021.                                                  Instance Search for Tracking. In CVPR, 1420–1429.
+Ma, F.; Shou, M. Z.; Zhu, L.; Fan, H.; Xu, Y.; Yang, Y.;            Tian, Y.; Xie, L.; Qiu, J.; Jiao, J.; Wang, Y.; Tian, Q.; and
+and Yan, Z. 2022. Unified transformer tracker for object            Ye, Q. 2024. Fast-iTPN: Integrally Pre-trained Transformer
+tracking. In CVPR, 8781–8790.                                       Pyramid Network with Token Migration. IEEE TPAMI, 1–
+Mayer, C.; Danelljan, M.; Bhat, G.; Paul, M.; Paudel, D. P.;        15.
+Yu, F.; and Van Gool, L. 2022. Transforming Model Predic-           Vaswani, A.; Shazeer, N.; Parmar, N.; Uszkoreit, J.; Jones,
+tion for Tracking. In CVPR, 8731–8740.                              L.; Gomez, A. N.; Kaiser, Ł.; and Polosukhin, I. 2017. At-
+Mayer, C.; Danelljan, M.; Paudel, D. P.; and Van Gool, L.           tention is All You Need. In NeurIPS, 5998–6008.
+2021. Learning Target Candidate Association to Keep Track           Voigtlaender, P.; Luiten, J.; Torr, P. H. S.; and Leibe, B. 2020.
+of What not to Track. In ICCV, 13444–13454.                         Siam R-CNN: Visual Tracking by Re-Detection. In CVPR,
+Mueller, M.; Smith, N.; and Ghanem, B. 2016. A benchmark            6578–6588.
+and simulator for UAV tracking. In ECCV, 445–461.                   Wang, C.; Xu, C.; Cui, Z.; Zhou, L.; Zhang, T.; Zhang, X.;
+Muller, M.; Bibi, A.; Giancola, S.; Alsubaihi, S.; and              and Yang, J. 2020. Cross-Modal Pattern-Propagation for
+Ghanem, B. 2018. TrackingNet: A Large-Scale Dataset and             RGB-T Tracking. In CVPR, 7064–7073.
+Benchmark for Object Tracking in the Wild. In ECCV, 300–            Wang, N.; Zhou, W.; Wang, J.; and Li, H. 2021a. Trans-
+317.                                                                former Meets Tracker: Exploiting Temporal Context for Ro-
+Nam, H.; and Han, B. 2016. Learning Multi-domain Con-               bust Visual Tracking. In CVPR, 1571–1580.
+volutional Neural Networks for Visual Tracking. In CVPR,            Wang, P.; Yang, A.; Men, R.; Lin, J.; Bai, S.; Li, Z.; Ma,
+4293–4302.                                                          J.; Zhou, C.; Zhou, J.; and Yang, H. 2022. OFA: Uni-
+Paul, M.; Danelljan, M.; Mayer, C.; and Van Gool, L. 2022.          fying Architectures, Tasks, and Modalities through a Sim-
+Robust Visual Tracking by Segmentation. In ECCV, 571–               ple Sequence-to-Sequence Learning Framework. In ICML,
+588.                                                                23318–23340.
+Peng, L.; Gao, J.; Liu, X.; Li, W.; Dong, S.; Zhang, Z.; Fan,       Wang, Q.; Zhang, L.; Bertinetto, L.; Hu, W.; and Torr, P.
+H.; and Zhang, L. 2024. VastTrack: Vast Category Visual             H. S. 2019. Fast Online Object Tracking and Segmentation:
+Object Tracking. arXiv preprint arXiv:2403.03493.                   A Unifying Approach. In CVPR, 1328–1338.
+Wang, X.; Li, C.; Yang, R.; Zhang, T.; Tang, J.; and Luo,        Yan, S.; Yang, J.; Käpylä, J.; Zheng, F.; Leonardis, A.; and
+B. 2018. Describe and attend to track: Learning natural lan-     Kämäräinen, J.-K. 2021c. DepthTrack: Unveiling the power
+guage guided structural representation and visual attention      of RGBD tracking. In ICCV, 10725–10733.
+for object tracking. arXiv preprint arXiv:1811.10014.            Yang, J.; Li, Z.; Zheng, F.; Leonardis, A.; and Song, J. 2022.
+Wang, X.; Li, J.; Zhu, L.; Zhang, Z.; Chen, Z.; Li, X.; Wang,    Prompting for Multi-Modal Tracking. In ACMMM, 3492–
+Y.; Tian, Y.; and Wu, F. 2024. VisEvent: Reliable Object         3500.
+Tracking via Collaboration of Frame and Event Flows. IEEE        Yang, Z.; Gong, B.; Wang, L.; Huang, W.; Yu, D.; and Luo,
+TCYB, 1997–2010.                                                 J. 2019. A fast and accurate one-stage approach to visual
+Wang, X.; Shu, X.; Zhang, Z.; Jiang, B.; Wang, Y.; Tian,         grounding. In ICCV, 4683–4693.
+Y.; and Wu, F. 2021b. Towards More Flexible and Ac-              Yang, Z.; Kumar, T.; Chen, T.; Su, J.; and Luo, J. 2020.
+curate Object Tracking with Natural Language: Algorithms         Grounding-tracking-integration. IEEE TCSVT, 3433–3443.
+and Benchmark. In CVPR, 13763–13773.                             Ye, B.; Chang, H.; Ma, B.; Shan, S.; and Chen, X. 2022.
+Wang, X.; Zhang, X.; Cao, Y.; Wang, W.; Shen, C.; and            Joint Feature Learning and Relation Modeling for Tracking:
+Huang, T. 2023. SegGPT: Towards Segmenting Everything            A One-Stream Framework. In ECCV, 341–357.
+in Context. In ICCV, 1130–1140.                                  Yu, Y.; Xiong, Y.; Huang, W.; and Scott, M. R. 2020. De-
+Wei, X.; Bai, Y.; Zheng, Y.; Shi, D.; and Gong, Y. 2023.         formable Siamese Attention Networks for Visual Object
+Autoregressive Visual Tracking. In CVPR, 9697–9706.              Tracking. In CVPR, 6728–6737.
+Wu, Q.; Yang, T.; Liu, Z.; Wu, B.; Shan, Y.; and Chan,           Zhang, H.; Zhang, L.; Zhuo, L.; and Zhang, J. 2020a. Object
+A. B. 2023. DropMAE: Masked Autoencoders with Spatial-           Tracking in RGB-T Videos Using Modal-Aware Attention
+Attention Dropout for Tracking Tasks. In CVPR, 14561–            Network and Competitive Learning. Sensors, 393.
+14571.                                                           Zhang, L.; Danelljan, M.; Gonzalez-Garcia, A.; van de Wei-
+Wu, Z.; Zheng, J.; Ren, X.; Vasluianu, F.-A.; Ma, C.; Paudel,    jer, J.; and Shahbaz Khan, F. 2019. Multi-modal fusion for
+D. P.; Van Gool, L.; and Timofte, R. 2024. Single-Model and      end-to-end RGB-T tracking. In ICCVW, 0–0.
+Any-Modality for Video Object Tracking. In CVPR, 19156–          Zhang, P.; Zhao, J.; Bo, C.; Wang, D.; Lu, H.; and Yang, X.
+19166.                                                           2021a. Jointly Modeling Motion and Appearance Cues for
+                                                                 Robust RGB-T Tracking. IEEE TIP, 3335–3347.
+Xiao, Y.; Yang, M.; Li, C.; Liu, L.; and Tang, J. 2022.
+Attribute-based Progressive Fusion Network for RGBT              Zhang, P.; Zhao, J.; Wang, D.; Lu, H.; and Ruan, X. 2022.
+Tracking. In AAAI, 2831–2838.                                    Visible-Thermal UAV Tracking: A Large-Scale Benchmark
+                                                                 and New Baseline. In CVPR, 8886–8895.
+Xie, F.; Chu, L.; Li, J.; Lu, Y.; and Ma, C. 2023. VideoTrack:
+Learning to Track Objects via Video Transformer. In CVPR,        Zhang, X.; Tian, Y.; Xie, L.; Huang, W.; Dai, Q.; Ye, Q.; and
+22826–22835.                                                     Tian, Q. 2023. HiViT: A Simpler and More Efficient Design
+                                                                 of Hierarchical Vision Transformer. In ICLR, 1–9.
+Xie, F.; Wang, C.; Wang, G.; Cao, Y.; Yang, W.; and Zeng,        Zhang, Z.; Liu, Y.; Wang, X.; Li, B.; and Hu, W. 2021b.
+W. 2022. Correlation-Aware Deep Tracking. In CVPR,               Learn to match: Automatic matching network design for vi-
+8751–8760.                                                       sual tracking. In ICCV, 13339–13348.
+Xie, J.; Zhong, B.; Mo, Z.; Zhang, S.; Shi, L.; Song, S.;        Zhang, Z.; Peng, H.; Fu, J.; Li, B.; and Hu, W. 2020b. Ocean:
+and Ji, R. 2024. Autoregressive Queries for Adaptive Track-      Object-Aware Anchor-Free Tracking. In ECCV, 771–787.
+ing with Spatio-Temporal Transformers. In CVPR, 19300–
+19309.                                                           Zhao, H.; Wang, X.; Wang, D.; Lu, H.; and Ruan, X. 2023.
+                                                                 Transformer Vision-Language Tracking via Proxy Token
+Xu, Y.; Wang, Z.; Li, Z.; Yuan, Y.; and Yu, G. 2020.             Guided Cross-Modal Fusion. PRL, 10–16.
+SiamFC++: Towards Robust and Accurate Visual Tracking            Zheng, Y.; Zhong, B.; Liang, Q.; Mo, Z.; Zhang, S.; and Li,
+with Target Estimation Guidelines. In AAAI, 12549–12556.         X. 2024. ODtrack: Online Dense Temporal Token Learning
+Yan, B.; Jiang, Y.; Sun, P.; Wang, D.; Yuan, Z.; Luo, P.; and    for Visual Tracking. In AAAI, 7588–7596.
+Lu, H. 2022. Towards Grand Unification of Object Tracking.       Zhou, L.; Zhou, Z.; Mao, K.; and He, Z. 2023. Joint Visual
+In ECCV, 733–751.                                                Grounding and Tracking with Natural Language Specifica-
+Yan, B.; Jiang, Y.; Wu, J.; Wang, D.; Luo, P.; Yuan, Z.; and     tion. In CVPR, 23151–23160.
+Lu, H. 2023. Universal Instance Perception as Object Dis-        Zhu, J.; Lai, S.; Chen, X.; Wang, D.; and Lu, H. 2023a. Vi-
+covery and Retrieval. In CVPR, 15325–15336.                      sual Prompt Multi-Modal Tracking. In CVPR, 9516–9526.
+Yan, B.; Peng, H.; Fu, J.; Wang, D.; and Lu, H. 2021a.           Zhu, X.-F.; Xu, T.; Tang, Z.; Wu, Z.; Liu, H.; Yang, X.;
+Learning Spatio-Temporal Transformer for Visual Tracking.        Wu, X.-J.; and Kittler, J. 2023b. RGBD1K: A Large-Scale
+In ICCV, 10448–10457.                                            Dataset and Benchmark for RGB-D Object Tracking. In
+Yan, B.; Peng, H.; Wu, K.; Wang, D.; Fu, J.; and Lu, H.          AAAI, 3870–3878.
+2021b. LightTrack: Finding Lightweight Neural Networks           Zhu, Y.; Li, C.; Luo, B.; Tang, J.; and Wang, X. 2019. Dense
+for Object Tracking via One-Shot Architecture Search. In         feature aggregation and pruning for RGBT tracking. In
+CVPR, 15180–15189.                                               ACMMM, 465–472.
+Zhu, Y.; Li, C.; Tang, J.; and Luo, B. 2020. Quality-Aware
+Feature Aggregation Network for Robust RGBT Tracking.
+IEEE TIV, 121–130.
+

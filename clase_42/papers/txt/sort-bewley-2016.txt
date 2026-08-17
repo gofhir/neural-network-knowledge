@@ -1,0 +1,310 @@
+                                                                          SIMPLE ONLINE AND REALTIME TRACKING
+
+                                                              Alex Bewley† , Zongyuan Ge† , Lionel Ott⋄ , Fabio Ramos⋄, Ben Upcroft†
+
+                                                                   Queensland University of Technology†, University of Sydney⋄
+
+
+                                                                 ABSTRACT                                                                   Accuracy vs. Speed
+
+
+
+
+arXiv:1602.00763v2 [cs.CV] 7 Jul 2017
+                                            This paper explores a pragmatic approach to multiple ob-
+                                        ject tracking where the main focus is to associate objects ef-                                                             Proposed
+                                        ficiently for online and realtime applications. To this end, de-
+                                        tection quality is identified as a key factor influencing track-
+                                        ing performance, where changing the detector can improve                         100
+                                        tracking by up to 18.9%. Despite only using a rudimentary
+
+                                                                                                            Speed (Hz)
+                                                                                                                               ↑ Realtime
+                                        combination of familiar techniques such as the Kalman Filter
+                                        and Hungarian algorithm for the tracking components, this
+                                        approach achieves an accuracy comparable to state-of-the-art                     10
+                                        online trackers. Furthermore, due to the simplicity of our
+                                        tracking method, the tracker updates at a rate of 260 Hz which
+                                        is over 20x faster than other state-of-the-art trackers.
+                                                                                                                          1
+                                            Index Terms— Computer Vision, Multiple Object Track-
+                                        ing, Detection, Data Association
+                                                                                                                                  15        20        25      30        35
+                                                                                                                                            Accuracy (MOTA)
+                                                            1. INTRODUCTION
+                                                                                                                                TDAM        LP2D           TBD         JPDA
+                                        This paper presents a lean implementation of a tracking-by-                             NOMT        DP NMS         SMOT        SORT
+                                        detection framework for the problem of multiple object track-                           MDP         TC ODAL        MHT DAM
+                                        ing (MOT) where objects are detected each frame and repre-
+                                        sented as bounding boxes. In contrast to many batch based          Fig. 1. Benchmark performance of the proposed method
+                                        tracking approaches [1, 2, 3], this work is primarily targeted     (SORT) in relation to several baseline trackers [6]. Each
+                                        towards online tracking where only detections from the pre-        marker indicates a trackers accuracy and speed measured in
+                                        vious and the current frame are presented to the tracker. Ad-      frames per second (FPS) [Hz], i.e. higher and more right is
+                                        ditionally, a strong emphasis is placed on efficiency for fa-      better.
+                                        cilitating realtime tracking and to promote greater uptake in
+                                        applications such as pedestrian tracking for autonomous ve-
+                                        hicles.                                                            the top ranked tracker, suggesting that detection quality could
+                                             The MOT problem can be viewed as a data associa-              be holding back the other trackers. Furthermore, the trade-off
+                                        tion problem where the aim is to associate detections across       between accuracy and speed appears quite pronounced, since
+                                        frames in a video sequence. To aid the data association pro-       the speed of most accurate trackers is considered too slow for
+                                        cess, trackers use various methods for modelling the motion        realtime applications (see Fig. 1). With the prominence of
+                                        [1, 4] and appearance [5, 3] of objects in the scene. The          traditional data association techniques among the top online
+                                        methods employed by this paper were motivated through              and batch trackers along with the use of different detections
+                                        observations made on a recently established visual MOT             used by the top tracker, this work explores how simple MOT
+                                        benchmark [6]. Firstly, there is a resurgence of mature data       can be and how well it can perform.
+                                        association techniques including Multiple Hypothesis Track-
+                                                                                                               Keeping in line with Occam’s Razor, appearance features
+                                        ing (MHT) [7, 3] and Joint Probabilistic Data Association
+                                                                                                           beyond the detection component are ignored in tracking and
+                                        (JPDA) [2] which occupy many of the top positions of the
+                                                                                                           only the bounding box position and size are used for both mo-
+                                        MOT benchmark. Secondly, the only tracker that does not
+                                                                                                           tion estimation and data association. Furthermore, issues re-
+                                        use the Aggregate Channel Filter (ACF) [8] detector is also
+                                                                                                           garding short-term and long-term occlusion are also ignored,
+                                           Thanks to ACARP for funding.                                    as they occur very rarely and their explicit treatment intro-
+duces undesirable complexity into the tracking framework.            ing integer programs. Similarly, Kim et al. [3] used an ap-
+We argue that incorporating complexity in the form of object         pearance model for each target to prune the MHT graph to
+re-identification adds significant overhead into the tracking        achieve state-of-the-art performance. However, these meth-
+framework – potentially limiting its use in realtime applica-        ods still delay the decision making which makes them unsuit-
+tions.                                                               able for online tracking.
+     This design philosophy is in contrast to many proposed              Many online tracking methods aim to build appearance
+visual trackers that incorporate a myriad of components to           models of either the individual objects themselves [17, 18, 12]
+handle various edge cases and detection errors [9, 10, 11, 12].      or a global model [19, 11, 4, 5] through online learning. In ad-
+This work instead focuses on efficient and reliable handling of      dition to appearance models, motion is often incorporated to
+the common frame-to-frame associations. Rather than aim-             assist associating detections to tracklets [1, 19, 4, 11]. When
+ing to be robust to detection errors, we instead exploit re-         considering only one-to-one correspondences modelled as bi-
+cent advances in visual object detection to solve the detec-         partite graph matching, globally optimal solutions such as the
+tion problem directly. This is demonstrated by comparing the         Hungarian algorithm [15] can be used [10, 20].
+common ACF pedestrian detector [8] with a recent convolu-                The method by Geiger et al. [20] uses the Hungarian algo-
+tional neural network (CNN) based detector [13]. Addition-           rithm [15] in a two stage process. First, tracklets are formed
+ally, two classical yet extremely efficient methods, Kalman          by associating detections across adjacent frames where both
+filter [14] and Hungarian method [15], are employed to han-          geometry and appearance cues are combined to form the affin-
+dle the motion prediction and data association components of         ity matrix. Then, the tracklets are associated to each other to
+the tracking problem respectively. This minimalistic formu-          bridge broken trajectories caused by occlusion, again using
+lation of tracking facilitates both efficiency and reliability for   both geometry and appearance cues. This two step associa-
+online tracking, see Fig. 1. In this paper, this approach is         tion method restricts this approach to batch computation. Our
+only applied to tracking pedestrians in various environments,        approach is inspired by the tracking component of [20], how-
+however due to the flexibility of CNN based detectors [13], it       ever we simplify the association to a single stage with basic
+naturally can be generalized to other objects classes.               cues as described in the next section.
+     The main contributions of this paper are:
+     • We leverage the power of CNN based detection in the
+                                                                                        3. METHODOLOGY
+        context of MOT.
+     • A pragmatic tracking approach based on the Kalman             The proposed method is described by the key components of
+        filter and the Hungarian algorithm is presented and          detection, propagating object states into future frames, asso-
+        evaluated on a recent MOT benchmark.                         ciating current detections with existing objects, and managing
+     • Code will be open sourced to help establish a baseline        the lifespan of tracked objects.
+        method for research experimentation and uptake in col-
+        lision avoidance applications.
+     This paper is organised as follows: Section 2 provides a        3.1. Detection
+short review of related literature in the area of multiple ob-       To capitalise on the rapid advancement of CNN based de-
+ject tracking. Section 3 describes the proposed lean tracking        tection, we utilise the Faster Region CNN (FrRCNN) detec-
+framework before the effectiveness of the proposed frame-            tion framework [13]. FrRCNN is an end-to-end framework
+work on standard benchmark sequences is demonstrated in              that consists of two stages. The first stage extracts features
+Section 4. Finally, Section 5 provides a summary of the learnt       and proposes regions for the second stage which then clas-
+outcomes and discusses future improvements.                          sifies the object in the proposed region. The advantage of
+                                                                     this framework is that parameters are shared between the two
+                2. LITERATURE REVIEW                                 stages creating an efficient framework for detection. Addi-
+                                                                     tionally, the network architecture itself can be swapped to any
+Traditionally MOT has been solved using Multiple Hypothe-            design which enables rapid experimentation of different ar-
+sis Tracking (MHT) [7] or the Joint Probabilistic Data Associ-       chitectures to improve the detection performance.
+ation (JPDA) filters [16, 2], which delay making difficult de-            Here we compare two network architectures provided
+cisions while there is high uncertainty over the object assign-      with FrRCNN, namely the architecture of Zeiler and Fer-
+ments. The combinatorial complexity of these approaches is           gus (FrRCNN(ZF)) [21] and the deeper architecture of Si-
+exponential in the number of tracked objects making them             monyan and Zisserman (FrRCNN(VGG16)) [22]. Through-
+impractical for realtime applications in highly dynamic envi-        out this work, we apply the FrRCNN with default parameters
+ronments. Recently, Rezatofighi et al. [2], revisited the JPDA       learnt for the PASCAL VOC challenge. As we are only inter-
+formulation [16] in visual MOT with the goal to address the          ested in pedestrians we ignore all other classes and only pass
+combinatorial complexity issue with an efficient approxima-          person detection results with output probabilities greater than
+tion of the JPDA by exploiting recent developments in solv-          50% to the tracking framework.
+                                                                        We found that the IOU distance of the bounding boxes
+Table 1. Comparison of tracking performance by switching
+                                                                    implicitly handles short term occlusion caused by passing tar-
+the detector component. Evaluated on Validation sequences
+                                                                    gets. Specifically, when a target is covered by an occluding
+as listed in [12].
+                                                                    object, only the occluder is detected, since the IOU distance
+ Tracker     Detector                 Detection          Tracking
+                                  Recall Precision    ID Sw MOTA
+                                                                    appropriately favours detections with similar scale. This al-
+                                                                    lows both the occluder target to be corrected with the detec-
+             ACF                   36.6       75.8    222    24.0
+ MDP [12]    FrRCNN(ZF)            46.2       67.2    245    22.6   tion while the covered target is unaffected as no assignment
+             FrRCNN(VGG16)         50.1       76.0    178    33.5   is made.
+             ACF                   33.6       65.7    224    15.1
+ Proposed    FrRCNN(ZF)            41.3       72.4    347    24.0
+             FrRCNN(VGG16)         49.5       77.5    274    34.0   3.4. Creation and Deletion of Track Identities
+                                                                    When objects enter and leave the image, unique identities
+                                                                    need to be created or destroyed accordingly. For creating
+    In our experiments, we found that the detection quality         trackers, we consider any detection with an overlap less than
+has a significant impact on tracking performance when com-          IOUmin to signify the existence of an untracked object. The
+paring the FrRCNN detections to ACF detections. This                tracker is initialised using the geometry of the bounding box
+is demonstrated using a validation set of sequences ap-             with the velocity set to zero. Since the velocity is unobserved
+plied to both an existing online tracker MDP [12] and the           at this point the covariance of the velocity component is ini-
+tracker proposed here. Table 1 shows that the best detector         tialised with large values, reflecting this uncertainty. Addi-
+(FrRCNN(VGG16)) leads to the best tracking accuracy for             tionally, the new tracker then undergoes a probationary pe-
+both MDP and the proposed method.                                   riod where the target needs to be associated with detections to
+                                                                    accumulate enough evidence in order to prevent tracking of
+3.2. Estimation Model                                               false positives.
+                                                                         Tracks are terminated if they are not detected for TLost
+Here we describe the object model, i.e. the representation and      frames. This prevents an unbounded growth in the number
+the motion model used to propagate a target’s identity into the     of trackers and localisation errors caused by predictions over
+next frame. We approximate the inter-frame displacements of         long durations without corrections from the detector. In all
+each object with a linear constant velocity model which is          experiments TLost is set to 1 for two reasons. Firstly, the con-
+independent of other objects and camera motion. The state of        stant velocity model is a poor predictor of the true dynamics
+each target is modelled as:                                         and secondly we are primarily concerned with frame-to-frame
+                                                                    tracking where object re-identification is beyond the scope of
+                    x = [u, v, s, r, u̇, v̇, ṡ]T ,                 this work. Additionally, early deletion of lost targets aids ef-
+                                                                    ficiency. Should an object reappear, tracking will implicitly
+where u and v represent the horizontal and vertical pixel loca-
+                                                                    resume under a new identity.
+tion of the centre of the target, while the scale s and r repre-
+sent the scale (area) and the aspect ratio of the target’s bound-
+ing box respectively. Note that the aspect ratio is considered                          4. EXPERIMENTS
+to be constant. When a detection is associated to a target, the
+detected bounding box is used to update the target state where      We evaluate the performance of our tracking implementa-
+the velocity components are solved optimally via a Kalman           tion on a diverse set of testing sequences as set by the MOT
+filter framework [14]. If no detection is associated to the tar-    benchmark database [6] which contains both moving and
+get, its state is simply predicted without correction using the     static camera sequences. For tuning the initial Kalman fil-
+linear velocity model.                                              ter covariances, IOUmin , and TLost parameters, we use the
+                                                                    same training/validation split as reported in [12]. The detec-
+                                                                    tion architecture used is the FrRCNN(VGG16) [22]. Source
+3.3. Data Association                                               code and sample detections from [22] are available online. 1
+In assigning detections to existing targets, each target’s
+bounding box geometry is estimated by predicting its new            4.1. Metrics
+location in the current frame. The assignment cost matrix is
+                                                                    Since it is difficult to use one single score to evaluate multi-
+then computed as the intersection-over-union (IOU) distance
+                                                                    target tracking performance, we utilise the evaluation metrics
+between each detection and all predicted bounding boxes
+                                                                    defined in [24], along with the standard MOT metrics [25]:
+from the existing targets. The assignment is solved optimally
+                                                                        • MOTA(↑): Multi-object tracking accuracy [25].
+using the Hungarian algorithm. Additionally, a minimum
+                                                                        • MOTP(↑): Multi-object tracking precision [25].
+IOU is imposed to reject assignments where the detection to
+target overlap is less than IOUmin .                                  1 https://github.com/abewley/sort
+                     Table 2. Performance of the proposed approach on MOT benchmark sequences [6].
+  Method                 Type     MOTA↑        MOTP↑       FAF↓     MT↑       ML↓       FP↓       FN↓      ID sw↓     Frag↓
+  TBD [20]              Batch        15.9        70.9      2.6%     6.4%     47.9%     14943     34777      1939      1963
+  ALExTRAC [5]          Batch        17.0        71.2      1.6%     3.9%     52.4%      9233     39933      1859      1872
+  DP NMS [23]           Batch        14.5        70.8      2.3%     6.0%     40.8%     13171     34814      4537      3090
+  SMOT [1]              Batch        18.2        71.2      1.5%     2.8%     54.8%      8780     40310      1148      2132
+  NOMT [11]             Batch        33.7        71.9      1.3%    12.2%     44.0%      7762     32547      442       823
+  RMOT [4]              Online       18.6        69.6      2.2%     5.3%     53.3%     12473     36835      684       1282
+  TC ODAL [17]          Online       15.1        70.5      2.2%     3.2%     55.8%     12970     38538      637       1716
+  TDAM [18]             Online       33.0        72.8      1.7%    13.3%     39.1%     10064     30617      464       1506
+  MDP [12]              Online       30.3        71.3      1.7%    13.0%     38.4%      9717     32422      680       1500
+  SORT (Proposed)       Online       33.4        72.1      1.3%    11.7%     30.9%      7318     32615      1001      1764
+
+
+    • FAF(↓): number of false alarms per frame.                    4.3. Runtime
+    • MT(↑): number of mostly tracked trajectories. I.e. tar-
+      get has the same label for at least 80% of its life span.    Most MOT solutions aim to push performance towards
+    • ML(↓): number of mostly lost trajectories. i.e. target is    greater accuracy, often, at the cost of runtime performance.
+      not tracked for at least 20% of its life span.               While slow runtime may be tolerated in offline processing
+    • FP(↓): number of false detections.                           tasks, for robotics and autonomous vehicles, realtime perfor-
+    • FN(↓): number of missed detections.                          mance is essential. Fig. 1 shows a number of trackers on
+    • ID sw(↓): number of times an ID switches to a different      the MOT benchmark [6] in relation to both their speed and
+      previously tracked object [24].                              accuracy. This shows that methods which achieve the best ac-
+    • Frag(↓): number of fragmentations where a track is in-       curacy also tend to be the slowest (bottom right in Figure 1).
+      terrupted by miss detection.                                 On the opposite end of the spectrum the fastest methods tend
+Evaluation measures with (↑), higher scores denote better          to have lower accuracy (top left corner in Figure 1). SORT
+performance; while for evaluation measures with (↓), lower         combines the two desirable properties, speed and accuracy,
+scores denote better performance. True positives are con-          without the typical drawbacks (top right in Figure 1). The
+sidered to have at least 50% overlap with the corresponding        tracking component runs at 260 Hz on single core of an Intel
+ground truth bounding box. Evaluation codes were down-             i7 2.5GHz machine with 16 GB memory.
+loaded from [6].
+
+4.2. Performance Evaluation
+Tracking performance is evaluated using the MOT benchmark                               5. CONCLUSION
+[6] test server where the ground truth for 11 sequences is with-
+held. Table 2 compares the proposed method SORT with sev-
+                                                                   In this paper, a simple online tracking framework is presented
+eral other baseline trackers. For brevity, only the most rel-
+                                                                   that focuses on frame-to-frame prediction and association.
+evant trackers, which are state-of-the-art online trackers in
+                                                                   We showed that the tracking quality is highly dependent on
+terms of accuracy, such as (TDAM [18], MDP [12]), the
+                                                                   detection performance and by capitalising on recent devel-
+fastest batch based tracker (DP NMS [23]), and all round
+                                                                   opments in detection, state-of-the-art tracking quality can be
+near online method (NOMT [11]) are listed. Additionally,
+                                                                   achieved with only classical tracking methods. The presented
+methods which inspired this approach (TBD [20], ALEx-
+                                                                   framework achieves best in class performance with respect
+TRAC [5], and SMOT [1]) are also listed. Compared to
+                                                                   to both speed and accuracy, while other methods typically
+these other methods, SORT achieves the highest MOTA score
+                                                                   sacrifice one for the other. The presented framework’s sim-
+for the online trackers and is comparable to the state-of-the-
+                                                                   plicity makes it well suited as a baseline, allowing for new
+art method NOMT which is significantly more complex and
+                                                                   methods to focus on object re-identification to handle long
+uses frames in the near future. Additionally, as SORT aims
+                                                                   term occlusion. As our experiments highlight the importance
+to focus on frame-to-frame associations the number of lost
+                                                                   of detection quality in tracking, future work will investigate a
+targets (ML) is minimal despite having similar false nega-
+                                                                   tightly coupled detection and tracking framework.
+tives to other trackers. Furthermore, since SORT focuses on
+frame-to-frame associations to grow tracklets, it has the low-
+est number of lost targets in comparison to the other methods.
+                    6. REFERENCES                                [13] S. Ren, K. He, R. Girshick, and J. Sun, “Faster R-CNN:
+                                                                      Towards Real-Time Object Detection with Region Pro-
+ [1] C. Dicle, M. Sznaier, and O. Camps, “The way they                posal Networks,” in Advances in Neural Information
+     move: Tracking multiple targets with similar appear-             Processing Systems, 2015.
+     ance,” in International Conference on Computer Vision,
+     2013.                                                       [14] R. Kalman, “A New Approach to Linear Filtering and
+                                                                      Prediction Problems,” Journal of Basic Engineering,
+ [2] S. H. Rezatofighi, A. Milan, Z. Zhang, A. Dick, Q. Shi,          vol. 82, no. Series D, pp. 35–45, 1960.
+     and I. Reid, “Joint Probabilistic Data Association Revis-
+                                                                 [15] H. W. Kuhn, “The Hungarian method for the assignment
+     ited,” in International Conference on Computer Vision,
+                                                                      problem,” Naval Research Logistics Quarterly, vol. 2,
+     2015.
+                                                                      pp. 83–97, 1955.
+ [3] C. Kim, F. Li, A. Ciptadi, and J. M. Rehg, “Multiple        [16] Y. Bar-Shalom, Tracking and data association, Aca-
+     Hypothesis Tracking Revisited,” in International Con-            demic Press Professional, Inc., 1987.
+     ference on Computer Vision, 2015.
+                                                                 [17] S. H. Bae and K. J. Yoon, “Robust Online Multi-Object
+ [4] J. H. Yoon, M. H. Yang, J. Lim, and K. J. Yoon,                  Tracking based on Tracklet Confidence and Online Dis-
+     “Bayesian Multi-Object Tracking Using Motion Con-                criminative Appearance Learning,” Computer Vision
+     text from Multiple Objects,” in Winter Conference on             and Pattern Recognition, 2014.
+     Applications of Computer Vision, 2015.
+                                                                 [18] Y. Min and J. Yunde, “Temporal Dynamic Appearance
+ [5] A. Bewley, L. Ott, F. Ramos, and B. Upcroft, “ALEx-              Modeling for Online Multi-Person Tracking,” oct 2015.
+     TRAC: Affinity Learning by Exploring Temporal Rein-         [19] A. Bewley, V. Guizilini, F. Ramos, and B. Upcroft,
+     forcement within Association Chains,” in International           “Online Self-Supervised Multi-Instance Segmentation
+     Conference on Robotics and Automation. 2016, IEEE.               of Dynamic Objects,” in International Conference on
+                                                                      Robotics and Automation. 2014, IEEE.
+ [6] L. Leal-Taixé, A. Milan, I. Reid, S. Roth, and
+     K. Schindler, “MOTChallenge 2015: Towards a Bench-          [20] A. Geiger, M. Lauer, C. Wojek, C. Stiller, and R. Ur-
+     mark for Multi-Target Tracking,” arXiv preprint, 2015.           tasun, “3D Traffic Scene Understanding from Movable
+                                                                      Platforms,” Pattern Analysis and Machine Intelligence,
+ [7] D. Reid, “An Algorithm for Tracking Multiple Targets,”           2014.
+     Automatic Control, vol. 24, pp. 843–854, 1979.
+                                                                 [21] M. Zeiler and R. Fergus, “Visualizing and Understand-
+ [8] P. Dollar, R. Appel, S. Belongie, and P. Perona, “Fast           ing Convolutional Networks,” in European Conference
+     Feature Pyramids for Object Detection,” Pattern Analy-           on Computer Vision, 2014.
+     sis and Machine Intelligence, vol. 36, 2014.
+                                                                 [22] K. Simonyan and A. Zisserman, “Very Deep Convolu-
+ [9] S. Oh, S. Russell, and S. Sastry, “Markov Chain                  tional Networks for Large-Scale Image Recognition,” in
+     Monte Carlo Data Association for General Multiple-               International Conference on Learning Representations,
+     Target Tracking Problems,” in Decision and Control.              2015.
+     2004, pp. 735–742, IEEE.
+                                                                 [23] H. Pirsiavash, D. Ramanan, and C. Fowlkes, “Globally-
+[10] A. Perera, C. Srinivas, A. Hoogs, and G. Brooksby,               optimal greedy algorithms for tracking a variable num-
+     “Multi-Object Tracking Through Simultaneous Long                 ber of objects,” in Computer Vision and Pattern Recog-
+     Occlusions and Split-Merge Conditions,” in Computer              nition. 2011, IEEE.
+     Vision and Pattern Recognition. 2006, IEEE.                 [24] Y. Li, C. Huang, and R. Nevatia, “Learning to asso-
+                                                                      ciate: HybridBoosted multi-target tracker for crowded
+[11] W. Choi, “Near-Online Multi-target Tracking with Ag-             scene,” in Computer Vision and Pattern Recognition.
+     gregated Local Flow Descriptor,” in International Con-           2009, IEEE.
+     ference on Computer Vision, 2015.
+                                                                 [25] K. Bernardin and R. Stiefelhagen, “Evaluating Multiple
+[12] Y. Xiang, A. Alahi, and S. Savarese, “Learning to Track          Object Tracking Performance: The CLEAR MOT Met-
+     : Online Multi-Object Tracking by Decision Making,”              rics,” Image and Video Processing, , no. May, 2008.
+     in International Conference on Computer Vision, 2015.
+

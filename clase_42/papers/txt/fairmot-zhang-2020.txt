@@ -1,0 +1,1171 @@
+                                         Noname manuscript No.
+                                         (will be inserted by the editor)
+
+
+
+
+                                         FairMOT: On the Fairness of Detection and Re-Identification in Multiple
+                                         Object Tracking
+                                         Yifu Zhang1† · Chunyu Wang2† · Xinggang Wang1∗ · Wenjun Zeng2 · Wenyu Liu1
+
+
+
+
+arXiv:2004.01888v6 [cs.CV] 19 Oct 2021
+                                         Received: date / Accepted: date
+
+
+                                         Abstract Multi-object tracking (MOT) is an important prob-        The source code and pre-trained models are released at https:
+                                         lem in computer vision which has a wide range of applica-         //github.com/ifzhang/FairMOT.
+                                         tions. Formulating MOT as multi-task learning of object de-
+                                                                                                           Keywords FairMOT · Multi-Object Tracking · One-Shot ·
+                                         tection and re-ID in a single network is appealing since it
+                                                                                                           Anchor-Free · Real-Time Inference
+                                         allows joint optimization of the two tasks and enjoys high
+                                         computation efficiency. However, we find that the two tasks
+                                         tend to compete with each other which need to be carefully        1 Introduction
+                                         addressed. In particular, previous works usually treat re-ID
+                                         as a secondary task whose accuracy is heavily affected by         Multi-Object Tracking (MOT) has been a longstanding goal
+                                         the primary detection task. As a result, the network is bi-       in computer vision (Bewley et al., 2016; Wojke et al., 2017;
+                                         ased to the primary detection task which is not fair to the       Chen et al., 2018a; Yu et al., 2016). The goal is to esti-
+                                         re-ID task. To solve the problem, we present a simple yet         mate trajectories for objects of interest presented in videos.
+                                         effective approach termed as FairMOT based on the anchor-         The successful resolution of the problem can immediately
+                                         free object detection architecture CenterNet. Note that it is     benefit many applications such as intelligent video analy-
+                                         not a naive combination of CenterNet and re-ID. Instead,          sis, human computer interaction, human activity recognition
+                                         we present a bunch of detailed designs which are critical to      (Wang et al., 2013; Luo et al., 2017), and even social com-
+                                         achieve good tracking results by thorough empirical studies.      puting.
+                                         The resulting approach achieves high accuracy for both de-             Most of the existing methods such as (Mahmoudi et al.,
+                                         tection and tracking. The approach outperforms the state-of-      2019; Zhou et al., 2018; Fang et al., 2018; Bewley et al.,
+                                         the-art methods by a large margin on several public datasets.     2016; Wojke et al., 2017; Chen et al., 2018a; Yu et al., 2016)
+                                                                                                           attempt to address the problem by two separate models: the
+                                                                                                           detection model firstly detects objects of interest by bound-
+                                         Yifu Zhang
+                                         E-mail: yifuzhang@hust.edu.cn
+                                                                                                           ing boxes in each frame, then the association model extracts
+                                                                                                           re-identification (re-ID) features from the image regions cor-
+                                         Chunyu Wang
+                                         E-mail: chnuwa@microsoft.com
+                                                                                                           responding to each bounding box, links the detection to one
+                                                                                                           of the existing tracks or creates a new track according to
+                                         Xinggang Wang
+                                         E-mail: xgwang@hust.edu.cn
+                                                                                                           certain metrics defined on features.
+                                                                                                                There has been remarkable progress on object detection
+                                         Wenjun Zeng
+                                         E-mail: wezeng@microsoft.com
+                                                                                                           (Ren et al., 2015; He et al., 2017; Zhou et al., 2019a; Red-
+                                                                                                           mon and Farhadi, 2018; Fu et al., 2020; Sun et al., 2021b,a)
+                                         Wenyu Liu
+                                         E-mail: liuwy@hust.edu.cn
+                                                                                                           and re-ID (Zheng et al., 2017a; Chen et al., 2018a) respec-
+                                         1
+                                                                                                           tively recently which in turn boosts the overall tracking ac-
+                                             Huazhong University of Science and Technology, Wuhan, China
+                                         2
+                                             Microsoft Research Asia, Beijing, China
+                                                                                                           curacy. However, these two-step methods suffer from scala-
+                                         ∗
+                                             Corresponding Author                                          bility issues. They cannot achieve real-time inference speed
+                                         †
+                                             Yifu Zhang and Chunyu Wang have contributed equally.          when there are a large number of objects in the environment
+                                                                                                           because the two models do not share features and they need
+2                                                                  Yifu Zhang, Chunyu Wang, Xinggang Wang, Wenjun Zeng, Wenyu Liu
+
+
+to apply the re-ID models for every bounding box indepen-               In this work, we present a simple approach termed as
+dently in the video.                                                FairMOT which elegantly address the three issues as illus-
+    With the maturity of multi-task learning (Kokkinos, 2017;       trated in Figure 1. FairMOT is built on top of CenterNet
+Chen et al., 2018b), one-shot trackers which estimate ob-           (Zhou et al., 2019a). In particular, the detection and re-ID
+jects and learn re-ID features using a single network have          tasks are treated equally in FairMOT which essentially dif-
+attracted more attention (Wang et al., 2020b; Voigtlaender          fers from the previous “detection first, re-ID secondary” frame-
+et al., 2019). For example, Voigtlaender et al. (Voigtlaender       work. It is worth noting that it is not a naive combination of
+et al., 2019) add a re-ID branch to Mask R-CNN to extract a         CenterNet and re-ID. Instead, we present a bunch of detailed
+re-ID feature for each proposal (He et al., 2017). It reduces       designs which are critical to achieve good tracking results by
+inference time by re-using backbone features for the re-ID          thorough empirical studies.
+network. But the performance drops remarkably compared                  Figure 1 shows an overview of FairMOT. It has a sim-
+to the two-step models. In fact, the detection accuracy is still    ple network structure which consists of two homogeneous
+good but the tracking performance drops a lot. For example,         branches for detecting objects and extracting re-ID features,
+the number of ID switches increases by a large margin. The          respectively. Inspired by (Zhou et al., 2019a; Law and Deng,
+result suggests that combining the two tasks is a non-trivial       2018; Zhou et al., 2019b; Duan et al., 2019), the detection
+task and should be treated carefully.                               branch is implemented in an anchor-free style which esti-
+                                                                    mates object centers and sizes represented as position-aware
+    In this paper, we investigate the reasons behind the fail-      measurement maps. Similarly, the re-ID branch estimates a
+ure, and present a simple yet effective solution. Three fac-        re-ID feature for each pixel to characterize the object cen-
+tors are identified to account for the failure. The first issue     tered at the pixel. Note that the two branches are completely
+is caused by anchors. Anchors are originally designed for           homogeneous which essentially differs from the previous
+object detection (Ren et al., 2015). However, we show that          methods which perform detection and re-ID in a two-stage
+anchors are not suitable for extracting re-ID features for two      cascaded style. So FairMOT eliminates the unfair disadvan-
+reasons. First, anchor-based one-shot trackers such as Track        tage of the detection branch as reflected in Table 1, effec-
+R-CNN (Voigtlaender et al., 2019) overlook the re-ID task           tively learns high-quality re-ID features and obtains a good
+because they need anchors to first detect objects (i.e. , us-       trade-off between detection and re-ID.
+ing RPN (Ren et al., 2015)) and then extract the re-ID fea-             We evaluate FairMOT on the MOT Challenge bench-
+tures based on the detection results (re-ID features are use-       mark via the evaluation server. It ranks first among all track-
+less when detection results are incorrect). So when competi-        ers on the 2DMOT15 (Leal-Taixé et al., 2015), MOT16 (Mi-
+tion occurs between the two tasks, it will favor the detection      lan et al., 2016), MOT17 (Milan et al., 2016) and MOT20
+task. Anchors also introduce a lot of ambiguity during train-       (Dendorfer et al., 2020) datasets. When we further pre-train
+ing the re-ID features because one anchor may correspond            our model using our proposed single image training method,
+to multiple identities and multiple anchors may correspond          it achieves additional gains on all datasets. In spite of the
+to one identity, especially in crowded scenes.                      strong results, the approach is very simple and runs at 30
+    The second issue is caused by feature sharing between           FPS on a single RTX 2080Ti GPU. It sheds light on the rela-
+the two tasks. Detection task and re-ID task are two totally        tionship between detection and re-ID in MOT and provides
+different tasks and they need different features. In general,       guidance for designing one-shot video tracking networks.
+re-ID features need more low-level features to discriminate             Our contributions are as follows:
+different instances of the same class while detection features       – We empirically demonstrate that the prevalent anchor-
+need to be similar for different instances. The shared fea-            based one-shot MOT architectures have limitations in
+tures in one-shot trackers will lead to feature conflict and           terms of learning effective re-ID features which has been
+thus reduce the performance of each task.                              overlooked. The issues severely limit the tracking per-
+    The third issue is caused by feature dimension. The di-            formance of those methods.
+mension of re-ID features is usually as high as 512 (Wang            – We present FairMOT to address the fairness issue. Fair-
+et al., 2020b) or 1024 (Zheng et al., 2017a) which is much             MOT is built on top of CenterNet. Although the adopted
+higher than that of object detection. We find that the huge            techniques are mostly not novel by themselves, we have
+difference between dimensions will harm the performance                new discoveries which are important to MOT. These are
+of the two tasks. More importantly, our experiments suggest            both novel and valuable.
+that it is a generic rule that learning low-dimensional re-ID        – We show that the achieved fairness allows our FairMOT
+features for “joint detection and re-ID” networks achieves             to obtain high levels of detection and tracking accuracy
+both higher tracking accuracy and efficiency. This also re-            and outperform the previous state-of-the-art methods by
+veals the difference between the MOT task and the re-ID                a large margin on multiple datasets such as 2DMOT15,
+task, which is overlooked in the field of MOT.                         MOT16, MOT17 and MOT20.
+FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking                                                     3
+
+                                                                                                      Detection
+                                                                                heatmap
+                                                              Detection
+
+                                                                  Re-ID
+                                                                                box size
+         Image                encoder-decoder
+
+                                                                                center offset
+                     Encoder-decoder network
+               1/4
+
+                      1/8
+                                                                                                        Re-ID
+                            1/16
+                                                                              Re-ID Embeddings
+                                   1/32                                                            extract features
+
+
+             down sample      up sample   keep resolution   sum
+
+
+Fig. 1 Overview of our one-shot tracker FairMOT. The input image is first fed to an encoder-decoder network to extract high resolution feature
+maps (stride=4). Then we add two homogeneous branches for detecting objects and extracting re-ID features, respectively. The features at the
+predicted object centers are used for tracking.
+
+
+2 Related Work                                                            2.1.2 Tracking Methods
+
+The best-performing MOT methods (Bergmann et al., 2019;                   Most of the existing works focus on the tracking part of the
+Brasó and Leal-Taixé, 2020; Hornakova et al., 2020; Yu et al.,          problem. We classify them into two classes according to the
+2016; Mahmoudi et al., 2019; Zhou et al., 2018; Wojke et al.,             type of cues used for association.
+2017; Chen et al., 2018a; Wang et al., 2020b; Voigtlaender
+et al., 2019; Zhang et al., 2021a) usually follow the tracking-
+by-detection paradigm, which first detect objects in each
+frame and then associate them over time. We classify the                  Location and Motion Cues based Methods SORT (Bew-
+existing works into two categories based on whether they                  ley et al., 2016) first uses Kalman Filter (Kalman, 1960)
+use a single model or separate models to detect objects and               to predict future locations of the tracklets, computes their
+extract association features. We discuss the pros and cons of             overlap with the detections, and uses Hungarian algorithm
+the methods and compare them to our approach.                             (Kuhn, 1955) to assign detections to tracklets. IOU-Tracker
+                                                                          (Bochinski et al., 2017) directly computes the overlap be-
+                                                                          tween the tracklets (of the previous frame) and the detec-
+2.1 Detection and Tracking by Separate Models                             tions without using using Kalman filter to predict future lo-
+                                                                          cations. The approach achieves 100K fps inference speed
+2.1.1 Detection Methods                                                   (detection time not counted) and works well when object
+                                                                          motion is small. Both SORT and IOU-Tracker are widely
+Most benchmark datasets such as MOT17 (Milan et al., 2016)                used in practice due to their simplicity.
+provide detection results obtained by popular methods such                    However, they may fail in challenging cases of crowded
+as DPM (Felzenszwalb et al., 2008), Faster R-CNN (Ren                     scenes and fast motion. Some works such as (Xiang et al.,
+et al., 2015) and SDP (Yang et al., 2016) such that the works             2015; Zhu et al., 2018; Chu and Ling, 2019; Chu et al.,
+that focus on the tracking part can be fairly compared on the             2019) leverage sophisticated single object tracking methods
+same object detections. Some works such as (Yu et al., 2016;              to get accurate object locations and reduce false negatives.
+Wojke et al., 2017; Zhou et al., 2018; Mahmoudi et al., 2019)             However, these methods are extremely slow especially when
+use a large private pedestrian detection dataset to train the             there are a large number of people in the scene. To solve the
+Faster R-CNN detector with VGG-16 (Simonyan and Zis-                      problem of trajectory fragments, Zhang et al. (Zhang et al.,
+serman, 2014) as backbone, which obtain better detection                  2020) propose a motion evaluation network to learn long-
+performance. A small number of works such as (Han et al.,                 range features of tracklets for association. MAT (Han et al.,
+2020) use more powerful detectors which are developed re-                 2020) is an enhanced SORT, which additionally models the
+cently such as Cascade R-CNN (Cai and Vasconcelos, 2018)                  camera motion and uses dynamic windows for long-range
+to boost the detection performance.                                       re-association.
+4                                                                  Yifu Zhang, Chunyu Wang, Xinggang Wang, Wenjun Zeng, Wenyu Liu
+
+
+Appearance Cues based Methods Some recent works (Yu                 Advantages and Limitations For the methods which per-
+et al., 2016; Mahmoudi et al., 2019; Zhou et al., 2018; Wojke       form detection and tracking by separate models, the main
+et al., 2017) propose to crop the image regions of the detec-       advantage is that they can develop the most suitable model
+tions and feed them to re-ID networks (Zheng et al., 2017b;         for each task separately without making compromise. In ad-
+Hermans et al., 2017; Luo et al., 2019a) to extract image           dition, they can crop the image patches according to the
+features. Then they compute the similarity between track-           detected bounding boxes and resize them to the same size
+lets and detections based on re-ID features and use Hungar-         before estimating re-ID features. This helps to handle the
+ian algorithm (Kuhn, 1955) to accomplish assignment. The            scale variations of objects. As a result, these approaches (Yu
+method is robust to fast motion and occlusion. In particular,       et al., 2016; Henschel et al., 2019) have achieved the best
+it can re-initialize lost tracks because appearance features        performance on the public datasets. However, they are usu-
+are relatively stable over time.                                    ally very slow because the two tasks need to be done sep-
+    There are also some works (Bae and Yoon, 2014; Tang             arately without sharing. So it is hard to achieve video rate
+et al., 2017; Sadeghian et al., 2017; Chen et al., 2018a; Xu        inference which is required in many applications.
+et al., 2019) focusing on enhancing appearance features. For
+example, Bae et al. (Bae and Yoon, 2014) propose an on-
+line appearance learning method to handle appearance vari-          2.2 Detection and Tracking by a Single Model
+ations. Tang et al. (Tang et al., 2017) leverage body pose
+                                                                    With the quick maturity of multi-task learning (Kokkinos,
+features to enhance the appearance features. Some meth-
+                                                                    2017; Ranjan et al., 2017; Sener and Koltun, 2018) in deep
+ods (Sadeghian et al., 2017; Xu et al., 2019; Shan et al.,
+                                                                    learning, joint detection and tracking using a single network
+2020) propose to fuse multiple cues (i.e. motion, appearance
+                                                                    has begun to attract more research attention. We classify
+and location) to get more reliable similarity. MOTDT (Chen
+                                                                    them into two classes as discussed in the following.
+et al., 2018a) proposes a hierarchical data association strat-
+egy which uses IoU to associate objects when appearance
+                                                                    Joint Detection and Re-ID The first class of methods (Voigt-
+features are not reliable. A small number of works such as
+                                                                    laender et al., 2019; Wang et al., 2020b; Liang et al., 2020;
+(Mahmoudi et al., 2019; Zhou et al., 2018; Fang et al., 2018)
+                                                                    Pang et al., 2021; Lu et al., 2020) perform object detection
+also propose to use more complicated association strategies
+                                                                    and re-ID feature extraction in a single network in order to
+such as group models and RNNs.
+                                                                    reduce inference time. For example, Track-RCNN (Voigt-
+                                                                    laender et al., 2019) adds a re-ID head on top of Mask R-
+Offline Methods The offline methods (or batch methods)              CNN (He et al., 2017) and regresses a bounding box and a
+(Zhang et al., 2008; Wen et al., 2014; Berclaz et al., 2011;        re-ID feature for each proposal. Similarly, JDE (Wang et al.,
+Zamir et al., 2012; Milan et al., 2013; Choi, 2015; Brasó and      2020b) is built on top of YOLOv3 (Redmon and Farhadi,
+Leal-Taixé, 2020; Hornakova et al., 2020) often achieve bet-       2018) which achieves near video rate inference. However,
+ter results by performing global optimization in the whole          the accuracy of these one-shot trackers is usually lower than
+sequence. For example, Zhang et al. (Zhang et al., 2008)            that of the two-step ones.
+build a graphical model with nodes representing detections
+in all frames. The optimal assignment is searched using a           Joint Detection and Motion Prediction The second class of
+min-cost flow algorithm, which exploits the specific struc-         methods (Feichtenhofer et al., 2017; Zhou et al., 2020; Pang
+ture of the graph to reach the optimum faster than Linear           et al., 2020; Peng et al., 2020; Sun et al., 2020) learn detec-
+Programming. Berclaz et al. (Berclaz et al., 2011) also treat       tion and motion features in a single network. D&T (Feicht-
+data association as a flow optimization task and use the K-         enhofer et al., 2017) propose a Siamese network which takes
+shortest paths algorithm to solve it, which significantly speeds    input of adjacent frames and predicts inter-frame displace-
+up computation and reduces parameters that need to be tuned.        ments between bounding boxes. Tracktor (Bergmann et al.,
+Milan et al. (Milan et al., 2013) formulate multi-object track-     2019) directly exploits the bounding box regression head to
+ing as minimization of a continuous energy and focus on             propagate identities of region proposals and thus removes
+designing the energy function. The energy depends on loca-          box association. Chained-Tracker (Peng et al., 2020) pro-
+tions and motion of all targets in all frames as well as phys-      poses an end-to-end model using adjacent frame pair as in-
+ical constraints. MPNTrack (Brasó and Leal-Taixé, 2020)           put and generating the box pair representing the same target.
+proposes trainable graph neural networks to perform a global        These box-based methods assume that bounding boxes have
+association of the entire set of detections and make MOT            a large overlap between frames, which is not true in low-
+fully differentiable. Lif T (Hornakova et al., 2020) formu-         frame rate videos. Different from these methods, Center-
+lates MOT as a lifted disjoint path problem and introduces          Track (Zhou et al., 2020) predicts the object center displace-
+lifted edges for long range temporal interactions, which sig-       ments with pair-wise inputs and associate by these point dis-
+nificantly reduces id switches and re-identify lost.                tances. It also provides the tracklets as an additional point-
+FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking                                                 5
+
+
+based heatmap input to the network and is then able to match            that they are extremely slow especially when there are a
+objects anywhere even if the boxes have no overlap at all.              large number of objects in videos.
+However, these methods only associate objects in adjacent
+frames without re-initializing lost tracks and thus have diffi-
+culty handling occlusion cases.                                         3 Unfairness Issues in One-shot Trackers
+    Our work belongs to the first class. We investigate the
+reasons why one-shot trackers get degraded association per-             In this section, we discuss three unfairness issues that arise
+formance and propose a simple approach to address the prob-             in the existing one-shot trackers which usually lead to de-
+lems. We show that the tracking accuracy is improved sig-               graded tracking performances.
+nificantly without heavy engineering efforts. A concurrent
+work CSTrack (Liang et al., 2020) also aims to alleviate the
+                                                                        3.1 Unfairness Caused by Anchors
+conflicts between the two tasks from the perspective of fea-
+tures, and propose a cross-correlation network module to                The existing one-shot trackers such as Track R-CNN (Voigt-
+enable the model to learn task-dependent representations.               laender et al., 2019) and JDE (Wang et al., 2020b) are mostly
+Different from CSTrack, our method tries to address the                 anchor-based since they are directly modified from anchor-
+problem from three perspectives in a systematic way and                 based object detectors such as YOLO (Redmon and Farhadi,
+obtains notably better performances than CSTrack. Center-               2018) and Mask R-CNN (He et al., 2017). However, we find
+Track (Zhou et al., 2020) is also related to our work since             that the anchor-based design is not suitable for learning re-
+it also uses center-based object detection framework. But               ID features which result in a large number of ID switches in
+CenterTrack does not extract appearance features and only               spite of the good detection results. We explain the problem
+links objects in adjacent frames. In contrast, FairMOT can              from three perspectives in the following.
+perform long-range association with the appearance features
+and handle occlusion cases.
+                                                                        Overlooked re-ID task Track R-CNN (Voigtlaender et al.,
+                                                                        2019) operates in a cascaded style which first estimates ob-
+Multi-task Learning There is a large body of literature (Liu
+                                                                        ject proposals (boxes) and then pools features from them
+et al., 2019; Kendall et al., 2018; Chen et al., 2018b; Guo
+                                                                        to estimate the corresponding re-ID features. The quality of
+et al., 2018; Sener and Koltun, 2018) on multi-task learn-
+                                                                        re-ID features heavily depends on the quality of proposals
+ing which may be used to balance the object detection and
+                                                                        during training (re-ID features are useless if proposals are
+re-ID feature extraction tasks. Uncertainty (Kendall et al.,
+                                                                        not accurate). As a result, in the training stage, the model is
+2018) uses task-dependent uncertainty to automatically bal-
+                                                                        seriously biased to estimate accurate object proposals rather
+ance the single-task losses. MGDA is proposed in (Sener
+                                                                        than high quality re-ID features. So the standard “detection
+and Koltun, 2018) to update the shared network weights by
+                                                                        first, re-ID secondary” design of the existing one-shot track-
+finding a common direction among the task-specific gradi-
+                                                                        ers makes the re-ID network not fairly learned.
+ents. GradNorm (Chen et al., 2018b) controls the training of
+multi-task networks by simulating the task-specific gradi-
+                                                                        One anchor corresponds to multiple identities The anchor-
+ents to be of similar magnitude. We evaluate these methods
+                                                                        based methods usually use ROI-Align to extract features
+in the experimental sections.
+                                                                        from proposals. Most sampling locations in ROI-Align may
+                                                                        belong to other disturbing instances or background as shown
+2.3 Video Object Detection                                              in Figure 2. As a result, the extracted features are not opti-
+                                                                        mal in terms of accurately and discriminatively representing
+Video Object Detection (VOD) (Feichtenhofer et al., 2017;               the target objects. Instead, we find in this work that it is sig-
+Luo et al., 2019b) is related to MOT in the sense that it lever-        nificantly better to only extract features at a single point, i.e.
+ages tracking to improve object detection performances in               , the estimated object centers.
+challenging frames. Although these methods were not eval-
+uated on MOT datasets, some of the ideas may be valuable                Multiple anchors correspond to one identity In both (Voigt-
+for the field. So we briefly review them in this section. Tang          laender et al., 2019) and (Wang et al., 2020b), multiple adja-
+et al. (Tang et al., 2019) detect object tubes in videos which          cent anchors, which correspond to different image patches,
+aims to enhance classification scores in challenging frames             may be forced to estimate the same identity as long as their
+based on their neighboring frames. The detection rate for               IOU is sufficiently large. This introduces severe ambigu-
+small objects increases by a large margin on the benchmark              ity for training. See Figure 2 for illustration. On the other
+dataset. Similar ideas have also been explored in (Han et al.,          hand, when an image undergoes small perturbation, e.g.,
+2016; Kang et al., 2016, 2017; Tang et al., 2019; Pang et al.,          due to data augmentation, it is possible that the same an-
+2020). One main limitation of these tube-based methods is               chor is forced to estimate different identities. In addition,
+6                                                                                Yifu Zhang, Chunyu Wang, Xinggang Wang, Wenjun Zeng, Wenyu Liu
+
+
+                             (Ⅰ)                                                       (Ⅱ)                                          (Ⅲ)
+       TrackRCNN Anchor-based                                     JDE Anchor-based                                FairMOT Anchor-free
+
+                                   bbox                                        bbox                                              bbox
+               RPN
+    backbone           ROI         class                         backbone      class                               backbone      heatmap
+
+                                   re-id                                       re-id                                             re-id
+
+
+                                                   (a) Comparison of the existing one-shot trackers and FairMOT
+
+
+
+
+     (b) One anchor contains multiple identities         (c) Multiple anchors response for one identity              (d) One point for one identity
+
+
+Fig. 2 (a) Track R-CNN treats detection as the primary task and re-ID as the secondary one. Both Track R-CNN and JDE are anchor-based. The
+red boxes represent positive anchors and the green boxes represent the target objects. The three methods extract re-ID features differently. Track
+R-CNN extracts re-ID features for all positive anchors using ROI-Align. JDE extracts re-ID features at the centers of all positive anchors. FairMOT
+extracts re-ID features at the object center. (b) The red anchor contains two different instances. So it will be forced to predict two conflicting classes.
+(c) Three different anchors with different image patches are response for predicting the same identity. (d) FairMOT extracts re-ID features only at
+the object center and can mitigate the problems in (b) and (c).
+
+
+feature maps in object detection are usually down-sampled                          notably harms the object detection accuracy due to the com-
+by 8/16/32 times to balance accuracy and speed. This is ac-                        petition of the two tasks which in turn also has negative im-
+ceptable for object detection but it is too coarse for learning                    pact to the final tracking accuracy. So considering that the
+re-ID features because features extracted at coarse anchors                        feature dimension in object detection is usually very low
+may not be aligned with object centers.                                            (class numbers + box locations), we propose to learn low-
+                                                                                   dimensional re-ID features to balance the two tasks; (2) the
+                                                                                   MOT task is different from the re-ID task. The MOT task
+3.2 Unfairness Caused by Features                                                  only performs a small number of one-to-one matchings be-
+                                                                                   tween two consecutive frames. The re-ID task needs to match
+For one-shot trackers, most features are shared between the                        the query to a large number of candidates and thus requires
+object detection and re-ID tasks. But it is well known that                        more discriminative and high-dimensional re-ID features.
+they actually require features from different layers to achieve                    So in MOT we do not need that high-dimensional features;
+the best results. In particular, object detection requires deep                    (3) learning low dimensional re-ID features improves the in-
+features to estimate object classes and positions but re-ID                        ference speed as will be shown in our experiments.
+requires low-level appearance features to distinguish differ-
+ent instances of the same class. From the perspective of the
+multi-task loss optimization, the optimization objectives of                       4 FairMOT
+detection and re-ID have conflicts. Thus, it is important to
+                                                                                   In this section, we present the technical details of FairMOT
+balance the loss optimization strategy of the two tasks.
+                                                                                   including the backbone network, the object detection branch,
+                                                                                   the re-ID branch as well as training details.
+
+3.3 Unfairness Caused by Feature Dimension
+                                                                                   4.1 Backbone Network
+The previous re-ID works usually learn very high dimen-
+sional features and have achieved promising results on the                         We adopt ResNet-34 as backbone in order to strike a good
+benchmarks of their field. However, we find that learning                          balance between accuracy and speed. An enhanced version
+lower-dimensional features is actually better for one-shot                         of Deep Layer Aggregation (DLA) (Zhou et al., 2019a) is
+MOT for three reasons: (1) high-dimensional re-ID features                         applied to the backbone to fuse multi-layer features as shown
+FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking                                                    7
+
+
+in Figure 1. Different from original DLA (Yu et al., 2018), it
+has more skip connections between low-level and high-level                            
+                                                                                  1 X (1 − M̂xy )α log(M̂xy ),             Mxy = 1;
+features which is similar to the Feature Pyramid Network                Lheat = −
+(FPN) (Lin et al., 2017a). In addition, convolution layers in                     N xy (1 − Mxy )β (M̂xy )α log(1 − M̂xy ) otherwise,
+all up-sampling modules are replaced by deformable con-                                                                                  (1)
+volution such that they can dynamically adjust the receptive
+field according to object scales and poses. These modifica-             where M̂ is the estimated heatmap, and α, β are the pre-
+tions are also helpful to alleviate the alignment issue. The            determined parameters in focal loss.
+resulting model is named DLA-34. Denote the size of in-
+put image as Himage × Wimage , then the output feature map              4.2.2 Box Offset and Size Heads
+has the shape of C × H × W where H = Himage /4 and
+W = Wimage /4. Besides DLA, other deep networks that                    The box offset head aims to localize objects more precisely.
+provide multi-scale convolutional features, such as Higher              Since the stride of the final feature map is four, it will in-
+HRNet (Cheng et al., 2020), can be used in our framework                troduce quantization errors up to four pixels. This branch
+to provide fair features for both detection and re-ID.                  estimates a continuous offset relative to the object center for
+                                                                        each pixel in order to mitigate the impact of down-sampling.
+                                                                        The box size head is responsible for estimating height and
+                                                                        width of the target box at each location.
+4.2 Detection Branch                                                        Denote the output of the size and offset heads as Ŝ ∈
+                                                                        R2×H×W and Ô ∈ R2×H×W , respectively. For each GT
+Our detection branch is built on top of CenterNet (Zhou                 box bi = (xi1 , y1i , xi2 , y2i ) in the image, we compute its size
+et al., 2019a) but other anchor-free methods such as (Duan              as si = (xi2 − xi1 , y2i − y1i ). Similarly, the GT offset is com-
+et al., 2019; Law and Deng, 2018; Dong et al., 2020; Yang                                   ci   ci      ci     ci
+                                                                        puted as oi = ( 4x , 4y )−(b 4x c, b 4y c). Denote the estimated
+et al., 2019) can also be used. We briefly describe the ap-
+                                                                        size and offset at the corresponding location as ŝi and ôi , re-
+proach to make this work self-contained. In particular, three
+                                                                        spectively. Then we enforce l1 losses for the two heads:
+parallel heads are appended to DLA-34 to estimate heatmaps,
+object center offsets and bounding box sizes, respectively.                      N
+                                                                                 X
+Each head is implemented by applying a 3 × 3 convolution                Lbox =          koi − ôi k1 + λs ksi − ŝi k1 .                 (2)
+(with 256 channels) to the output features of DLA-34, fol-                        i=1
+lowed by a 1 × 1 convolutional layer which generates the
+                                                                        where λs is a weighting parameter and is set 0.1 as the orig-
+final targets.
+                                                                        inal CenterNet (Zhou et al., 2019a).
+
+
+4.2.1 Heatmap Head
+                                                                        4.3 Re-ID Branch
+This head is responsible for estimating the locations of the            Re-ID branch aims to generate features that can distinguish
+object centers. The heatmap based representation, which is              objects. Ideally, affinity among different objects should be
+the de facto standard for the landmark point estimation task,           smaller than that between same objects. To achieve this goal,
+is adopted here. In particular, the dimension of the heatmap            we apply a convolution layer with 128 kernels on top of
+is 1 × H × W . The response at a location in the heatmap                backbone features to extract re-ID features for each location.
+is expected to be one if it collapses with the ground-truth             Denote the resulting feature map as E ∈ R128×H×W . The
+object center. The response decays exponentially as the dis-            re-ID feature Ex,y ∈ R128 of an object centered at (x, y)
+tance between the heatmap location and the object center.               can be extracted from the feature map.
+    For each GT box bi = (xi1 , y1i , xi2 , y2i ) in the image, we
+                                                   xi +xi
+compute the object center (cix , ciy ) as cix = 1 2 2 and ciy =         4.3.1 Re-ID Loss
+y1i +y2i
+    2 , respectively. Then its location on the feature map
+                                                     ci      ci         We learn re-ID features through a classification task. All
+                                    cix , ceiy ) = (b 4x c, b 4y c).
+is obtained by dividing the stride (e
+Then the heatmap response at the location (x, y) is com-                object instances of the same identity in the training set are
+                                  ci
+                               (x−e   2    ci
+                                   x ) +(y−ey)
+                                              2                         treated as the same class. For each GT box bi = (xi1 , y1i , xi2 , y2i )
+                   PN        −          2
+puted as Mxy = i=1 exp                2σc
+                                                where N rep-            in the image, we obtain the object center on the heatmap
+resents the number of objects in the image and σc represents             cix , ceiy ). We extract the re-ID feature vector Eceix ,eciy and use
+                                                                        (e
+the standard deviation. The loss function is defined as pixel-          a fully connected layer and a softmax operation to map it to
+wise logistic regression with focal loss (Lin et al., 2017b):           a class distribution vector P = {p(k), k ∈ [1, K]}. Denote
+8                                                                Yifu Zhang, Chunyu Wang, Xinggang Wang, Wenjun Zeng, Wenyu Liu
+
+
+the one-hot representation of the GT class label as Li (k).       4.5 Online Inference
+Then we compute the re-ID loss as:
+                                                                  In this section, we present how we perform online inference,
+                N X
+                  K
+                X
+                           i                                      and in particular, how we perform association with the de-
+Lidentity = −             L (k)log(p(k)),                  (3)
+                                                                  tections and re-ID features.
+                i=1 k=1
+
+where K is the number of all the identities in the training
+data. During the training process of our network, only the        4.5.1 Network Inference
+identity embedding vectors located at object centers are used
+for training, since we can obtain object centers from the ob-     The network takes a frame of size 1088×608 as input which
+jectness heatmap in testing.                                      is the same as the previous work JDE (Wang et al., 2020b).
+                                                                  On top of the predicted heatmap, we perform non-maximum
+                                                                  suppression (NMS) based on the heatmap scores to extract
+4.4 Training FairMOT                                              the peak keypoints. The NMS is implemented by a simple
+                                                                  3 × 3 max pooling operation as in (Zhou et al., 2019a). We
+We jointly train the detection and re-ID branches by adding       keep the locations of the keypoints whose heatmap scores
+the losses (i.e., Eq. (1), Eq. (2) and Eq. (3)) together. In      are larger than a threshold. Then, we compute the corre-
+particular, we use the uncertainty loss proposed in (Kendall      sponding bounding boxes based on the estimated offsets and
+et al., 2018) to automatically balance the detection and re-ID    box sizes. We also extract the identity embeddings at the es-
+tasks:                                                            timated object centers. In the next section, we discuss how
+                                                                  we associate the detected boxes over time using the re-ID
+Ldetection = Lheat + Lbox ,                                (4)
+                                                                  features.
+
+
+           1 1                  1
+Ltotal =    (     Ldetection + w2 Lidentity + w1 + w2 ),   (5)    4.5.2 Online Association
+           2 ew 1             e
+where w1 and w2 are learnable parameters that balance the         We follow MOTDT (Chen et al., 2018a) and use a hierarchi-
+two tasks. Specifically, given an image with a few objects        cal online data association method. We first initialize a num-
+and their corresponding IDs, we generate heatmaps, box off-       ber of tracklets based on the detected boxes in the first frame.
+set and size maps as well as one-hot class representation of      Then in the subsequent frame, we link the detected boxes to
+the objects. These are compared to the estimated measures         the existing tracklets using a two-stage matching strategy.
+to obtain losses to train the whole network.                      In the first stage, we use Kalman Filter (Kalman, 1960) and
+    In addition to the standard training strategy presented       re-ID features to obtain initial tracking results. In particu-
+above, we propose a single image training method to train         lar, we use Kalman Filter to predict tracklet locations in the
+FairMOT on image-level object detection datasets such as          following frame and compute the Mahalanobis distance Dm
+COCO (Lin et al., 2014) and CrowdHuman (Shao et al.,              between the predicted and detected boxes following Deep-
+2018). Different from CenterTrack (Zhou et al., 2020) that        SORT (Wojke et al., 2017). We fuse the Mahalanobis dis-
+takes two simulated consecutive frames as input, we only          tance with the cosine distance computed on re-ID features:
+take a single image as input. We assign each bounding box         D = λDr + (1 − λ)Dm where λ is a weighting parame-
+a unique identity and thus regard each object instance in the     ter and is set to be 0.98 in our experiments. Following JDE
+dataset as a separate class. We apply different transforma-       (Wang et al., 2020b), we set Mahalanobis distance to infin-
+tions to the whole image including HSV augmentation, ro-          ity if it is larger than a threshold to avoid getting trajecto-
+tation, scaling, translation and shearing. The single image       ries with large motion. We use Hungarian algorithm (Kuhn,
+training method has significant empirical values. First, the      1955) with a matching threshold τ1 = 0.4 to complete the
+pre-trained model on the CrowdHuman dataset can be di-            first stage matching.
+rectly used as a tracker and get acceptable results on MOT             In the second stage, for unmatched detections and track-
+datasets such as MOT17 (Milan et al., 2016). This is be-          lets, we try to match them according to the overlap between
+cause the CrowdHuman dataset can boost the human detec-           their boxes. In particular, we set the matching threshold τ2 =
+tion performance and also has strong domain generalization        0.5. We update the appearance features of the tracklets in
+ability. Our training of the re-ID features further enhances      each time step to handle appearance variations as in (Bolme
+the association ability of the tracker. Second, we can fine-      et al., 2010; Henriques et al., 2014). Finally, we initialize the
+tune it on other MOT datasets and further improve the final       unmatched detections as new tracks and save the unmatched
+performance.                                                      tracklets for 30 frames in case they reappear in the future.
+FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking                                                       9
+
+
+5 Experiments                                                           Table 1 Comparison of different re-ID feature extraction (sampling)
+                                                                        strategies on the validation set of MOT17. The rest of the models are
+5.1 Datasets and Metrics                                                kept the same for fair comparison. ↑ means the larger the better and ↓
+                                                                        means the smaller the better. The best results are shown in bold.
+
+There are six training datasets briefly introduced as follows:            Feature Extraction        Anchor MOTA↑ IDF1↑ IDs↓ TPR↑
+the ETH (Ess et al., 2008) and CityPerson (Zhang et al.,                  FairMOT (ROI-Align)         X        68.7     71.0    331    93.1
+2017) datasets only provide box annotations so we only train              FairMOT (POS-Anchor)        X        69.0     70.3    434    93.9
+the detection branch on them. The CalTech (Dollár et al.,                FairMOT (Center)                     69.1     72.8    299    94.4
+                                                                          FairMOT (Center-BI)                  68.8     74.3    303    94.9
+2009), MOT17 (Milan et al., 2016), CUHK-SYSU (Xiao                        FairMOT (Two-Stage)         X        69.0     68.2    388    90.5
+et al., 2017) and PRW (Zheng et al., 2017a) datasets provide
+both box and identity annotations which allows us to train
+both branches. Some videos in ETH also appear in the test-
+ing set of the MOT17 which are removed from the training                5.3.1 Anchors
+dataset for fair comparison. The overall training strategy is
+described in Section 4.4, which is the same as (Wang et al.,            We evaluate four strategies for sampling re-ID features from
+2020b). For the self-supervised training of our method, we              the detected boxes which are frequently used by previous
+use the CrowdHuman dataset (Shao et al., 2018) which only               works (Wang et al., 2020b) (Voigtlaender et al., 2019). The
+contains object bounding box annotations.                               first strategy is ROI-Align used in Track R-CNN (Voigt-
+    We evaluate our approach on the testing sets of four                laender et al., 2019). It samples features from the detected
+benchmarks: 2DMOT15, MOT16, MOT17 and MOT20. We                         proposals using ROI-Align. As discussed previously, many
+use Average Precision (AP) to evaluate detection results.               sampling locations deviate from object centers. The second
+Following (Wang et al., 2020b), we use True Positive Rate               strategy is POS-Anchor used in JDE (Wang et al., 2020b). It
+(TPR) at a false accept rate of 0.1 for evaluating re-ID fea-           samples features from positive anchors which may also de-
+tures. In particular, we extract re-ID features which corre-            viate from object centers. The third strategy is “Center” used
+spond to ground truth boxes and use each feature to retrieve            in FairMOT. It only samples features at object centers. Re-
+N most similar candidates. We report the true positive rate at          call that, in our approach, re-ID features are extracted from
+false accept rate 0.1 (TPR@FAR=0.1). Note that TPR is not               discretized low-resolution maps. In order to sample features
+affected by detection results and faithfully reflects the qual-         at accurate object locations, we also try to apply Bi-linear
+ity of re-ID features. We use the CLEAR metric (Bernardin               Interpolation (Center-BI) to extract more accurate features.
+and Stiefelhagen, 2008) (i.e. MOTA, IDs) and IDF1 (Ristani
+                                                                             We also evaluate a two-stage approach to first detect ob-
+et al., 2016) to evaluate overall tracking accuracy.
+                                                                        ject bounding boxes and then extract re-ID features. In the
+                                                                        first stage, the detection part is the same as our FairMOT. In
+                                                                        the second stage, we use ROI-Align (He et al., 2017) to ex-
+5.2 Implementation Details
+                                                                        tract the backbone features based on the detected bounding
+We use a variant of DLA-34 proposed in (Zhou et al., 2019a)             boxes and then use a re-ID head (a fully connected layer)
+as our default backbone. The model parameters pre-trained               to get re-ID features. The main difference between the two-
+on the COCO dataset (Lin et al., 2014) are used to initial-             stage approach and the one-stage “ROI-Align” approach is
+ize our model. We train our model with the Adam opti-                   that the re-ID features of the two-stage approach rely on the
+mizer (Kingma and Ba, 2014) for 30 epochs with a start-                 detection results while those of the one-stage approach do
+ing learning rate of 10−4 . The learning rate decays to 10−5            not during training.
+at 20 epochs. The batch size is set to be 12. We use stan-                   The results are shown in Table 1. Note that the five ap-
+dard data augmentation techniques including rotation, scal-             proaches are all built on top of FairMOT. The only differ-
+ing and color jittering. The input image is resized to 1088 ×           ence lies in how they sample re-ID features from detected
+608 and the feature map resolution is 272×152. The training             boxes. First, we can see that our approach (Center) obtains
+step takes about 30 hours on two RTX 2080 Ti GPUs.                      notably higher IDF1 score and True Positive Rate (TPR)
+                                                                        than ROI-Align, POS-Anchor and the two-stage approach.
+                                                                        This metric is independent of object detection results and
+5.3 Ablative Studies                                                    faithfully reflects the quality of re-ID features. In addition,
+                                                                        the number of ID switches (IDs) of our approach is also sig-
+In this section, we present rigorous studies of the three crit-         nificantly smaller than the two baselines. The results vali-
+ical factors in FairMOT including anchor-less re-ID feature             date that sampling features at object centers is more effective
+extraction, feature fusion and feature dimensions by care-              than the strategies used in the previous works. Bi-linear In-
+fully designing a number of baseline methods.                           terpolation (Center-BI) achieves even higher TPR than Cen-
+10                                                                   Yifu Zhang, Chunyu Wang, Xinggang Wang, Wenjun Zeng, Wenyu Liu
+
+
+ter because it samples features at more accurate locations.           MOTA), meaning that ensuring different tasks to have simi-
+The two-stage approach harms the quality of the re-ID fea-            lar gradient magnitude is helpful to handle feature conflicts.
+tures.                                                                However, GradNorm takes longer training time. So we use
+                                                                      the simpler Uncertainty method which is slightly worse than
+                                                                      GradNorm in the rest of our experiments.
+5.3.2 Balancing Multi-task Losses
+
+We evaluate different methods for balancing the losses of               5.3.3 Multi-layer Feature Fusion
+different tasks including Uncertainty (Kendall et al., 2018),
+GradNorm (Chen et al., 2018b) and MGDA-UB (Sener and                    We compare a number of backbones such as vanilla ResNet
+Koltun, 2018). We also evaluate a baseline with fixed weights           (He et al., 2016), Feature Pyramid Network (FPN) (Lin et al.,
+obtained by grid search. We implement two versions for the              2017a), High-Resolution Network (HRNet) (Wang et al.,
+uncertainty-based method. The first is “Uncertainty-task” which 2020a), DLA (Zhou et al., 2019a), HarDNet (Chao et al.,
+learns two parameters for the detection loss and re-ID loss,            2019) and RegNet (Radosavovic et al., 2020). Note that the
+respectively. The second is “Uncertainty-branch” which learns rest of the factors of these approaches such as training datasets
+four parameters for the heatmap loss, box size loss, offset             are all controlled to be the same for fair comparison. In par-
+loss and re-ID losses, respectively.                                    ticular, the stride of the final feature map is four for all meth-
+                                                                        ods. We add three up-sampling operations for vanilla ResNet
+                                                                        and RegNet to obtain feature maps of stride four. We divide
+Table 2 Comparison of different loss weighting strategies on the vali-  these backbones into two categories, one without multi-layer
+dation set of the MOT17 dataset. The best results are shown in bold.    fusion (i.e. ResNet and RegNet) and one with (i.e. FPN, HR-
+   Loss Weighting         MOTA↑ IDF1↑ IDs↓ AP↑ TPR↑                     Net, DLA and HarDNet).
+   Fixed                   69.6       71.6     387 81.9        93.8
+                                                                             The results are shown in Table 3. We also list the Ima-
+   Uncertainty-task        69.1       72.8     299 81.2        94.4     geNet (Russakovsky et al., 2015) classification accuracy Acc
+   Uncertainty-branch      68.5       73.3     319 81.0        96.0     in order to demonstrate that a strong backbone in one task
+   MGDA-UB                 63.6       67.9     355 78.5        97.0     does not mean it will also get good results in MOT. So de-
+   GradNorm                69.5       73.8     311 81.3        95.1
+                                                                        tailed studies for MOT are necessary and useful.
+                                                                             By comparing the results of ResNet-34 and ResNet-50,
+                                                                        we find that blindly using a larger network does not notably
+                                                                        improve the overall tracking result measured by MOTA. In
+                                                                        particular, the quality of re-ID features barely benefits from
+Table 3 Comparison of different backbones on the validation set of      the larger network. For example, IDF1 only improves from
+MOT17 dataset. “MLFF” is short for multi-layer feature fusion. “Acc”
+                                                                        67.2% to 67.7% and TPR improves from 90.9% to 91.9%,
+is short for ImageNet classification accuracy. The results of the Ima-
+geNet classification accuracy are from the original papers of the back- respectively. In addition, the number of ID switches even
+bone networks. The best results are shown in bold.                      increases from 435 to 501. By comparing ResNet-50 and
+                                                                        RegNetY-4.0GF, we can find that using a even more power-
+ Backbone              w/ MLFF MOTA↑ IDF1↑ IDs↓ AP↑ TPR↑ Acc↑           ful backbone also achieves very limited gain. The re-ID met-
+ ResNet-34                        63.6    67.2 435 75.1 90.9 75.2       ric TPR of RegNetY-4.0GF is the same as ResNet-50 (91.9)
+ ResNet-50                        63.7    67.7 501 75.5 91.9 77.8       while the ImageNet classification accuracy improves a lot
+ RegNetY-4.0GF                    63.9    68.0 407 75.8 91.9 79.4       (79.4 vs 77.8). All these results suggest that directly using
+ ResNet-34-FPN            X       64.4    69.6 369 77.7 94.2 75.2
+ RegNetY-4.0GF-FPN        X       65.8    69.3 257 78.0 94.3 79.4       a larger or a more powerful network cannot always improve
+ HRNet-W18                X       67.4    74.3 315 80.5 94.6 76.8       the final tracking accuracy.
+ DLA-34                   X       69.1    72.8 299 81.2 94.4 76.9
+                                                                             In contrast, ResNet-34-FPN, which actually has fewer
+ HarDNet-85               X       71.2    74.5 198 82.6 95.8 77.0
+                                                                        parameters than ResNet-50, achieves a larger MOTA score
+                                                                        than ResNet-50. More importantly, TPR improves signifi-
+                                                                        cantly from 90.9% to 94.2%. By comparing RegNetY-4.0GF-
+     The results are shown in Table 2. We can see that the              FPN with RegNetY-4.0GF, we can see that adding multi-
+“Fixed” method gets the best MOTA and AP but the worst                  layer feature fusion structure (Lin et al., 2017a) to RegNet
+IDs and TPR. It means that the model is biased to the de-               brings considerable gains (+1.9 MOTA, +1.3 IDF1, -36.9%
+tection task. MGDA-UB has the highest TPR but the lowest                IDs, +2.2 AP, +2.3 TPR), which suggests that multi-layer
+MOTA and AP, which indicates that the model is biased to                feature fusion has clear advantages over simply using larger
+the re-ID task. Similar results can be found in (Wang et al.,           or more powerful networks.
+2020b; Vandenhende et al., 2021). GradNorm gets the best                     In addition, DLA-34, which is also built on top of ResNet-
+overall tracking accuracy (highest IDF1 and second highest              34 but has more levels of feature fusion, achieves an even
+FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking                                                     11
+
+
+Table 4 Demonstration of feature conflict between the detection and         Table 6 Evaluation of re-ID feature dimensions of JDE and FairMOT
+re-ID tasks on the validation set of the MOT17 dataset. “-det” means        on the validation set of MOT17. The best results of the same method
+only the detection branch is trained and the re-ID branch is randomly       are shown in bold.
+initialized. The best results are shown in bold.
+
+     Backbone          MOTA↑      IDF1↑     IDs↓     AP↑       TPR↑          Method     Dim MOTA ↑ IDF1 ↑ IDs ↓ AP↑ TPR ↑ FPS↑
+     ResNet-34           63.6      67.2     435      75.1      90.9          JDE        512      59.9      64.1    536    73.3   76.8    22.2
+     ResNet-34-det       63.7      60.4     597      76.1      36.7          JDE         64      60.3      65.0    474    73.6   82.0    24.4
+     DLA-34              69.1      72.8     299      81.2      94.4
+                                                                             FairMOT    512      68.5      73.7    312    80.9   94.6    24.1
+                                                                             FairMOT     64      69.2      73.3    283    81.3   94.3    26.8
+
+Table 5 The impact of different backbones on objects of different
+scales. Small: area smaller than 7000 pixels; Medium: area from 7000
+to 15000 pixels; Large: area larger than 15000 pixels. The best results     detection result measured by AP improves by 1 point if we
+are shown in bold.                                                          do not train the re-ID branch which shows the conflict be-
+                                                                            tween the two tasks. In particular, ResNet-34-det even gets
+Backbone        APS APM APL TPRS TPRM TPRL IDsS IDsM IDsL                   higher MOTA score than ResNet-34 because the metric fa-
+ResNet-34     40.6 57.8 85.2 91.7         85.7    88.8   190    87    118   vors better detection than tracking results. In contrast, DLA-
+ResNet-50     39.7 59.4 86.0 91.3         85.3    89.0   248    91    124   34, which adds multi-layer feature fusion over ResNet-34,
+ResNet-34-FPN 45.9 61.0 85.4 90.7         91.5    93.3   166    71     90   achieves better detection as well as tracking results. It means
+HRNet-W18     51.1 63.7 85.7 94.2         92.5    93.1   168    55     56
+DLA-34        46.8 65.1 88.8 92.7         91.2    91.8   134    64     70
+                                                                            multi-layer feature fusion helps alleviate the feature conflict
+                                                                            problem by allowing each task to extract whatever it needs
+                                                                            for its own task from the fused features.
+
+larger MOTA score. In particular, TPR increases significantly               5.3.4 Feature Dimension
+from 90.9% to 94.4% which in turn decreases the number of
+ID switches (IDs) from 435 to 299. Similar conclusions can                  The previous one-shot trackers such as JDE (Wang et al.,
+be obtained from the results of HRNet-W18. The results val-                 2020b) usually learns 512 dimensional re-ID features fol-
+idate that feature fusion (FPN, DLA and HRNet) effectively                  lowing the two-step methods without ablation study. How-
+improves the discriminative ability of re-ID features. On the               ever, we find in our experiments that the feature dimension
+other hand, although ResNet-34-FPN obtains equally good                     actually plays an important role in balancing detection and
+re-ID features (TPR) as DLA-34, its detection results (AP)                  tracking accuracy. Learning lower dimensional re-ID fea-
+are significantly worse than DLA-34. We think the use of                    tures causes less harm to the detection accuracy and im-
+deformable convolution in DLA-34 is the main reason be-                     proves the inference speed. We conduct experiments on dif-
+cause it enables more flexible receptive fields for objects of              ferent one-shot trackers and find it is a generic rule that low-
+different sizes - it is very important for our method since                 dimensional (i.e. 64) re-ID features achieves better perfor-
+FairMOT only extracts features from object centers with-                    mance than high-dimensional (i.e. 512) re-ID features.
+out using any region features. We can only get 65.0 MOTA                         We evaluate multiple choices for re-ID feature dimen-
+and 78.1 AP when replacing all the deformable convolutions                  sion of JDE and FairMOT in Table 6. For JDE, we can
+with normal convolutions in DLA-34. As shown in Table 5,                    see that 64 achieves better performance than 512 on all the
+we can see that DLA-34 mainly outperforms HRNet-W18                         metrics. For FairMOT, we can see that 512 achieves higher
+on middle and large size objects. When we further use a                     IDF1 and TPR scores which indicates that higher dimen-
+more powerful backbone HarDNet-85 with more multi-layer                     sional re-ID features lead to stronger discriminative ability.
+feature fusion structures, we achieve even better results than              However, the MOTA score improves when we decrease the
+DLA-34 (+2.1 MOTA, +1.7 IDF1, -33.8% IDs, +1.4 AP,                          dimension from 512 to 64. This is mainly caused by the con-
++1.4 TPR). Although HRNet-W18, DLA-34 and HarDNet-                          flict between the detection and re-ID tasks. In particular, we
+85 get lower ImageNet classification accuracy than ResNet-                  can see that the detection result (AP) improves when we de-
+50 and RegNetY-4.0GF, they achieve much higher tracking                     crease the dimension of re-ID features. Different from the
+accuracy. Based on the experimental results above, we be-                   re-ID task, low-dimensional re-ID features achieves better
+lieve that multi-layer feature fusion is the key to solve the               performance and efficiency on the MOT task.
+“feature” issue.
+    To validate the existence of feature conflict between the               5.3.5 Data Association Methods
+detection and re-ID tasks, we introduce a baseline ResNet-
+34-det which only trains the detection branch (re-ID branch                 This section evaluates the three ingredients in the data asso-
+is randomly initialized). We can see from Table 4 that the                  ciation step including bounding box IoU, re-ID features and
+12                                                                       Yifu Zhang, Chunyu Wang, Xinggang Wang, Wenjun Zeng, Wenyu Liu
+
+
+
+
+           Query Image                Target Image          ResNet-34-det + Center        ResNet-34 + Center          DLA-34 + Center
+
+
+
+
+      DLA-34 + ROI-Align         DLA-34 + POS-Anchor           DLA-34 + Center           DLA-34 + Center-BI         DLA-34 + Two-Stage
+
+
+
+
+          Query Image                 Target Image          ResNet-34-det + Center       ResNet-34 + Center           DLA-34 + Center
+
+
+
+
+      DLA-34 + ROI-Align        DLA-34 + POS-Anchor            DLA-34 + Center           DLA-34 + Center-BI         DLA-34 + Two-Stage
+Fig. 3 Visualization of the discriminative ability of the re-ID features. Query instances are marked as red boxes and target instances are marked
+as green boxes. The similarity maps are computed using re-ID features extracted based on different strategies (e.g., Center, Center-BI, ROI-Align
+and POS-Anchor as described in Section 5.3.1) and different backbones (e.g., ResNet-34 and DLA-34). The query frames and target frames are
+randomly chosen from the MOT17-09 and the MOT17-02 sequence.
+
+
+Kalman Filter (Kalman, 1960). These are used to compute        Table 7 Evaluation of the three ingredients in the data association
+the similarity between each pair of detected boxes. With that  model. The backbone is DLA-34. The best results are shown in bold.
+we use Hungarian algorithm (Kuhn, 1955) to solve the as-
+signment problem. Table 7 shows the results. We can see         Box IoU Re-ID Features Kalman Filter MOTA ↑ IDF1 ↑ IDs ↓
+that only using box IoU causes a lot of ID switches. This          X                                       67.8      67.2    648
+is particularly true for crowded scenes and fast camera mo-                    X                           68.1      70.3    435
+tion. Using re-ID features alone notably increases IDF1 and                    X               X           68.9      71.8    342
+                                                                   X           X               X           69.1      72.8    299
+decreases the number of ID switches. In addition, adding
+Kalman filter helps obtain smooth (reasonable) tracklets which
+further decreases the number of ID switches. When an object
+is partly occluded, its re-ID features become unreliable. In
+                                                               5.3.6 Visualization of Re-ID Similarity
+this case, it is important to leverage box IoU, re-ID features
+and Kalman filter to obtain good tracking performance.
+                                                               We use re-ID similarity maps to demonstrate the discrim-
+    We also present a detailed runtime breakdown of differ-    inative ability of re-ID features in Figure 3. We randomly
+ent components including detection, re-ID matching, Kalman choose two frames from our validation set. The first frame
+Filter and IoU matching. We test runtime on sequences with     contains the query instance and the second frame contains
+different density (average number of pedestrians per frame).   the target instance that has the same ID. We obtain the re-
+The results are shown in Fig 4. The time spent on joint de-    ID similarity maps by computing the cosine similarity be-
+tection and re-ID is minimally affected by density. The time   tween the re-ID feature of the query instance and the whole
+spent on Kalman Filter and IoU matching are around 1ms         re-ID feature map of the target frame, as described in Sec-
+or 2ms and can be ignored. The time spent on re-ID match-      tion 5.3.1 and Section 5.3.3 respectively. By comparing the
+ing increases linearly with the increase of density. This is   similarity maps of ResNet-34 and ResNet-34-det, we can
+because a large amount of time is cost on updating the re-ID   see that training the re-ID branch is important. By compar-
+feature of each tracklet.                                      ing DLA-34 and ResNet-34, we can see that multi-layer fea-
+FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking                                                      13
+
+
+                                                                        Table 8 Effects of single image training on the validation set of
+                                                                        MOT17. “CH” and “MIX” stand for CrowdHuman and the composed
+                                                                        five datasets introduced in Section 5.1, respectively. * means no iden-
+                                                                        tity annotations are used. The best results are shown in bold.
+
+                                                                             Training Data     MOTA ↑      IDF1 ↑    IDs ↓    AP↑    TPR ↑
+                                                                             CH*                 64.1       64.9      476     80.5   79.9
+                                                                             MOT17               67.5       69.9      408     79.6   93.4
+                                                                             CH* +MOT17          71.1       75.6      327     83.0   93.6
+                                                                             MIX+MOT17           69.1       72.8      299     81.2   94.4
+
+
+
+                                                                        Table 9 Comparison of the state-of-the-art one-shot trackers on the
+                                                                        2DMOT15 dataset. “MIX” represents the large scale training dataset
+                                                                        and “MOT17 Seg” stands for the 4 videos with segmentation labels
+                                                                        in the MOT17 dataset. The best results of the same training data are
+Fig. 4 Time spent on different parts of our whole MOT system. We run    shown in bold.
+tracking on sequences with different density from the MOT17 dataset
+and the MOT20 dataset.
+                                                                         Training Data Method             MOTA↑ IDF1↑ IDs↓ FP↓ FN↓ FPS↑
+                                                                         MIX              JDE              67.5     66.7    218 1881 2083 26.0
+ture aggregation can get more discriminative re-ID features.                              FairMOT(ours)    77.2     79.8    80 757 2094 30.9
+Among all the sampling strategies, the proposed Center and               MOT17 Seg Track R-CNN             69.2     49.4    294 1328 2349 2.0
+Center-BI can better discriminate the target object from sur-                      FairMOT(ours)           70.2     64.0    96 1209 2537 30.9
+rounding objects in crowded scenes.
+
+
+                                                                        5.5.1 Comparing with One-Shot SOTA MOT Methods
+5.4 Single Image Training
+                                                                        There are two published works of JDE (Wang et al., 2020b)
+We first pre-train FairMOT on the CrowdHuman dataset (Shao
+                                                                        and TrackRCNN (Voigtlaender et al., 2019) that jointly per-
+et al., 2018). In particular, we assign a unique identity label
+                                                                        form object detection and identity feature embedding. We
+for each bounding box and train FairMOT using the method
+                                                                        compare our approach to both of them. Following the previ-
+described in section 4.4. Then we finetune the pre-trained
+                                                                        ous work (Wang et al., 2020b), the testing dataset contains
+model on the target dataset MOT17.
+                                                                        6 videos from 2DMOT15. FairMOT uses the same train-
+    Table 8 shows the results. First, the pre-trained model
+                                                                        ing data as the two methods as described in their papers.
+can be directly used as a tracker and get acceptable results on
+                                                                        In particular, when we compare to JDE, both FairMOT and
+MOT datasets such as MOT17. This is because the Crowd-
+                                                                        JDE use the large scale composed dataset described in Sec-
+Human dataset can boost the human detection performance
+                                                                        tion 5.1. Since Track R-CNN requires segmentation labels to
+and also has strong domain generalization ability. Our train-
+                                                                        train the network, it only uses 4 videos of the MOT17 dataset
+ing of the re-ID features further enhances the association
+                                                                        which has segmentation labels as training data. In this case,
+ability of the tracker. Second, pre-training on CrowdHuman
+                                                                        we also use the 4 videos to train our model. The CLEAR
+outperforms directly training on the MOT17 dataset by a
+                                                                        metric (Bernardin and Stiefelhagen, 2008) and IDF1 (Ris-
+large margin. Third, the single image training model even
+                                                                        tani et al., 2016) are used to measure their performance.
+outperforms the model trained on the “MIX” and MOT17
+datasets with identity annotations. The results validate the                The results are shown in Table 9. We can see that our ap-
+effectiveness of the proposed single image pre-training, which          proach remarkably outperforms JDE (Wang et al., 2020b).
+saves lots of annotation efforts and makes FairMOT more                 In particular, the number of ID switches reduces from 218
+attractive in real applications.                                        to 80 which is big improvement in terms of user experience.
+                                                                        The results validate the effectiveness of the anchor-free ap-
+                                                                        proach over the previous anchor-based one. The inference
+                                                                        speed is near video rate for the both methods with ours being
+5.5 Results on MOTChallenge                                             faster. Compared with Track R-CNN (Voigtlaender et al.,
+                                                                        2019), their detection results are slightly better than ours
+We compare our approach to the state-of-the-art (SOTA)                  (with lower FN). However, FairMOT achieves much higher
+methods including both the one-shot methods and the two-                IDF1 score (64.0 vs. 49.4) and fewer ID switches (96 vs.
+step methods.                                                           294). This is mainly because Track R-CNN follows the “de-
+14                                                                          Yifu Zhang, Chunyu Wang, Xinggang Wang, Wenjun Zeng, Wenyu Liu
+
+
+Table 10 Comparison of the state-of-the-art methods under the “private detector” protocol. It is noteworthy that FPS considers both detection and
+association time. The one-shot trackers are labeled by “*”. The best results of each dataset are shown in bold.
+
+         Dataset       Tracker                                     MOTA↑           IDF1↑         MT↑          ML↓           IDs↓      FPS↑
+         MOT15         MDP SubCNN(Xiang et al., 2015)                47.5           55.7        30.0%        18.6%          628       <1.7
+                       CDA DDAL(Bae and Yoon, 2017)                  51.3           54.1        36.3%        22.2%           544      <1.2
+                       EAMTT(Sanchez-Matilla et al., 2016)           53.0           54.0        35.9%        19.6%          7538      <4.0
+                       AP HWDPL(Chen et al., 2017)                   53.0           52.2        29.1%        20.2%           708       6.7
+                       RAR15(Fang et al., 2018)                      56.5           61.3        45.1%        14.6%           428      <3.4
+                       TubeTK* (Pang et al., 2020)                   58.4           53.1        39.3%        18.0%          854        5.8
+                       FairMOT (Ours)*                               60.6           64.7        47.6%        11.0%           591      30.5
+         MOT16         EAMTT(Sanchez-Matilla et al., 2016)           52.5           53.3        19.9%        34.9%           910      <5.5
+                       SORTwHPD16(Bewley et al., 2016)               59.8           53.8        25.4%        22.7%          1423      <8.6
+                       DeepSORT 2(Wojke et al., 2017)                61.4           62.2        32.8%        18.2%           781      <6.4
+                       RAR16wVGG(Fang et al., 2018)                  63.0           63.8        39.9%        22.1%           482      <1.4
+                       VMaxx(Wan et al., 2018)                       62.6           49.2        32.7%        21.1%          1389      <3.9
+                       TubeTK* (Pang et al., 2020)                   64.0           59.4        33.5%        19.4%          1117       1.0
+                       JDE* (Wang et al., 2020b)                     64.4           55.8        35.4%        20.0%          1544      18.5
+                       TAP(Zhou et al., 2018)                        64.8           73.5        38.5%        21.6%          571       <8.0
+                       CNNMTT(Mahmoudi et al., 2019)                 65.2           62.2        32.4%        21.3%           946      <5.3
+                       POI(Yu et al., 2016)                          66.1           65.1        34.0%        20.8%           805      <5.0
+                       CTrackerV1* (Peng et al., 2020)               67.6           57.2        32.9%        23.1%          1897      6.8
+                       FairMOT (Ours)*                               74.9           72.8        44.7%        15.9%          1074      25.9
+         MOT17         SST(Sun et al., 2019)                         52.4           49.5        21.4%        30.7%          8431      <3.9
+                       TubeTK* (Pang et al., 2020)                   63.0           58.6        31.2%        19.9%          4137       3.0
+                       CTrackerV1* (Peng et al., 2020)               66.6           57.4        32.2%        24.2%          5529      6.8
+                       CenterTrack* (Zhou et al., 2020)              67.8           64.7        34.6%        24.6%          2583      17.5
+                       FairMOT (Ours)*                               73.7           72.3        43.2%        17.3%          3303      25.9
+         MOT20         FairMOT (Ours)*                               61.8           67.3        68.8%         7.6%          5243      13.2
+
+
+
+
+tection first, re-ID secondary” framework and use anchors                    Table 11 Results of the MOT17 test set when using different datasets
+which also introduce ambiguity to the re-ID task.                            for training. “MIX” represents the large scale dataset mentioned in part
+                                                                             4.1 and “CH” is short for the CrowdHuman dataset. All the results are
+                                                                             obtained from the MOT challenge server. The best results are shown in
+                                                                             bold.
+
+                                                                             Training Data        Images Boxes Identities MOTA↑ IDF1↑ IDs↓
+5.5.2 Comparing with Other SOTA MOT Methods                                  MOT17                 5K      112K      0.5K      69.8     69.9 3996
+                                                                             MOT17+MIX             54K     270K      8.7K      72.9     73.2 3345
+                                                                             MOT17+MIX+CH          73K     740K      8.7K      73.7     72.3 3303
+We compare our approach to the state-of-the-art trackers in-
+cluding the two-step methods in Table 10. Since we do not
+use the public detection results, the “private detector” pro-
+tocol is adopted. We report results on the testing sets of the
+2DMOT15, MOT16, MOT17 and MOT20 datasets, respec-
+tively. Note that all of the results are directly obtained from              5.5.3 Training Data Ablation Study
+the official MOT challenge evaluation server.
+    Our approach ranks first among all online and offline                    We also evaluate the performance of FairMOT using differ-
+trackers on the four datasets. In particular, it outperforms                 ent amount of training data in Table 11. We can achieve 69.8
+other methods by a large margin. This is a very strong re-                   MOTA when only using the MOT17 dataset for training,
+sult especially considering that our approach is very sim-                   which already outperforms other methods using more train-
+ple. In addition, our approach achieves video rate inference.                ing data. When we use the same training data as JDE (Wang
+In contrast, most high-performance trackers such as (Fang                    et al., 2020b), we can achieve 72.9 MOTA, which remark-
+et al., 2018; Yu et al., 2016) are usually slower than ours.                 ably outperforms JDE. In addition, when we perform sin-
+Our approach also ranks second under a very recent local                     gle image training on the CrowdHuman dataset, the MOTA
+MOT metric ALTA (Valmadre et al., 2021), which further                       score improves to 73.7. The results suggest that our approach
+indicates that our approach achieves very high tracking per-                 is not data hungry which is a big advantage in practical ap-
+formance (Table 10).                                                         plications.
+FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking                                                       15
+
+
+
+
+   MOT17-01
+
+
+
+
+   MOT17-03
+
+
+
+
+   MOT17-06
+
+
+
+
+   MOT17-07
+
+
+
+
+   MOT17-08
+
+
+
+
+   MOT17-12
+
+
+
+
+   MOT17-14
+
+
+
+Fig. 5 Example tracking results of our method on the test set of MOT17. Each row shows the results of sampled frames in chronological order
+of a video sequence. Bounding boxes and identities are marked in the images. Bounding boxes with different colors represent different identities.
+Best viewed in color.
+16                                                                Yifu Zhang, Chunyu Wang, Xinggang Wang, Wenjun Zeng, Wenyu Liu
+
+
+5.6 Qualitative Results                                            References
+
+Figure 5 visualizes several tracking results of FairMOT on      Bae SH, Yoon KJ (2014) Robust online multi-object track-
+the test set of MOT17 (Milan et al., 2016). From the results      ing based on tracklet confidence and online discriminative
+of MOT17-01, we can see that our method can assign cor-           appearance learning. In: Proceedings of the IEEE con-
+rect identities with the help of high-quality re-ID features      ference on computer vision and pattern recognition, pp
+when two pedestrians cross over each other. Trackers using        1218–1225
+bounding box IoUs (Bewley et al., 2016; Bochinski et al.,       Bae SH, Yoon KJ (2017) Confidence-based data association
+2017) usually cause identity switches under these circum-         and discriminative deep appearance learning for robust
+stances. From the results of MOT17-03, we can see that our        online multi-object tracking. IEEE transactions on pattern
+method perform well under crowded scenes. From the re-            analysis and machine intelligence 40(3):595–610
+sults of MOT17-08, we can see that our method can keep          Berclaz J, Fleuret F, Turetken E, Fua P (2011) Multiple ob-
+both correct identities and correct bounding boxes when the       ject tracking using k-shortest paths optimization. IEEE
+pedestrians are heavily occluded. The results of MOT17-06         transactions on pattern analysis and machine intelligence
+and MOT17-12 show that our method can deal with large             33(9):1806–1819
+scale variations. This mainly attributes to the using of multi- Bergmann P, Meinhardt T, Leal-Taixe L (2019) Tracking
+layer feature aggregation. Our method can detect small ob-        without bells and whistles. In: ICCV, pp 941–951
+jects accurately as shown in the results of MOT17-07 and        Bernardin K, Stiefelhagen R (2008) Evaluating multi-
+MOT17-14.                                                         ple object tracking performance: the clear mot met-
+                                                                  rics. EURASIP Journal on Image and Video Processing
+                                                                  2008:1–10
+                                                                Bewley A, Ge Z, Ott L, Ramos F, Upcroft B (2016) Simple
+                                                                  online and realtime tracking. In: ICIP, IEEE, pp 3464–
+6 Summary and Future Work                                         3468
+                                                                Bochinski E, Eiselein V, Sikora T (2017) High-speed
+Start from studying why the previous one-shot methods (Wang       tracking-by-detection without using image information.
+et al., 2020b) fail to achieve comparable results as the two-     In: 2017 14th IEEE International Conference on Ad-
+step methods, we find that the use of anchors in object de-       vanced Video and Signal Based Surveillance (AVSS),
+tection and identity embedding is the main reason for the de-     IEEE, pp 1–6
+graded results. In particular, multiple nearby anchors, which   Bolme DS, Beveridge JR, Draper BA, Lui YM (2010) Vi-
+correspond to different parts of an object, may be responsi-      sual object tracking using adaptive correlation filters. In:
+ble for estimating the same identity which causes ambigui-        CVPR, IEEE, pp 2544–2550
+ties for network training. Further, we find the feature unfair- Brasó G, Leal-Taixé L (2020) Learning a neural solver
+ness issue and feature dimension issue between the detec-         for multiple object tracking. In: Proceedings of the
+tion and re-ID tasks in previous MOT frameworks. By ad-           IEEE/CVF Conference on Computer Vision and Pattern
+dressing these problems in an anchor-free single-shot deep        Recognition, pp 6247–6257
+network, we propose FairMOT. It outperforms the previous        Cai Z, Vasconcelos N (2018) Cascade r-cnn: Delving into
+state-of-the-art methods on several benchmark datasets by a       high quality object detection. In: CVPR, pp 6154–6162
+large margin in terms of both tracking accuracy and infer-      Chao P, Kao CY, Ruan YS, Huang CH, Lin YL (2019) Hard-
+ence speed. Besides, FairMOT is inherently training data-         net: A low memory traffic network. In: Proceedings of
+efficient and we propose single image training of multi-object    the IEEE/CVF International Conference on Computer Vi-
+trackers only using bounding box annotated images, which          sion, pp 3552–3561
+both make our method more appealing in real applications        Chen L, Ai H, Shang C, Zhuang Z, Bai B (2017) Online
+(Zhang et al., 2021b).                                            multi-object tracking with convolutional neural networks.
+                                                                  In: 2017 IEEE International Conference on Image Pro-
+                                                                  cessing (ICIP), IEEE, pp 645–649
+                                                                Chen L, Ai H, Zhuang Z, Shang C (2018a) Real-time mul-
+                                                                  tiple people tracking with deeply learned candidate se-
+Acknowledgements
+                                                                  lection and person re-identification. In: 2018 IEEE Inter-
+                                                                  national Conference on Multimedia and Expo (ICME),
+This work was in part supported by NSFC (No. 61733007
+                                                                  IEEE, pp 1–6
+and No. 61876212) and MSRA Collaborative Research Fund.
+                                                                Chen Z, Badrinarayanan V, Lee CY, Rabinovich A (2018b)
+We thank all the anonymous reviewers for their valuable
+                                                                  Gradnorm: Gradient normalization for adaptive loss bal-
+suggestions.
+FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking                                           17
+
+
+  ancing in deep multitask networks. In: ICML, PMLR, pp                   arXiv:160208465
+  794–803                                                               He K, Zhang X, Ren S, Sun J (2016) Deep residual learning
+Cheng B, Xiao B, Wang J, Shi H, Huang TS, Zhang L                         for image recognition. In: CVPR, pp 770–778
+  (2020) Higherhrnet: Scale-aware representation learning               He K, Gkioxari G, Dollár P, Girshick R (2017) Mask r-cnn.
+  for bottom-up human pose estimation. In: CVPR                           In: ICCV, pp 2961–2969
+Choi W (2015) Near-online multi-target tracking with ag-                Henriques JF, Caseiro R, Martins P, Batista J (2014) High-
+  gregated local flow descriptor. In: Proceedings of the                  speed tracking with kernelized correlation filters. IEEE
+  IEEE international conference on computer vision, pp                    transactions on pattern analysis and machine intelligence
+  3029–3037                                                               37(3):583–596
+Chu P, Ling H (2019) Famnet: Joint learning of feature,                 Henschel R, Zou Y, Rosenhahn B (2019) Multiple people
+  affinity and multi-dimensional assignment for online mul-               tracking using body and joint detections. In: CVPRW, pp
+  tiple object tracking. In: ICCV, pp 6172–6181                           0–0
+Chu P, Fan H, Tan CC, Ling H (2019) Online multi-object                 Hermans A, Beyer L, Leibe B (2017) In defense of the
+  tracking with instance-aware tracker and dynamic model                  triplet loss for person re-identification. arXiv preprint
+  refreshment. In: 2019 IEEE Winter Conference on Appli-                  arXiv:170307737
+  cations of Computer Vision (WACV), IEEE, pp 161–170                   Hornakova A, Henschel R, Rosenhahn B, Swoboda P (2020)
+Dendorfer P, Rezatofighi H, Milan A, Shi J, Cremers D, Reid               Lifted disjoint paths with application in multiple object
+  I, Roth S, Schindler K, Leal-Taixé L (2020) Mot20: A                   tracking. In: International Conference on Machine Learn-
+  benchmark for multi object tracking in crowded scenes.                  ing, PMLR, pp 4364–4375
+  arXiv preprint arXiv:200309003                                        Kalman RE (1960) A new approach to linear filtering and
+Dollár P, Wojek C, Schiele B, Perona P (2009) Pedestrian                 prediction problems. J Fluids Eng 82(1):35–45
+  detection: A benchmark. In: CVPR, IEEE, pp 304–311                    Kang K, Ouyang W, Li H, Wang X (2016) Object detection
+Dong Z, Li G, Liao Y, Wang F, Ren P, Qian C (2020) Cen-                   from video tubelets with convolutional neural networks.
+  tripetalnet: Pursuing high-quality keypoint pairs for ob-               In: Proceedings of the IEEE conference on computer vi-
+  ject detection. In: CVPR, pp 10519–10528                                sion and pattern recognition, pp 817–825
+Duan K, Bai S, Xie L, Qi H, Huang Q, Tian Q (2019) Cen-                 Kang K, Li H, Xiao T, Ouyang W, Yan J, Liu X, Wang X
+  ternet: Keypoint triplets for object detection. In: ICCV, pp            (2017) Object detection in videos with tubelet proposal
+  6569–6578                                                               networks. In: Proceedings of the IEEE Conference on
+Ess A, Leibe B, Schindler K, Van Gool L (2008) A mobile                   Computer Vision and Pattern Recognition, pp 727–735
+  vision system for robust multi-person tracking. In: CVPR,             Kendall A, Gal Y, Cipolla R (2018) Multi-task learning us-
+  IEEE, pp 1–8                                                            ing uncertainty to weigh losses for scene geometry and
+Fang K, Xiang Y, Li X, Savarese S (2018) Recurrent au-                    semantics. In: CVPR, pp 7482–7491
+  toregressive networks for online multi-object tracking. In:           Kingma DP, Ba J (2014) Adam: A method for stochastic
+  WACV, IEEE, pp 466–475                                                  optimization. arXiv preprint arXiv:14126980
+Feichtenhofer C, Pinz A, Zisserman A (2017) Detect to track             Kokkinos I (2017) Ubernet: Training a universal convolu-
+  and track to detect. In: Proceedings of the IEEE Interna-               tional neural network for low-, mid-, and high-level vision
+  tional Conference on Computer Vision, pp 3038–3046                      using diverse datasets and limited memory. In: CVPR, pp
+Felzenszwalb P, McAllester D, Ramanan D (2008) A dis-                     6129–6138
+  criminatively trained, multiscale, deformable part model.             Kuhn HW (1955) The hungarian method for the assignment
+  In: CVPR, IEEE, pp 1–8                                                  problem. Naval research logistics quarterly 2(1-2):83–97
+Fu J, Zong L, Li Y, Li K, Yang B, Liu X (2020) Model adap-              Law H, Deng J (2018) Cornernet: Detecting objects as
+  tion object detection system for robot. In: 2020 39th Chi-              paired keypoints. In: ECCV, pp 734–750
+  nese Control Conference (CCC), IEEE, pp 3659–3664                     Leal-Taixé L, Milan A, Reid I, Roth S, Schindler K (2015)
+Guo M, Haque A, Huang DA, Yeung S, Fei-Fei L (2018)                       Motchallenge 2015: Towards a benchmark for multi-
+  Dynamic task prioritization for multitask learning. In:                 target tracking. arXiv preprint arXiv:150401942
+  Proceedings of the European Conference on Computer                    Liang C, Zhang Z, Lu Y, Zhou X, Li B, Ye X, Zou J (2020)
+  Vision (ECCV), pp 270–287                                               Rethinking the competition between detection and reid in
+Han S, Huang P, Wang H, Yu E, Liu D, Pan X, Zhao J (2020)                 multi-object tracking. arXiv preprint arXiv:201012138
+  Mat: Motion-aware multi-object tracking. arXiv preprint               Lin TY, Maire M, Belongie S, Hays J, Perona P, Ramanan
+  arXiv:200904794                                                         D, Dollár P, Zitnick CL (2014) Microsoft coco: Common
+Han W, Khorrami P, Paine TL, Ramachandran P,                              objects in context. In: ECCV, Springer, pp 740–755
+  Babaeizadeh M, Shi H, Li J, Yan S, Huang TS (2016)                    Lin TY, Dollár P, Girshick R, He K, Hariharan B, Belongie
+  Seq-nms for video object detection. arXiv preprint                      S (2017a) Feature pyramid networks for object detection.
+18                                                               Yifu Zhang, Chunyu Wang, Xinggang Wang, Wenjun Zeng, Wenyu Liu
+
+
+  In: CVPR, pp 2117–2125                                          Ren S, He K, Girshick R, Sun J (2015) Faster r-cnn: Towards
+Lin TY, Goyal P, Girshick R, He K, Dollár P (2017b) Focal          real-time object detection with region proposal networks.
+  loss for dense object detection. In: ICCV, pp 2980–2988           In: Advances in neural information processing systems,
+Liu S, Johns E, Davison AJ (2019) End-to-end multi-task             pp 91–99
+  learning with attention. In: Proceedings of the IEEE/CVF        Ristani E, Solera F, Zou R, Cucchiara R, Tomasi C (2016)
+  Conference on Computer Vision and Pattern Recognition,            Performance measures and a data set for multi-target,
+  pp 1871–1880                                                      multi-camera tracking. In: ECCV, Springer, pp 17–35
+Lu Z, Rathod V, Votel R, Huang J (2020) Retinatrack: On-          Russakovsky O, Deng J, Su H, Krause J, Satheesh S, Ma
+  line single stage joint detection and tracking. In: Proceed-      S, Huang Z, Karpathy A, Khosla A, Bernstein M, et al.
+  ings of the IEEE/CVF conference on computer vision and            (2015) Imagenet large scale visual recognition challenge.
+  pattern recognition, pp 14668–14678                               International journal of computer vision 115(3):211–252
+Luo C, Ma C, Wang C, Wang Y (2017) Learning discrimina-           Sadeghian A, Alahi A, Savarese S (2017) Tracking the un-
+  tive activated simplices for action recognition. In: AAAI         trackable: Learning to track multiple cues with long-term
+Luo H, Gu Y, Liao X, Lai S, Jiang W (2019a) Bag of tricks           dependencies. In: Proceedings of the IEEE International
+  and a strong baseline for deep person re-identification. In:      Conference on Computer Vision, pp 300–311
+  Proceedings of the IEEE/CVF Conference on Computer              Sanchez-Matilla R, Poiesi F, Cavallaro A (2016) Online
+  Vision and Pattern Recognition Workshops, pp 0–0                  multi-target tracking with strong and weak detections. In:
+Luo H, Xie W, Wang X, Zeng W (2019b) Detect or track:               ECCV, Springer, pp 84–99
+  Towards cost-effective video object detection/tracking.         Sener O, Koltun V (2018) Multi-task learning as multi-
+  In: Proceedings of the AAAI Conference on Artificial In-          objective optimization. In: NIPS, pp 527–538
+  telligence, vol 33, pp 8803–8810                                Shan C, Wei C, Deng B, Huang J, Hua XS, Cheng X, Liang
+Mahmoudi N, Ahadi SM, Rahmati M (2019) Multi-target                 K (2020) Fgagt: Flow-guided adaptive graph tracking.
+  tracking using cnn-based features: Cnnmtt. Multimedia             arXiv preprint arXiv:201009015
+  Tools and Applications 78(6):7077–7096                          Shao S, Zhao Z, Li B, Xiao T, Yu G, Zhang X, Sun J (2018)
+Milan A, Roth S, Schindler K (2013) Continuous energy               Crowdhuman: A benchmark for detecting human in a
+  minimization for multitarget tracking. IEEE transactions          crowd. arXiv preprint arXiv:180500123
+  on pattern analysis and machine intelligence 36(1):58–72        Simonyan K, Zisserman A (2014) Very deep convolu-
+Milan A, Leal-Taixé L, Reid I, Roth S, Schindler K (2016)          tional networks for large-scale image recognition. arXiv
+  Mot16: A benchmark for multi-object tracking. arXiv               preprint arXiv:14091556
+  preprint arXiv:160300831                                        Sun P, Jiang Y, Zhang R, Xie E, Cao J, Hu X,
+Pang B, Li Y, Zhang Y, Li M, Lu C (2020) Tubetk: Adopting           Kong T, Yuan Z, Wang C, Luo P (2020) Transtrack:
+  tubes to track multi-object in a one-step training model.         Multiple-object tracking with transformer. arXiv preprint
+  In: Proceedings of the IEEE/CVF Conference on Com-                arXiv:201215460
+  puter Vision and Pattern Recognition, pp 6308–6318              Sun P, Jiang Y, Xie E, Shao W, Yuan Z, Wang C, Luo P
+Pang J, Qiu L, Li X, Chen H, Li Q, Darrell T, Yu F (2021)           (2021a) What makes for end-to-end object detection? In:
+  Quasi-dense similarity learning for multiple object track-        Proceedings of the 38th International Conference on Ma-
+  ing. In: Proceedings of the IEEE/CVF Conference on                chine Learning, PMLR, Proceedings of Machine Learn-
+  Computer Vision and Pattern Recognition, pp 164–173               ing Research, vol 139, pp 9934–9944
+Peng J, Wang C, Wan F, Wu Y, Wang Y, Tai Y, Wang C, Li J,         Sun P, Zhang R, Jiang Y, Kong T, Xu C, Zhan W, Tomizuka
+  Huang F, Fu Y (2020) Chained-tracker: Chaining paired             M, Li L, Yuan Z, Wang C, et al. (2021b) Sparse r-cnn:
+  attentive regression results for end-to-end joint multiple-       End-to-end object detection with learnable proposals. In:
+  object detection and tracking. In: European Conference            Proceedings of the IEEE/CVF Conference on Computer
+  on Computer Vision, Springer, pp 145–161                          Vision and Pattern Recognition, pp 14454–14463
+Radosavovic I, Kosaraju RP, Girshick R, He K, Dollár P           Sun S, Akhtar N, Song H, Mian AS, Shah M (2019) Deep
+  (2020) Designing network design spaces. In: Proceedings           affinity network for multiple object tracking. IEEE trans-
+  of the IEEE/CVF Conference on Computer Vision and                 actions on pattern analysis and machine intelligence
+  Pattern Recognition, pp 10428–10436                             Tang P, Wang C, Wang X, Liu W, Zeng W, Wang J (2019)
+Ranjan R, Patel VM, Chellappa R (2017) Hyperface: A deep            Object detection in videos by high quality object linking.
+  multi-task learning framework for face detection, land-           IEEE transactions on pattern analysis and machine intel-
+  mark localization, pose estimation, and gender recogni-           ligence 42(5):1272–1278
+  tion. T-PAMI 41(1):121–135                                      Tang S, Andriluka M, Andres B, Schiele B (2017) Mul-
+Redmon J, Farhadi A (2018) Yolov3: An incremental im-               tiple people tracking by lifted multicut and person re-
+  provement. arXiv preprint arXiv:180402767                         identification. In: Proceedings of the IEEE Conference on
+FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking                                          19
+
+
+  Computer Vision and Pattern Recognition, pp 3539–3548                   9657–9666
+Valmadre J, Bewley A, Huang J, Sun C, Sminchisescu C,                   Yu F, Li W, Li Q, Liu Y, Shi X, Yan J (2016) Poi: Multi-
+  Schmid C (2021) Local metrics for multi-object tracking.                ple object tracking with high performance detection and
+  arXiv preprint arXiv:210402631                                          appearance feature. In: ECCV, Springer, pp 36–42
+Vandenhende S, Georgoulis S, Van Gansbeke W, Proesmans                  Yu F, Wang D, Shelhamer E, Darrell T (2018) Deep layer
+  M, Dai D, Van Gool L (2021) Multi-task learning for                     aggregation. In: CVPR, pp 2403–2412
+  dense prediction tasks: A survey. IEEE Transactions on                Zamir AR, Dehghan A, Shah M (2012) Gmcp-tracker:
+  Pattern Analysis and Machine Intelligence                               Global multi-object tracking using generalized minimum
+Voigtlaender P, Krause M, Osep A, Luiten J, Sekar BBG,                    clique graphs. In: European Conference on Computer Vi-
+  Geiger A, Leibe B (2019) Mots: Multi-object tracking and                sion, Springer, pp 343–356
+  segmentation. In: CVPR, pp 7942–7951                                  Zhang L, Li Y, Nevatia R (2008) Global data association for
+Wan X, Wang J, Kong Z, Zhao Q, Deng S (2018) Multi-                       multi-object tracking using network flows. In: 2008 IEEE
+  object tracking using online metric learning with long                  Conference on Computer Vision and Pattern Recognition,
+  short-term memory. In: 2018 25th IEEE International                     IEEE, pp 1–8
+  Conference on Image Processing (ICIP), IEEE, pp 788–                  Zhang S, Benenson R, Schiele B (2017) Citypersons: A
+  792                                                                     diverse dataset for pedestrian detection. In: CVPR, pp
+Wang C, Wang Y, Yuille AL (2013) An approach to pose-                     3213–3221
+  based action recognition. In: CVPR, pp 915–922                        Zhang Y, Sheng H, Wu Y, Wang S, Lyu W, Ke W, Xiong Z
+Wang J, Sun K, Cheng T, Jiang B, Deng C, Zhao Y, Liu                      (2020) Long-term tracking with deep tracklet association.
+  D, Mu Y, Tan M, Wang X, et al. (2020a) Deep high-                       IEEE Transactions on Image Processing 29:6694–6706
+  resolution representation learning for visual recognition.            Zhang Y, Sun P, Jiang Y, Yu D, Yuan Z, Luo P, Liu W, Wang
+  IEEE transactions on pattern analysis and machine intel-                X (2021a) Bytetrack: Multi-object tracking by associating
+  ligence                                                                 every detection box. arXiv preprint arXiv:211006864
+Wang Z, Zheng L, Liu Y, Li Y, Wang S (2020b) Towards                    Zhang Y, Wang C, Wang X, Liu W, Zeng W (2021b) Voxel-
+  real-time multi-object tracking. In: Computer Vision–                   track: Multi-person 3d human pose estimation and track-
+  ECCV 2020: 16th European Conference, Glasgow, UK,                       ing in the wild. arXiv preprint arXiv:210802452
+  August 23–28, 2020, Proceedings, Part XI 16, Springer,                Zheng L, Zhang H, Sun S, Chandraker M, Yang Y, Tian Q
+  pp 107–122                                                              (2017a) Person re-identification in the wild. In: CVPR, pp
+Wen L, Li W, Yan J, Lei Z, Yi D, Li SZ (2014) Multiple                    1367–1376
+  target tracking based on undirected hierarchical relation             Zheng Z, Zheng L, Yang Y (2017b) A discriminatively
+  hypergraph. In: Proceedings of the IEEE conference on                   learned cnn embedding for person reidentification. ACM
+  computer vision and pattern recognition, pp 1282–1289                   Transactions on Multimedia Computing, Communica-
+Wojke N, Bewley A, Paulus D (2017) Simple online and                      tions, and Applications (TOMM) 14(1):1–20
+  realtime tracking with a deep association metric. In:                 Zhou X, Wang D, Krähenbühl P (2019a) Objects as points.
+  2017 IEEE international conference on image processing                  arXiv preprint arXiv:190407850
+  (ICIP), IEEE, pp 3645–3649                                            Zhou X, Zhuo J, Krahenbuhl P (2019b) Bottom-up ob-
+Xiang Y, Alahi A, Savarese S (2015) Learning to track: On-                ject detection by grouping extreme and center points. In:
+  line multi-object tracking by decision making. In: ICCV,                CVPR, pp 850–859
+  pp 4705–4713                                                          Zhou X, Koltun V, Krähenbühl P (2020) Tracking objects
+Xiao T, Li S, Wang B, Lin L, Wang X (2017) Joint detection                as points. In: European Conference on Computer Vision,
+  and identification feature learning for person search. In:              Springer, pp 474–490
+  CVPR, pp 3415–3424                                                    Zhou Z, Xing J, Zhang M, Hu W (2018) Online multi-target
+Xu J, Cao Y, Zhang Z, Hu H (2019) Spatial-temporal rela-                  tracking with tensor-based high-order graph matching. In:
+  tion networks for multi-object tracking. In: Proceedings                2018 24th International Conference on Pattern Recogni-
+  of the IEEE/CVF International Conference on Computer                    tion (ICPR), IEEE, pp 1809–1814
+  Vision, pp 3988–3998                                                  Zhu J, Yang H, Liu N, Kim M, Zhang W, Yang MH (2018)
+Yang F, Choi W, Lin Y (2016) Exploit all the layers: Fast and             Online multi-object tracking with dual matching attention
+  accurate cnn object detector with scale dependent pooling               networks. In: Proceedings of the European Conference on
+  and cascaded rejection classifiers. In: Proceedings of the              Computer Vision (ECCV), pp 366–382
+  IEEE conference on computer vision and pattern recogni-
+  tion, pp 2129–2137
+Yang Z, Liu S, Hu H, Wang L, Lin S (2019) Reppoints:
+  Point set representation for object detection. In: ICCV, pp
+

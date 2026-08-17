@@ -64,6 +64,32 @@ Tres tensiones definen el campo: (1) cómo **modelar movimiento sin desperdiciar
       Lin, Gan y Han (MIT): la línea de la **eficiencia** en vez de la capacidad. En lugar de introducir una operación temporal, desplaza 1/4 de los canales del mapa de características a lo largo del eje del tiempo —1/8 al pasado, 1/8 al futuro— y deja que la convolución 2D siguiente haga la mezcla, apoyándose en que una convolución se descompone en *desplazamiento + multiplicación-acumulación*. **Cero parámetros y cero FLOPs adicionales.** Su variante unidireccional habilita reconocimiento causal en vivo con 13,4 ms de latencia en una Jetson Nano. **Por qué importó:** cierra la era 3D mostrando que su costo era en buena medida evitable —33 GFLOPs y 17,4 ms contra los 306 GFLOPs y 165 ms del I3D comparable, con más precisión— y su tabla de resultados se volvió el instrumento canónico para medir **cuánta temporalidad exige cada benchmark**: +3,5 puntos en Kinetics contra +28,0 en Something-Something. Cubierto en la [Clase 40](/clases/clase-40), con la mecánica en [Desplazamiento Temporal](/fundamentos/desplazamiento-temporal).
     {{< /hito >}}
   {{< /era >}}
+  {{< era name="Era del seguimiento multi-objeto (MOT)" years="2016-2022" >}}
+    {{< hito year="2016" name="SORT" status="covered" link="/papers/sort-bewley-2016" >}}
+      Bewley et al. (QUT / Sydney): [filtro de Kalman](/fundamentos/filtro-de-kalman) con velocidad constante más [algoritmo húngaro](/fundamentos/asignacion-hungara) sobre IoU, sin modelo de apariencia y sin tratamiento explícito de la oclusión. **Por qué importó:** fijó la línea base del área quitando componentes en vez de agregarlos — 34,0 de MOTA y **260 Hz en un núcleo de CPU**, mejor que trackers batch mucho más complejos. Y dejó el hallazgo más transferible del campo: cambiar solo el detector, con el tracker intacto, mueve MOTA de 15,1 a 34,0. Cubierto en la [Clase 42](/clases/clase-42).
+    {{< /hito >}}
+    {{< hito year="2016" name="MOT16 / MOTChallenge" status="covered" link="/papers/mot16-milan-2016" >}}
+      Milan et al.: 14 secuencias, 292 733 cajas anotadas, detecciones públicas y servidor de evaluación con el *ground truth* de test oculto. **Por qué importó:** hizo comparables los resultados del área, y su decisión de rankear por **MOTA** —una métrica dominada por los errores de detección— orientó una década de investigación hacia el eje equivocado. Cubierto en la [Clase 42](/clases/clase-42).
+    {{< /hito >}}
+    {{< hito year="2017" name="DeepSORT" status="covered" link="/papers/deepsort-wojke-2017" >}}
+      Wojke, Bewley y Paulus: agrega a SORT un descriptor de apariencia de 128-D entrenado offline sobre re-identificación de personas, una compuerta de Mahalanobis con umbral $\chi^2$ y la **cascada de matching**. **Por qué importó:** reduce los cambios de identidad un 45 % y estableció el patrón "movimiento como compuerta, apariencia como costo". Su cascada corrige un incentivo perverso real: la distancia de Mahalanobis favorece a la trayectoria más incierta. Cubierto en la [Clase 42](/clases/clase-42).
+    {{< /hito >}}
+    {{< hito year="2019" name="Tracktor" status="covered" link="/papers/tracktor-bergmann-2019" >}}
+      Bergmann, Meinhardt y Leal-Taixé (TUM): usa la cabeza de regresión del detector como modelo de movimiento —la caja del frame anterior entra al regresor y sale la del actual, con la identidad intacta— sin entrenar nada sobre datos de seguimiento. **Por qué importó:** además del método, su análisis con oráculos mostró que ningún tracker dedicado manejaba los casos difíciles mejor: lo que ganaban eran los casos fáciles. Cubierto en la [Clase 42](/clases/clase-42).
+    {{< /hito >}}
+    {{< hito year="2020" name="FairMOT" status="covered" link="/papers/fairmot-zhang-2020" >}}
+      Zhang et al. (HUST / MSRA): diagnostica por qué fusionar detección y [re-identificación](/fundamentos/re-identificacion) en una sola red hace perder a la segunda —anchors, resolución del mapa de features, dimensión del embedding— y lo corrige sobre una arquitectura *anchor-free*. **Por qué importó:** convirtió el enfoque *one-shot* en competitivo, y es un caso de estudio general de competencia entre tareas en modelos multi-tarea. Cubierto en la [Clase 42](/clases/clase-42).
+    {{< /hito >}}
+    {{< hito year="2020" name="HOTA" status="covered" link="/papers/hota-luiten-2020" >}}
+      Luiten et al.: MOTA e IDF1 son dos proyecciones sesgadas de un espacio de dos dimensiones —detección y asociación— y ninguna mide localización. HOTA las separa y las combina en la media geométrica $\sqrt{\mathrm{DetA}\cdot\mathrm{AssA}}$. **Por qué importó:** es la métrica principal actual de MOTChallenge y KITTI, y su análisis explica por qué una década de resultados premiaba mejorar el detector. Cubierto en la [Clase 42](/clases/clase-42).
+    {{< /hito >}}
+    {{< hito year="2021" name="ByteTrack" status="covered" link="/papers/bytetrack-zhang-2021" >}}
+      Zhang et al. (HUST / ByteDance): asocia también las detecciones de **score bajo**, en una segunda ronda contra las trayectorias huérfanas, porque una caja dudosa suele ser un objeto ocluido. **Por qué importó:** 63,1 de HOTA en MOT17 **sin ningún modelo de apariencia**, y el método es un componente reutilizable que mejora IDF1 de 1 a 10 puntos en nueve trackers distintos. Cubierto en la [Clase 42](/clases/clase-42).
+    {{< /hito >}}
+    {{< hito year="2022" name="OC-SORT" status="covered" link="/papers/oc-sort-cao-2022" >}}
+      Cao et al. (CMU): durante una oclusión el filtro de Kalman se actualiza con sus propias predicciones y **realimenta su error**; OC-SORT reconstruye el filtro hacia atrás con una trayectoria virtual entre las observaciones reales que la rodean. **Por qué importó:** el estado del arte de 2022 resultó ser el algoritmo de 2016 con tres correcciones, corriendo a 700+ FPS en CPU. Y en DanceTrack expuso que el orden de mérito depende del dataset: ahí DeepSORT queda por debajo de SORT. Cubierto en la [Clase 42](/clases/clase-42).
+    {{< /hito >}}
+  {{< /era >}}
   {{< era name="Era de Video Transformers" years="2021-2022" >}}
     {{< hito year="2021" name="TimeSformer" status="minimal" >}}
       Bertasius et al. (FAIR): primer Video Transformer puro. Tokeniza cada frame como en ViT y aplica atención factorizada (espacial dentro de cada frame, temporal a través de frames). **Por qué importó:** mostró que ViT podía superar a 3D-CNN profundas con menos cómputo, abriendo la era Transformer en video.
@@ -93,6 +119,12 @@ Tres tensiones definen el campo: (1) cómo **modelar movimiento sin desperdiciar
     {{< /hito >}}
     {{< hito year="2024" name="Veo / Veo 2" status="minimal" >}}
       Google DeepMind (Veo 1 mayo 2024, Veo 2 dic 2024): generación de video con prompts complejos, control de cámara y estilos cinematográficos (Veo 1 hasta 1080p; Veo 2 hasta 4K). **Por qué importó:** alternativa frontera a Sora con foco en control fino y resolución.
+    {{< /hito >}}
+    {{< hito year="2024" name="SUTrack" status="covered" link="/papers/sutrack-chen-2024" >}}
+      Chen et al. (Dalian / Baidu): consolida cinco tareas de seguimiento de **un solo objeto** —RGB, profundidad, térmico, eventos y lenguaje— en un Transformer entrenado en una sesión, con una tokenización unificada y un *soft token type embedding* que lo vuelve agnóstico a la modalidad. **Por qué importó:** el modelo unificado supera a los especialistas en 11 datasets, evidencia de sinergia cross-modal. Cubierto en la [Clase 42](/clases/clase-42).
+    {{< /hito >}}
+    {{< hito year="2025" name="SAM 3" status="covered" link="/papers/sam3-meta-2025" >}}
+      Meta Superintelligence Labs: *Promptable Concept Segmentation* — dado un concepto en lenguaje natural (*"autobús escolar amarillo"*) o un ejemplar de imagen, detecta, segmenta y sigue **todas** las instancias que coinciden, con identidades persistentes. Introduce una **cabeza de presencia** que separa reconocer de localizar, y desacopla explícitamente un detector agnóstico a la identidad de un rastreador cuya función es separarlas. **Por qué importó:** lleva el seguimiento de categorías cerradas a vocabulario abierto; 48,8 de mask AP zero-shot en LVIS contra 38,5 del mejor previo. Cubierto en la [Clase 42](/clases/clase-42).
     {{< /hito >}}
     {{< hito year="2024" name="Kling / Runway Gen-3" status="minimal" >}}
       Kuaishou (Kling, jun 2024) y Runway (Gen-3 Alpha, jun 2024): generación de video competitiva con frontier occidental. **Por qué importó:** Kling demostró que China alcanzó paridad rápida; Runway llevó la generación a producción para creadores y estudios.
@@ -218,6 +250,9 @@ Las apuestas activas en video: **coherencia física genuina** (más allá de Sor
 ## Recursos relacionados
 
 **Fundamentos (predecesores conceptuales):**
+- [Seguimiento de Objetos](/fundamentos/seguimiento-de-objetos) — la otra mitad del campo junto al reconocimiento de acciones: SOT contra MOT, tracking-by-detection, online contra offline.
+- [Filtro de Kalman](/fundamentos/filtro-de-kalman), [Asignación Húngara](/fundamentos/asignacion-hungara) y [Re-identificación](/fundamentos/re-identificacion) — los tres componentes de todo tracker.
+- [Métricas de Tracking](/fundamentos/metricas-de-tracking) — MOTA, IDF1 y HOTA, y por qué ordenan los mismos sistemas al revés.
 - [Redes convolucionales](/fundamentos/redes-convolucionales) — base de C3D, I3D, R(2+1)D, SlowFast (toda la era 2-3 de video).
 - [Vision Transformer](/fundamentos/vision-transformer) — ViT es el ancestro directo de TimeSformer, ViViT, Video Swin.
 - [Self-attention](/fundamentos/self-attention) y [Transformer](/fundamentos/transformer) — la arquitectura sobre la que corren los Video Transformers y los modelos generativos modernos.
