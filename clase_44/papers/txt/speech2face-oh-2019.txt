@@ -1,0 +1,639 @@
+                                                                    Speech2Face: Learning the Face Behind a Voice
+
+                                                            Tae-Hyun Oh∗†               Tali Dekel∗    Changil Kim∗†                        Inbar Mosseri
+                                                       William T. Freeman†                    Michael Rubinstein                            Wojciech Matusik†
+                                                                                                  †
+                                                                                                      MIT CSAIL
+
+                                                                  Abstract
+
+
+
+
+arXiv:1905.09773v1 [cs.CV] 23 May 2019
+                                                                                                                                                      Speech2face
+                                         How much can we infer about a person’s looks from the
+                                         way they speak? In this paper, we study the task of recon-
+                                         structing a facial image of a person from a short audio
+                                                                                                                    True face    Face reconstructed         True face    Face reconstructed
+                                         recording of that person speaking. We design and train a                (for reference)    from speech          (for reference)    from speech
+                                         deep neural network to perform this task using millions of
+                                         natural Internet/YouTube videos of people speaking. Dur-
+                                         ing training, our model learns voice-face correlations that
+                                         allow it to produce images that capture various physical
+                                         attributes of the speakers such as age, gender and ethnicity.
+                                         This is done in a self-supervised manner, by utilizing the
+                                         natural co-occurrence of faces and speech in Internet videos,
+                                         without the need to model attributes explicitly. We evaluate
+                                         and numerically quantify how—and in what manner—our
+                                         Speech2Face reconstructions, obtained directly from audio,
+                                         resemble the true face images of the speakers.
+
+                                         1. Introduction
+                                         When we listen to a person speaking without seeing his/her
+                                         face, on the phone, or on the radio, we often build a mental           Figure 1. Top: We consider the task of reconstructing an image
+                                         model for the way the person looks [25, 45]. There is a strong         of a person’s face from a short audio segment of speech. Bottom:
+                                         connection between speech and appearance, part of which is             Several results produced by our Speech2Face model, which takes
+                                         a direct result of the mechanics of speech production: age,            only an audio waveform as input; the true faces are shown just for
+                                         gender (which affects the pitch of our voice), the shape of the        reference. Note that our goal is not to reconstruct an accurate image
+                                                                                                                of the person, but rather to recover characteristic physical features
+                                         mouth, facial bone structure, thin or full lips—all can affect
+                                                                                                                that are correlated with the input speech. All our results including
+                                         the sound we generate. In addition, other voice-appearance             the input audio, are available in the supplementary material (SM).
+                                         correlations stem from the way in which we talk: language,
+                                         accent, speed, pronunciations—such properties of speech
+                                         are often shared among nationalities and cultures, which can               We design a neural network model that takes the com-
+                                         in turn translate to common physical features [12].                    plex spectrogram of a short speech segment as input and
+                                             Our goal in this work is to study to what extent we can            predicts a feature vector representing the face. More specif-
+                                         infer how a person looks from the way they talk. Specifically,         ically, face information is represented by a 4096-D feature
+                                         from a short input audio segment of a person speaking, our             that is extracted from the penultimate layer (i.e., one layer
+                                         method directly reconstructs an image of the person’s face             prior to the classification layer) of a pre-trained face recogni-
+                                         in a canonical form (i.e., frontal-facing, neutral expression).        tion network [40]. We decode the predicted face feature into
+                                         Fig. 1 shows sample results of our method. Obviously, there            a canonical image of the person’s face using a separately-
+                                         is no one-to-one matching between faces and voices. Thus,              trained reconstruction model [10]. To train our model, we use
+                                         our goal is not to predict a recognizable image of the exact           the AVSpeech dataset [14], comprised of millions of video
+                                         face, but rather to capture dominant facial traits of the person       segments from YouTube with more than 100,000 different
+                                         that are correlated with the input speech.                             people speaking. Our method is trained in a self-supervised
+                                           ∗ The three authors contributed equally to this work.                manner, i.e., it simply uses the natural co-occurrence of
+                                         Correspondence: taehyun@csail.mit.edu                                  speech and faces in videos, not requiring additional informa-
+                                         Supplementary material (SM): https://speech2face.github.io             tion, e.g., human annotations.
+
+
+                                                                                                            1
+    Millions of                                     Face Recognition          4096-D Face Feature
+                                                                                       0
+  Internet videos                                                                      1                                : Pre-trained & fixed
+                                                                                       5
+
+
+
+
+                     Speech-Face pairs
+                                                                                       8            Loss
+                                                                                       7
+                                                                                       6                                : Trainable
+                                                                                       6
+
+
+
+                                                                       Voice Encoder                             Face Decoder   Recon. Face
+                                         Waveform     Spectrogram                      4
+                                                                                       3
+                                                                                       5
+                                                                                       3
+                                                                                       7
+                                                                                       6
+                                                                                       4
+
+
+                                                          Speech2Face Model
+Figure 2. Speech2Face model and training pipeline. The input to our network is a complex spectrogram computed from the short audio
+segment of a person speaking. The output is a 4096-D face feature that is then decoded into a canonical image of the face using a pre-trained
+face decoder network [10]. The module we train is marked by the orange-tinted box. We train the network to regress to the true face feature
+computed by feeding an image of the person (representative frame from the video) into a face recognition network [40] and extracting the
+feature from its penultimate layer. Our model is trained on millions of speech–face embedding pairs from the AVSpeech dataset [14].
+
+    We are certainly not the first to attempt to infer infor-                 reconstructed face images agree with the true face images
+mation about people from their voices. For example, pre-                      (unknown to the method) in terms of age, gender, ethnicity,
+dicting age and gender from speech has been widely ex-                        and various craniofacial measures and ratios.
+plored [53, 18, 16, 7, 50]. Indeed, one can consider an alter-
+native approach to attaching a face image to an input voice                   2. Ethical Considerations
+by first predicting some attributes from the person’s voice
+(e.g., their age, gender, etc. [53]), and then either fetching                Although this is a purely academic investigation, we feel
+an image from a database that best fits the predicted set of                  that it is important to explicitly discuss in the paper a set
+attributes, or using the attributes to generate an image [52].                of ethical considerations due to the potential sensitivity of
+However, this approach has several limitations. First, pre-                   facial information.
+dicting attributes from an input signal relies on the existence               Privacy. As mentioned, our method cannot recover the
+of robust and accurate classifiers and often requires ground                  true identity of a person from their voice (i.e., an exact im-
+truth labels for supervision. For example, predicting age,                    age of their face). This is because our model is trained to
+gender or ethnicity from speech requires building classifiers                 capture visual features (related to age, gender, etc.) that are
+specifically trained to capture those properties. More impor-                 common to many individuals, and only in cases where there
+tantly, this approach limits the predicted face to resemble                   is strong enough evidence to connect those visual features
+only a predefined set of attributes.                                          with vocal/speech attributes in the data (see “voice-face cor-
+    We aim at studying a more general, open question: what                    relations” below). As such, the model will only produce
+kind of facial information can be extracted from speech? Our                  average-looking faces, with characteristic visual features
+approach of predicting full visual appearance (e.g., a face im-               that are correlated with the input speech. It will not produce
+age) directly from speech allows us to explore this question                  images of specific individuals.
+without being restricted to predefined facial traits. Specif-                 Voice-face correlations and dataset bias. Our model is
+ically, we show that our reconstructed face images can be                     designed to reveal statistical correlations that exist between
+used as a proxy to convey the visual properties of the person                 facial features and voices of speakers in the training data.
+including age, gender and ethnicity. Beyond these dominant                    The training data we use is a collection of educational videos
+features, our reconstructions reveal non-negligible correla-                  from YouTube [14], and does not represent equally the entire
+tions between craniofacial features [31] (e.g., nose structure)               world population. Therefore, the model—as is the case with
+and voice. This is achieved with no prior information or the                  any machine learning model—is affected by this uneven
+existence of accurate classifiers for these types of fine geo-                distribution of data.
+metric features. In addition, we believe that predicting face                     More specifically, if a set of speakers might have vocal-
+images directly from voice may support useful applications,                   visual traits that are relatively uncommon in the data, then
+such as attaching a representative face to phone/video calls                  the quality of our reconstructions for such cases may degrade.
+based on the speaker’s voice.                                                 For example, if a certain language does not appear in the
+    To our knowledge, our work is the first to explore a                      training data, our reconstructions will not capture well the
+generic (speaker independent) model for reconstructing face                   facial attributes that may be correlated with that language.
+images directly from speech. We test our model on various                         Note that some of the features in our predicted faces may
+speakers and numerically evaluate different aspects of our                    not even be physically connected to speech, for example hair
+reconstructions including: how well a true face image can be                  color or style. However, if many speakers in the training
+retrieved based solely on an audio query; and how well our                    set who speak in a similar way (e.g., in the same language)
+also share some common visual traits (e.g., a common hair          or body animations from music or speech has been gaining
+color or style), then those visual traits may show up in the       interest [48, 26, 47, 43]. However, such methods typically
+predictions.                                                       parametrize the reconstructed subject a priori, and its texture
+    For the above reasons, we recommend that any further           is manually created or mined from a collection of textures.
+investigation or practical use of this technology will be care-    In the context of pixel-level generative methods, Sadoughi
+fully tested to ensure that the training data is representative    and Busso [41] reconstruct lip motions from speech, and
+of the intended user population. If that is not the case, more     Wiles et al. [51] control the pose and expression of a given
+representative data should be broadly collected.                   face using audio (or another face). While not directly related
+Categories. In our experimental section, we mention in-            to audio, Yan et al. [52] and Liu and Tuzel [30] synthesize a
+ferred demographic categories such as “White” and “Asian”.         face image from given facial attributes as input. Our model
+These are categories defined and used by a commercial face         reconstructs a face image directly from speech, with no ad-
+attribute classifier [15], and were only used for evaluation       ditional information. Finally, Duarte et al. [13] synthesize
+in this paper. Our model is not supplied with and does not         face images from speech using a GAN model, but their goal
+make use of this information at any stage.                         is to recover the true face of the speaker including expres-
+                                                                   sion and pose. In contrast, our goal is to recover general
+                                                                   facial traits, i.e., average looking faces in canonical pose and
+3. Related Work                                                    expression but capturing dominant visual attributes across
+Audio-visual cross-modal learning.            The natural co-      many speakers.
+occurrence of audio and visual signals often provides rich su-
+pervision signal, without explicit labeling, also known as self-   4. Speech2Face (S2F) Model
+supervision [11] or natural supervision [24]. Arandjelović        The large variability in facial expressions, head poses, occlu-
+and Zisserman [4] leveraged this to learn a generic audio-         sions, and lighting conditions in natural face images makes
+visual representations by training a deep network to classify      the design and training of a Speech2Face model non-trivial.
+if a given video frame and a short audio clip correspond to        For example, a straightforward approach of regressing from
+each other. Aytar et al. [6] proposed a student-teacher train-     input speech to image pixels does not work; such a model has
+ing procedure in which a well established visual recognition       to learn to factor out many irrelevant variations in the data
+model was used to transfer the knowledge obtained in the vi-       and to implicitly extract a meaningful internal representation
+sual modality to the sound modality, using unlabeled videos.       of faces—a challenging task by itself.
+Similarly, Castrejon et al. [8] designed a shared audio-visual         To sidestep these challenges, we train our model to regress
+representation that is agnostic of the modality. Such learned      to a low-dimensional intermediate representation of the
+audio-visual representations have been used for cross-modal        face. More specifically, we utilize the VGG-Face model,
+retrieval [38, 39, 46], sound source localization [42, 5, 37],     a face recognition model pre-trained on a large-scale face
+and sound source separation [54, 14]. Our work utilizes the        dataset [40], and extract a 4096-D face feature from the
+natural co-occurrence of faces and voices in Interent videos.      penultimate layer (fc7) of the network. These face features
+We use a pre-trained face recognition network to transfer          were shown to contain enough information to reconstruct the
+facial information to the voice modality.                          corresponding face images while being robust to many of
+Speech-face association learning. The associations be-             the aforementioned variations [10].
+tween faces and voices have been studied extensively in                Our Speech2Face pipeline, illustrated in Fig. 2, consists
+many scientific disciplines. In the domain of computer vi-         of two main components: 1) a voice encoder, which takes
+sion, different cross-modal matching methods have been pro-        a complex spectrogram of speech as input, and predicts a
+posed: a binary or multi-way classification task [34, 33, 44];     low-dimensional face feature that would correspond to the
+metric learning [27, 21]; and the multi-task classification        associated face; and 2) a face decoder, which takes as input
+loss [50]. Cross-modal signals extracted from faces and            the face feature and produces an image of the face in a
+voices have been used to disambiguate voiced and unvoiced          canonical form (frontal-facing and with neutral expression).
+consonants [36, 9]; to identify active speakers of a video         During training, the face decoder is fixed, and we train only
+from non-speakers therein [20, 17]; to separate mixed speech       the voice encoder that predicts the face feature. The voice
+signals of multiple speakers [14]; to predict lip motions from     encoder is a model we designed and trained, while we used
+speech [36, 3]; or to learn the correlation between speech         a face decoder model proposed by Cole et al. [10]. We now
+and emotion [2]. Our goal is to learn the correlations be-         describe both models in detail.
+tween facial traits and speech, by directly reconstructing a       Voice encoder network. Our voice encoder module is a
+face image from a short audio segment.                             convolutional neural network that turns the spectrogram of a
+Visual reconstruction from audio.            Various methods       short input speech into a pseudo face feature, which is sub-
+have been recently proposed to reconstruct visual infor-           sequently fed into the face decoder to reconstruct the face
+mation from different types of audio signals. In a more            image (Fig. 2). The architecture of the voice encoder is sum-
+graphics-oriented application, automatic generation of facial      marized in Table 1. The blocks of a convolution layer, ReLU,
+         Original image      Reconstruction      Reconstruction           Original image       Reconstruction      Reconstruction
+          (ref. frame)        from image          from audio               (ref. frame)         from image          from audio
+Figure 3. Qualitative results on the AVSpeech test set. For every example (triplet of images) we show: (left) the original image, i.e.,
+a representative frame from the video cropped around the speaker’s face; (middle) the frontalized, lighting-normalized face decoder
+reconstruction from the VGG-Face feature extracted from the original image; (right) our Speech2Face reconstruction, computed by decoding
+the predicted VGG-Face feature from the audio. In this figure, we highlight successful results of our method. Some failure cases are shown
+in Fig. 12, and more results (including the input audio for all the examples) can be found in the SM.
+          0DOH                    
+          )HPDOH                                 
+                                           
+                                   
+                       CONV
+                                 CONV      CONV
+                                                          CONV                  CONV                 CONV                  CONV   CONV             AVGPOOL
+  Layer          Input  RELU 
+                                   RELU    RELU
+                                                MAXPOOL    RELU    MAXPOOL       RELU     MAXPOOL     RELU      MAXPOOL     RELU   RELU      CONV     RELU     FC     FC
+                        BN BN        BN
+                                                            BN                    BN                   BN                    BN     BN                 BN     RELU
+                                     
+ Channels        2           64       64    128         –       128           –      128       –           256        –         512     512      512     –       4096    4096
+                                     
+  Stride         –            1        1     1       2×1         1           2×1      1       2×1           1        2×1         1       2        2      1         1       1
+           !                          
+Kernel size:+,7( –         4 × 4 4×4   4×4         ×1
+                                                     2     4×4           2×1    4×4       2×1         4×4        2×1       4×4     4×4      4×4     ∞×1      1×1     1×1
+          ,1',$                    
+
+Table 1.%/$&.
+          Voice encoder
+        $6,$1
+                       
+                      
+                           architecture. The input spectrogram dimensions are 598 × 257 (time × frequency) for a 6-second audio segment
+(which can be arbitrarily long), with the two input channels in the table corresponding to the spectrogram’s real and imaginary components.
+
+                                                                      0DOH            
+                                                                      )HPDOH                       
+                                                                                             
+                                                                                      
+                                                                                      
+                                                                                       
+                                                                                       
+                                                                                        
+                                                                                        
+                                                                      !                  
+                                                                      :+,7(                        
+                                                                      ,1',$            
+                                                                      %/$&.            
+                                                                      $6,$1           
+                                                                                                                                          Age
+
+
+
+
+                                    (a) Confusion matrices for the attributes                                                (b) AVSpeech dataset statistics
+Figure 4. Facial attribute evaluation. (a) confusion matrices (with row-wise normalization) comparing the classification results on our
+Speech2Face image reconstructions (S2F) and those obtained from the original images for gender, age, and ethnicity; the stronger diagonal
+tendency the better performance. Ethnicity performance in (a) appears to be biased due to uneven distribution of the training set shown in (b).
+
+and batch normalization [23] alternate with max-pooling                                       to the VGG-Face model to extract the 4096-D feature vec-
+layers, which pool along only the temporal dimension of the                                   tor, vf . This serves as the supervision signal for our voice
+spectrograms, while leaving the frequency information car-                                    encoder—the feature, vs , of our voice encoder is trained to
+ried over. This is intended to preserve more of the vocal char-                               predict vf .
+acteristics, since they are better contained in the frequency                                     A natural choice for the loss function would be the L1 dis-
+content, whereas linguistic information usually spans longer                                  tance between the features: kvf − vs k1 . However, we found
+time duration [22]. At the end of these blocks, we apply                                      that the training undergoes slow and unstable progression
+average pooling along the temporal dimension. This allows                                     with this loss alone. To stabilize the training, we introduce ad-
+us to efficiently aggregate information over time and makes                                   ditional loss terms, motivated by Castrejon et al. [8]. Specifi-
+the model applicable to input speech of varying duration.                                     cally, we additionally penalize the difference in the activation
+The pooled features are then fed into two fully-connected                                     of the last layer of the face encoder, fVGG : R4096 → R2622 ,
+layers to produce a 4096-D face feature.                                                      i.e., fc8 of VGG-Face, and that of the first layer of the face
+                                                                                              decoder, fdec : R4096 →R1000 , which are pre-trained and
+Face decoder network. The goal of the face decoder is                                         fixed during training the voice encoder. We feed both our
+to reconstruct the image of a face from a low-dimensional                                     predictions and the ground truth face features to these layers
+face feature. We opt to factor out any irrelevant variations                                  to calculate the losses. The final loss is:
+(pose, lighting, etc.), while preserving the facial attributes.                                                                                           vf
+                                                                                                                                                                          2
+                                                                                                                                                                  vs
+To do so, we use the face decoder model of Cole et al. [10]                                     Ltotal = kfdec (vf ) − fdec (vs )k1 + λ1                 kvf k − kvs k
+                                                                                                                                                                          2
+to reconstruct a canonical face image. We train this model                                                       +λ2 Ldistill (fVGG (vf ), fVGG (vs )) ,                 (1)
+using the same face features extracted from the VGG-Face
+model as input to the face decoder. This model is trained                                     where λ1 =0.025 and λ2 =200. λ1 and λ2 are tuned such
+separately and kept fixed during the voice encoder training.                                  that the gradient magnitude of each term with respect to
+                                                                                              vs are within a similar scale at an early iteration (we
+Training. Our voice encoder is trained in a self-supervised
+                                                                                              measured at the 1000th iteration).        The knowledge distil-
+manner, using the natural co-occurrence of a speaker’s                                                                           P
+                                                                                              lation loss Ldistill (a, b) = − i p(i) (a) log p(i) (b), where
+speech and facial images in videos. To this end, we use
+the AVSpeech dataset [14], a large-scale “in-the-wild” audio-                                 p(i) (a) = Pexp(a  i /T )
+                                                                                                                         , is used as an alternative of the cross
+                                                                                                           j exp(aj /T )
+visual dataset of people speaking. A single frame containing                                  entropy loss, which encourages the output of a network to
+the speaker’s face is extracted from each video clip and fed                                  approximate the output of another [19]. T =2 is used as
+recommended by the authors, which makes the activation
+smoother. We found that enforcing similarity over these ad-
+ditional layers stabilized and sped up the training process, in
+addition to a slight improvement in the resulting quality.
+Implementation details. We use up to 6 seconds of audio                     (a) Landmarks marked on reconstructions from image (F2F)
+taken from the beginning of each video clip in AVSpeech. If
+the video clip is shorter than 6 seconds, we repeat the audio
+such that it becomes at least 6-seconds long. The audio wave-
+form is resampled at 16 kHz and only a single channel is used.
+Spectrograms are computed similarly to Ephrat et al. [14] by
+taking STFT with a Hann window of 25 mm, the hop length            (b) Landmarks marked on our corresponding reconstructions from speech (S2F)
+of 10 ms, and 512 FFT frequency bands. Each complex
+                                                                           Face measurement                 Correlation        p-value
+spectrogram S subsequently goes through the power-law
+compression, resulting sgn(S)|S|0.3 for real and imaginary                 Upper lip height                  0.16              p < 0.001
+independently, where sgn(·) denotes the signum. We run                     Lateral upper lip heights         0.26              p < 0.001
+the CNN-based face detector from Dlib [28], crop the face                  Jaw width                         0.11              p < 0.001
+                                                                           Nose height                       0.14              p < 0.001
+regions from the frames, and resize them to 224 × 224 pixels.
+                                                                           Nose width                        0.35              p < 0.001
+The VGG-Face features are computed from the resized face                   Labio oral region                 0.17              p < 0.001
+images. The computed spectrogram and VGG-Face feature                      Mandibular idx                    0.20              p < 0.001
+of each segment are collected and used for training. The                   Intercanthal idx                  0.21              p < 0.001
+resulting training and test sets include 1.7 and 0.15 million              Nasal index                       0.38              p < 0.001
+spectra–face feature pairs, respectively. Our network is im-               Vermilion height idx              0.29              p < 0.001
+plemented in TensorFlow and optimized by ADAM [29]                         Mouth face with idx               0.20              p < 0.001
+with β1 = 0.5,  = 10−4 , the learning rate of 0.001 with the              Nose area                         0.28              p < 0.001
+exponentially decay rate of 0.95 at every 10,000 iterations,               Random baseline                   0.02              –
+and the batch size of 8 for 3 epochs.                                                    (c) Pearson correlation coefficient
+                                                                   Figure 5. Craniofacial features. We measure the correlation be-
+5. Results                                                         tween craniofacial features extracted from (a) face decoder recon-
+                                                                   structions from the original image (F2F), and (b) features extracted
+We test our model both qualitatively and quantitatively on
+                                                                   from our corresponding Speech2Face reconstructions (S2F); the
+the AVSpeech dataset [14] and the VoxCeleb dataset [35].           features are computed from detected facial landmarks, as described
+Our goal is to gain insights and to quantify how—and in            in [31]. The table reports Pearson correlation coefficient and statis-
+which manner—our Speech2Face reconstructions resemble              tical significance computed over 1,000 test images for each feature.
+the true face images.                                              Random baseline is computed for “Nasal index” by comparing
+   Qualitative results on the AVSpeech test set are shown          random pairs of F2F reconstruction (a) and S2F reconstruction (b).
+in Fig. 3. For each example, we show the true image of the
+speaker for reference (unknown to our model), the face re-
+                                                                   cally, we evaluate and compare age, gender, and ethnicity, by
+constructed from the face feature (computed from the true
+                                                                   running the Face++ classifiers on the original images and our
+image) by the face decoder (Sec. 4), and the face recon-
+                                                                   Speech2Face reconstructions. The Face++ classifiers return
+structed from a 6-seconds audio segment of the person’s
+                                                                   either “male” or “female” for gender, a continuous number
+speech, which is our Speech2Face result. While looking
+                                                                   for age, and one of the four values, “Asian”, “black”, “India”,
+somewhat like average faces, our Speech2Face reconstruc-
+                                                                   or “white”, for ethnicity.1
+tions capture rich physical information about the speaker,
+such as their age, gender, and ethnicity. The predicted im-            Fig. 4(a) shows confusion matrices for each of the at-
+ages also capture additional properties like the shape of the      tributes, comparing the attributes inferred from the original
+face or head (e.g., elongated vs. round), which we often find      images with those inferred from our Speech2Face recon-
+consistent with the true appearance of the speaker; see the        structions (S2F). See the supplementary material for similar
+last two rows in Fig. 3 for instance.                              evaluations of our face-decoder reconstructions from the
+                                                                   images (F2F). As can be seen, for age and gender the clas-
+5.1. Facial Features Evaluation                                    sification results are highly correlated. For gender, there is
+                                                                   an agreement of 94% in male/female labels between the
+We quantify how well different facial attributes are being cap-    true images and our reconstructions from speech. For ethnic-
+tured in our Speech2Face reconstructions and test different        ity, there is a good correlation on the “white” and “Asian”,
+aspects of our model.                                              but we observe less agreement on “India” and “black”. We
+Demographic attributes. We use Face++ [15], a leading
+commercial service for computing facial attributes. Specifi-      1 We directly refer to the Face++ labels, which are not our terminology.
+         Length    cos (deg)          L2              L1                  Duration    Metric    R@1      R@2       R@5      R@10
+     3 seconds    48.43 ± 6.01   0.19 ± 0.03     9.81 ± 1.74                3 sec       L2       5.86     10.02    18.98     28.92
+     6 seconds    45.75 ± 5.09   0.18 ± 0.02     9.42 ± 1.54                3 sec       L1       6.22      9.92    18.94     28.70
+                                                                            3 sec       cos      8.54     13.64    24.80     38.54
+Table 2. Feature similarity. We measure the similarity between our
+features predicted from speech and the corresponding face features          6 sec       L2       8.28     13.66    24.66     35.84
+computed on the true images of the speakers. We report average              6 sec       L1       8.34     13.70    24.66     36.22
+                                                                            6 sec       cos     10.92     17.00    30.60     45.82
+cosine, L2 and L1 distances over 5000 random samples from the
+AVSpeech test set, using 3- and 6-second audio segments.                       Random            1.00      2.00     5.00     10.00
+                                                                     Table 3. S2F→Face retrieval performance. We measure retrieval
+                                                                     performance by recall at K (R@K, in %), which indicates the
+                                                                     chance of retrieving the true image of a speaker within the top-K
+                                                                     results. We used a database of 5,000 images for this experiment;
+                                                                     see Fig. 7 for qualitative results. The higher the better. Random
+3 sec.
+                                                                     chance is presented as a baseline.
+
+
+
+6 sec.
+
+
+Figure 6. The effect of input audio duration. We compare our
+face reconstructions when using 3-second (middle row) and 6-
+second (bottom row) input voice segments at test time (in both
+cases we use the same model, trained on 6-second segments). The
+top row shows representative frames from the videos for reference.
+With longer speech duration the reconstructed faces capture the
+facial attributes better.
+
+believe this is because those classes have a smaller represen-
+tation in the data (see statistics we computed on AVSpeech
+in Fig. 4(b)). The performance can potentially be improved
+by leveraging the statistics to balance the training data for
+the voice encoder model, which we leave for future work.
+Craniofacial attributes. We evaluated craniofacial mea-              S2F recon.                   Retrieved top-5 results
+surements commonly used in the literature, for capturing
+                                                                     Figure 7. S2F→Face retrieval examples. We query a database of
+ratios and distances in the face [31]. For each such measure-        5,000 face images by comparing our Speech2Face prediction of in-
+ment, we computed the correlation between F2F (Fig. 5(a)),           put audio to all VGG-Face face features in the database (computed
+and our corresponding S2F reconstructions (Fig. 5(b)). Face          directly from the original faces). For each query, we show the top-5
+landmarks were computed using the DEST library [1]. Note             retrieved samples. The last row is an example where the true face
+that this evaluation is made possible because we are working         was not among the top results, but still shows visually close results
+with normalized faces (neutral expression, frontal-facing),          to the query. More results are available in the SM.
+thus differences between the facial landmarks’ positions re-
+flect geometric craniofacial changes. Fig. 5(c) shows the            tent improvement in all error metrics; this further evidences
+Pearson correlation coefficient for several measures, com-           the qualitative improvement we observe in Fig. 6.
+puted over 1,000 random samples from the AVSpeech test                   We further evaluated how accurately we can retrieve the
+set. As can be seen, there is statistically significant (i.e.,       true speaker from a database of face images. To do so, we
+p < 0.001) positive correlation for several measurements. In         take the speech of a person to predict the feature using our
+particular, the highest correlation is measured for the nasal        Speech2Face model, and query it by computing its distances
+index (0.38) and nose width (0.35), the features indicative of       to the face features of all face images in the database. We
+nose structures that may affect a speaker’s voice.                   report the retrieval performance by measuring the recall at K,
+Feature similarity. We test how well a person can be rec-            i.e., the percentage of time the true face is retrieved within the
+ognized from on the face features predicted from speech. We          rank of K. Table 3 shows the computed recalls for varying
+first directly measure the cosine distance between our pre-          configurations. In all cases, the cross-modal retrieval using
+dicted features and the true ones obtained from the original         our model shows a significant performance gain compared to
+face image of the speaker. Table 2 shows the average error           the random chance. It also shows that a longer duration of the
+over 5,000 test images, for the predictions using 3s and 6s          input speech noticeably improves the performance. In Fig. 7,
+audio segments. The use of longer audio clips exhibits consis-       we show several examples of 5 nearest faces such retrieved,
+     Iteration                   300k iter.                   500k iter.
+  Original image
+   (ref. frame)          Pixel loss       Full loss   Pixel loss       Full loss
+
+
+
+
+                                                                                                                 (a)       (a)                (b)
+                                                                                        Figure 10. Temporal and cross-video consistency. Face recon-
+                                                                                        struction from different speech segments of the same person taken
+                                                                                        from different parts within (a) the same or from (b) a different
+                                                                                        video.
+                                                                                         (a)                                      (b)
+Figure 8. Comparison to a pixel loss. The results obtained with
+an L1 loss on the output image and our full loss (Eq. 1) are shown
+after 300k and 500k training iterations (indicating convergence).
+
+Loss                                                                                     (b)Asian male speaking in English (left) An Asian girl speaking in English
+                                                                                        An
+                                                                                        & Chinese (right)
+1.50                                                                                    Figure 11. The effect of language. We notice mixed performance
+                                                                                        in terms of the ability of the model to handle languages and accents.
+                                                                                        (a) A sample case of language-dependent face reconstructions. (b)
+1.46
+                                                                                        A sample case that successfully factors out the language.
+
+         w/o BN, 3 sec. audio
+                                                                                        We tested the effect of the duration of the input audio during
+         w/ BN, 3 sec. audio
+1.42     w/ BN, 6 sec. audio                                                            both the train and test stages. Specifically, we trained two
+                           40k                 80k             120k
+                                                                                        models with 3- and 6-second speech segments. We found
+                                                                           Iterations
+                                                                                        that during the training time, the audio duration has an only
+Figure 9. Training convergence patterns. BN denotes batch nor-
+                                                                                        subtle effect on the convergence speed, without much effect
+malization. The red and green curves are obtained by using 3- and
+6-second audio clips as input during training, respectively (dashed                     on the overall loss and the quality of reconstructions (Fig. 9).
+line: training loss; solid line: validation loss). The face thumbnails                  However, we found that feeding longer speech as input at
+show reconstructions from models trained with and without BN.                           test time leads to improvement in reconstruction quality, that
+                                                                                        is, reconstructed faces capture the personal attributes better,
+which demonstrate the consistent facial characteristics that                            regardless of which of the two models are used. Fig. 6 shows
+are being captured by our predicted face features.                                      several qualitative comparisons, which are also consistent
+                                                                                        with the quantitative evaluations in Tables 2 and 3.
+t-SNE visualization for learned feature analysis. To                                        Fig. 9 also shows the training curves w/ and w/o Batch
+gain more insights on our predicted features, we present                                Normalization (BN). As can be seen, without BN the re-
+2-D t-SNE plots [49] of the features in the SM.                                         constructed faces converge to an average face. With BN the
+                                                                                        results contain much richer facial information.
+5.2. Ablation Studies
+                                                                                        Additional observations and limitations. In Fig. 10, we
+Comparisons with a direct pixel loss. Fig. 8 shows qual-                                infer faces from different speech segments of the same per-
+itative comparisons between the model trained with our full                             son, taken from different parts within the same video, and
+loss (Eq. 1) and the same model trained with only an image                              from a different video, in order to test the stability of our
+loss, i.e., an L1 loss between pixel values on the decoded                              Speech2Face reconstruction. The reconstructed face images
+image layer (with the decoder fixed). The model trained with                            are consistent within and between the videos. We show more
+the image loss results in lower facial image quality and fewer                          such results in the SM.
+facial variations. Our loss, measured at an early layer of the                              To qualitatively test the effect of language and accent, we
+face decoder, allows for better supervision and leads to faster                         probe the model with an Asian male example speaking the
+training and higher quality results.                                                    same sentence in English and Chinese (Fig. 11(a)). While
+The effect of audio duration and batch normalization.                                   having the same reconstructed face in both cases would be
+ideal, the model inferred different faces based on the spo-           Such cartoon re-rendering of the face may be useful as a
+ken language. However, in other examples, e.g., Fig. 11(b),           visual representation of a person during a phone or a video-
+the model was able to successfully factor out the language,           conferencing call, when the person’s identity is unknown or
+reconstructing a face with Asian features even though the             the person prefers not to share his/her picture. Our recon-
+girl was speaking in English with no apparent accent (the             structed faces may also be used directly, to assign faces to
+audio is available in the SM). In general, we observed mixed          machine-generated voices used in home devices and virtual
+behaviors and a more thorough examination is needed to                assistants.
+determine to which extent the model relies on language.
+   More generally, the ability to capture the latent attributes       6. Conclusion
+from speech, such as age, gender, and ethnicity, depends on
+several factors such as accent, spoken language, or voice             We have presented a novel study of face reconstruction di-
+pitch. Clearly, in some cases, these vocal attributes would           rectly from the audio recording of a person speaking. We
+not match the person’s appearance. Several such typical               address this problem by learning to align the feature space of
+speech-face mismatch examples are shown in Fig. 12.                   speech with that of a pre-trained face decoder using millions
+                                                                      of natural videos of people speaking. We have demonstrated
+5.3. Speech2cartoon                                                   that our method can predict plausible faces with the facial
+                                                                      attributes consistent with those of real images. By recon-
+Our face images reconstructed from speech may be used
+                                                                      structing faces directly from this cross-modal feature space,
+for generating personalized cartoons of speakers from their
+                                                                      we validate visually the existence of cross-modal biometric
+voices, as shown in Fig. 13. We use Gboard, the keyboard
+                                                                      information postulated in previous studies [27, 34]. We be-
+app available on Android phones, which is also capable of
+                                                                      lieve that generating faces, as opposed to predicting specific
+analyzing a selfie image to produce a cartoon-like version
+                                                                      attributes, may provide a more comprehensive view of voice-
+of the face [32]. As can be seen, our reconstructions cap-
+                                                                      face correlations and can open up new research opportunities
+ture the facial attributes well enough for the app to work.
+                                                                      and applications.
+                                                                      Acknowledgment The authors would like to thank Suwon
+                                                                      Shon, James Glass, Forrester Cole and Dilip Krishnan for
+                                                                      helpful discussion. T.-H. Oh and C. Kim were supported by
+                                                                      QCRI-CSAIL Computer Science Research Program at MIT.
+        (a) Gender mismatch         (c) Age mismacth (old to young)
+                                                                      References
+                                                                       [1] One Millisecond Deformable Shape Tracking Library
+                                                                           (DEST). https://github.com/cheind/dest. 7
+                                                                       [2] S. Albanie, A. Nagrani, A. Vedaldi, and A. Zisserman. Emo-
+       (b) Ethnicity mismatch       (d) Age mismacth (young to old)        tion recognition in speech using cross-modal transfer in the
+Figure 12. Example failure cases. (a) High-pitch male voice, e.g.,         wild. In ACM Multimedia Conference (MM), 2018. 3
+of kids, may lead to a face image with female features. (b) Spoken     [3] G. Andrew, R. Arora, J. Bilmes, and K. Livescu. Deep canon-
+language does not match ethnicity. (c-d) Age mismatches.                   ical correlation analysis. In International Conference on
+                                                                           Machine Learning (ICML), 2013. 3
+                                                                       [4] R. Arandjelovic and A. Zisserman. Look, listen and learn. In
+                                                                           IEEE International Conference on Computer Vision (ICCV),
+                                                                           2017. 3
+                                                                       [5] R. Arandjelovic and A. Zisserman. Objects that sound. In
+                                                                           European Conference on Computer Vision (ECCV), Springer,
+                                                                           2018. 3
+                                                                       [6] Y. Aytar, C. Vondrick, and A. Torralba. Soundnet: Learning
+                                                                           sound representations from unlabeled video. In Advances in
+                                                                           Neural Information Processing Systems (NIPS), 2016. 3
+                                                                       [7] M. H. Bahari and H. Van Hamme. Speaker age estimation
+                                                                           and gender detection based on supervised non-negative matrix
+                 (a)              (b)               (c)                    factorization. In IEEE Workshop on Biometric Measurements
+Figure 13. Speech-to-cartoon. Our reconstructed faces from audio           and Systems for Security and Medical Applications, 2011. 2
+(b) can be re-rendered as cartoons (c) using existing tools, such      [8] L. Castrejon, Y. Aytar, C. Vondrick, H. Pirsiavash, and A. Tor-
+as the personalized emoji app available in Gboard, the keyboard            ralba. Learning aligned cross-modal representations from
+app in Android phones [32]. (a) The true images of the person are          weakly aligned data. In IEEE Conference on Computer Vi-
+shown for reference.                                                       sion and Pattern Recognition (CVPR), 2016. 3, 5
+ [9] J. S. Chung, A. W. Senior, O. Vinyals, and A. Zisserman.         [26] T. Karras, T. Aila, S. Laine, A. Herva, and J. Lehtinen. Audio-
+     Lip reading sentences in the wild. In IEEE Conference on              driven facial animation by joint end-to-end learning of pose
+     Computer Vision and Pattern Recognition (CVPR), 2017. 3               and emotion. ACM Transactions on Graphics (SIGGRAPH),
+[10] F. Cole, D. Belanger, D. Krishnan, A. Sarna, I. Mosseri, and          36(4):94, 2017. 3
+     W. T. Freeman. Synthesizing normalized faces from facial         [27] C. Kim, H. V. Shin, T.-H. Oh, A. Kaspar, M. Elgharib, and
+     identity features. In IEEE Conference on Computer Vision              W. Matusik. On learning associations of faces and voices.
+     and Pattern Recognition (CVPR), 2017. 1, 2, 3, 5                      In Asian Conference on Computer Vision (ACCV), Springer,
+[11] V. R. de Sa. Minimizing disagreement for self-supervised clas-        2018. 3, 9
+     sification. In Proceedings of the 1993 Connectionist Models      [28] D. E. King. Dlib-ml: A machine learning toolkit. Journal of
+     Summer School, page 300. Psychology Press, 1994. 3                    Machine Learning Research (JMLR), 10:1755–1758, 2009. 6
+[12] P. B. Denes, P. Denes, and E. Pinson. The speech chain.          [29] D. P. Kingma and J. Ba. Adam: A method for stochastic
+     Macmillan, 1993. 1                                                    optimization. In International Conference for Learning Rep-
+[13] A. Duarte, F. Roldan, M. Tubau, J. Escur, S. Pascual, A. Sal-         resentations (ICLR), 2015. 6
+     vador, E. Mohedano, K. McGuinness, J. Torres, and X. Giro-       [30] M.-Y. Liu and O. Tuzel. Coupled generative adversarial
+     i-Nieto. Wav2Pix: speech-conditioned face generation us-              networks. In Advances in Neural Information Processing
+     ing generative adversarial networks. In IEEE International            Systems (NIPS), 2016. 3
+     Conference on Acoustics, Speech and Signal Processing            [31] M. Merler, N. Ratha, R. S. Feris, and J. R. Smith. Diversity
+     (ICASSP), 2019. 3                                                     in faces. CoRR, abs/1901.10436, 2019. 2, 6, 7
+[14] A. Ephrat, I. Mosseri, O. Lang, T. Dekel, K. Wilson, A. Has-     [32] Mini stickers for Gboard. Google Inc. https://goo.gl/
+     sidim, W. T. Freeman, and M. Rubinstein. Looking to listen at         hu5DsR. 9
+     the cocktail party: A speaker-independent audio-visual model
+     for speech separation. ACM Transactions on Graphics (SIG-        [33] A. Nagrani, S. Albanie, and A. Zisserman. Learnable PINs:
+     GRAPH), 37(4):112:1–112:11, 2018. 1, 2, 3, 5, 6                       Cross-modal embeddings for person identity. In European
+                                                                           Conference on Computer Vision (ECCV), Springer, 2018. 3
+[15] L. face-based identity verification service. Face++. https:
+     //www.faceplusplus.com/attributes/. 3, 6                         [34] A. Nagrani, S. Albanie, and A. Zisserman. Seeing voices and
+                                                                           hearing faces: Cross-modal biometric matching. In IEEE Con-
+[16] M. Feld, F. Burkhardt, and C. Müller. Automatic speaker
+                                                                           ference on Computer Vision and Pattern Recognition (CVPR),
+     age and gender recognition in the car for tailoring dialog and
+                                                                           2018. 3, 9
+     mobile services. In Interspeech, 2010. 2
+[17] I. D. Gebru, S. Ba, G. Evangelidis, and R. Horaud. Tracking      [35] A. Nagrani, J. S. Chung, and A. Zisserman. VoxCeleb: A
+     the active speaker based on a joint audio-visual observation          large-scale speaker identification dataset. Interspeech, 2017.
+     model. In IEEE International Conference on Computer Vision            6
+     Workshops, 2015. 3                                               [36] J. Ngiam, A. Khosla, M. Kim, J. Nam, H. Lee, and A. Y. Ng.
+[18] J. H. Hansen, K. Williams, and H. Bořil. Speaker height esti-        Multimodal deep learning. In International Conference on
+     mation from speech: Fusing spectral regression and statistical        Machine Learning (ICML), 2011. 3
+     acoustic models. The Journal of the Acoustical Society of        [37] A. Owens and A. A. Efros. Audio-visual scene analysis with
+     America, 138(2):1052–1067, 2015. 2                                    self-supervised multisensory features. In European Confer-
+[19] G. Hinton, O. Vinyals, and J. Dean. Distilling the knowledge          ence on Computer Vision (ECCV), Springer, 2018. 3
+     in a neural network. CoRR, abs/1503.02531, 2015. 5               [38] A. Owens, P. Isola, J. H. McDermott, A. Torralba, E. H. Adel-
+[20] K. Hoover, S. Chaudhuri, C. Pantofaru, M. Slaney, and                 son, and W. T. Freeman. Visually indicated sounds. In
+     I. Sturdy. Putting a face to the voice: Fusing audio and vi-          IEEE Conference on Computer Vision and Pattern Recog-
+     sual signals across a video to determine speakers. CoRR,              nition (CVPR), 2016. 3
+     abs/1706.00079, 2017. 3                                          [39] A. Owens, J. Wu, J. H. McDermott, W. T. Freeman, and
+[21] S. Horiguchi, N. Kanda, and K. Nagamatsu. Face-voice                  A. Torralba. Learning sight from sound: Ambient sound pro-
+     matching using cross-modal embeddings. In ACM Multi-                  vides supervision for visual learning. International Journal
+     media Conference (MM), 2018. 3                                        of Computer Vision (IJCV), 126(10):1120–1137, 2018. 3
+[22] W.-N. Hsu, Y. Zhang, and J. Glass. Unsupervised learning of      [40] O. M. Parkhi, A. Vedaldi, and A. Zisserman. Deep face
+     disentangled and interpretable representations from sequential        recognition. In British Machine Vision Conference (BMVC),
+     data. In Advances in Neural Information Processing Systems            2015. 1, 2, 3
+     (NIPS), 2017. 5                                                  [41] N. Sadoughi and C. Busso. Speech-driven expressive talk-
+[23] S. Ioffe and C. Szegedy. Batch normalization: Accelerating            ing lips with conditional sequential generative adversarial
+     deep network training by reducing internal covariate shift.           networks. CoRR, abs/1806.00154, 2018. 3
+     In International Conference on Machine Learning (ICML),          [42] A. Senocak, T.-H. Oh, J. Kim, M.-H. Yang, and I. S. Kweon.
+     2015. 3                                                               Learning to localize sound source in visual scenes. In IEEE
+[24] P. J. Isola. The Discovery of perceptual structure from visual        Conference on Computer Vision and Pattern Recognition
+     co-occurrences in space and time. PhD thesis, Massachusetts           (CVPR), 2018. 3
+     Institute of Technology, 2015. 3                                 [43] E. Shlizerman, L. Dery, H. Schoen, and I. Kemelmacher-
+[25] M. Kamachi, H. Hill, K. Lander, and E. Vatikiotis-Bateson.            Shlizerman. Audio to body dynamics. In IEEE Conference
+     Putting the face to the voice: Matching identity across modal-        on Computer Vision and Pattern Recognition (CVPR), 2018.
+     ity. Current Biology, 13(19):1709–1714, 2003. 1                       3
+[44] S. Shon, T.-H. Oh, and J. Glass. Noise-tolerant audio-visual
+     online person verification using an attention-based neural
+     network fusion. CoRR, abs/1811.10813, 2018. 3
+[45] H. M. Smith, A. K. Dunn, T. Baguley, and P. C. Stacey.
+     Matching novel face and voice identity using static and dy-
+     namic facial images. Attention, Perception, & Psychophysics,
+     78(3):868–879, 2016. 1
+[46] M. Solèr, J. C. Bazin, O. Wang, A. Krause, and A. Sorkine-
+     Hornung. Suggesting sounds for images from video collec-
+     tions. In European Conference on Computer Vision Work-
+     shops, 2016. 3
+[47] S. Suwajanakorn, S. M. Seitz, and I. Kemelmacher-
+     Shlizerman. Synthesizing Obama: Learning lip sync from au-
+     dio. ACM Transactions on Graphics (SIGGRAPH), 36(4):95,
+     2017. 3
+[48] S. L. Taylor, T. Kim, Y. Yue, M. Mahler, J. Krahe, A. G. Ro-
+     driguez, J. K. Hodgins, and I. A. Matthews. A deep learning
+     approach for generalized speech animation. ACM Transac-
+     tions on Graphics (SIGGRAPH), 36(4):93:1–93:11, 2017. 3
+[49] L. van der Maaten and G. Hinton. Visualizing data using
+     T-SNE. Journal of Machine Learning Research (JMLR),
+     9(Nov):2579–2605, 2008. 8
+[50] Y. Wen, M. A. Ismail, W. Liu, B. Raj, and R. Singh. Disjoint
+     mapping network for cross-modal matching of voices and
+     faces. In International Conference on Learning Representa-
+     tions (ICLR), 2019. 2, 3
+[51] O. Wiles, A. S. Koepke, and A. Zisserman. X2Face: A net-
+     work for controlling face generation using images, audio, and
+     pose codes. In European Conference on Computer Vision
+     (ECCV), Springer, 2018. 3
+[52] X. Yan, J. Yang, K. Sohn, and H. Lee. Attribute2image: Con-
+     ditional image generation from visual attributes. In European
+     Conference on Computer Vision (ECCV), Springer, 2016. 2,
+     3
+[53] R. Zazo, P. S. Nidadavolu, N. Chen, J. Gonzalez-Rodriguez,
+     and N. Dehak. Age estimation in short speech utterances
+     based on LSTM recurrent neural networks. IEEE Access,
+     6:22524–22530, 2018. 2
+[54] H. Zhao, C. Gan, A. Rouditchenko, C. Vondrick, J. H. Mc-
+     Dermott, and A. Torralba. The sound of pixels. In European
+     Conference on Computer Vision (ECCV), Springer, 2018. 3
+

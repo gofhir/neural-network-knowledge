@@ -1,0 +1,807 @@
+                                                     FaceForensics++: Learning to Detect Manipulated Facial Images
+
+                                                            Andreas Rössler1        Davide Cozzolino2 Luisa Verdoliva2                       Christian Riess3
+                                                                                     Justus Thies1   Matthias Nießner1
+                                                      1                                    2                                      3
+                                                          Technical University of Munich       University Federico II of Naples       University of Erlangen-Nuremberg
+
+
+
+
+arXiv:1901.08971v3 [cs.CV] 26 Aug 2019
+                                         Figure 1: FaceForensics++ is a dataset of facial forgeries that enables researchers to train deep-learning-based approaches
+                                         in a supervised fashion. The dataset contains manipulations created with four state-of-the-art methods, namely, Face2Face,
+                                         FaceSwap, DeepFakes, and NeuralTextures.
+
+                                                                    Abstract                                       1. Introduction
+                                            The rapid progress in synthetic image generation and                      Manipulation of visual content has now become ubiqui-
+                                         manipulation has now come to a point where it raises signif-              tous, and one of the most critical topics in our digital so-
+                                         icant concerns for the implications towards society. At best,             ciety. For instance, DeepFakes [1] has shown how com-
+                                         this leads to a loss of trust in digital content, but could po-           puter graphics and visualization techniques can be used to
+                                         tentially cause further harm by spreading false information               defame persons by replacing their face by the face of a dif-
+                                         or fake news. This paper examines the realism of state-of-                ferent person. Faces are of special interest to current manip-
+                                         the-art image manipulations, and how difficult it is to detect            ulation methods for various reasons: firstly, the reconstruc-
+                                         them, either automatically or by humans.                                  tion and tracking of human faces is a well-examined field
+                                                                                                                   in computer vision [68], which is the foundation of these
+                                             To standardize the evaluation of detection methods, we                editing approaches. Secondly, faces play a central role in
+                                         propose an automated benchmark for facial manipulation                    human communication, as the face of a person can empha-
+                                         detection1 . In particular, the benchmark is based on Deep-               size a message or it can even convey a message in its own
+                                         Fakes [1], Face2Face [59], FaceSwap [2] and NeuralTex-                    right [28].
+                                         tures [57] as prominent representatives for facial manipula-                 Current facial manipulation methods can be separated
+                                         tions at random compression level and size. The benchmark                 into two categories: facial expression manipulation and fa-
+                                         is publicly available2 and contains a hidden test set as well             cial identity manipulation (see Fig. 2). One of the most
+                                         as a database of over 1.8 million manipulated images. This                prominent facial expression manipulation techniques is the
+                                         dataset is over an order of magnitude larger than compara-                method of Thies et al. [59] called Face2Face. It enables the
+                                         ble, publicly available, forgery datasets. Based on this data,            transfer of facial expressions of one person to another per-
+                                         we performed a thorough analysis of data-driven forgery                   son in real time using only commodity hardware. Follow-up
+                                         detectors. We show that the use of additional domain-                     work such as “Synthesizing Obama” [55] is able to animate
+                                         specific knowledge improves forgery detection to unprece-                 the face of a person based on an audio input sequence.
+                                         dented accuracy, even in the presence of strong compres-
+                                         sion, and clearly outperforms human observers.                              1. kaldir.vc.in.tum.de/faceforensics_benchmark
+                                                                                                                     2. github.com/ondyari/FaceForensics
+
+
+                                                                                                               1
+Figure 2: Advances in the digitization of human faces have become the basis for modern facial image editing tools. The
+editing tools can be split in two main categories: identity modification and expression modification. Aside from manually
+editing the face using tools such as Photoshop, many automatic approaches have been proposed in the last few years. The most
+prominent and widespread identity editing technique is face swapping, which has gained significant popularity as lightweight
+systems are now capable of running on mobile phones. Additionally, facial reenactment techniques are now available, which
+alter the expressions of a person by transferring the expressions of a source person to the target.
+
+
+   Identity manipulation is the second category of facial               1,000 videos with pristine (i.e., real) sources and tar-
+forgeries. Instead of changing expressions, these methods               get ground truth to enable supervised learning,
+replace the face of a person with the face of another per-
+son. This category is known as face swapping. It became              • an extensive evaluation of state-of-the-art hand-crafted
+popular with wide-spread consumer-level applications like              and learned forgery detectors in various scenarios,
+Snapchat. DeepFakes also performs face swapping, but via
+deep learning. While face swapping based on simple com-              • a state-of-the-art forgery detection method tailored to
+puter graphics techniques can run in real time, DeepFakes              facial manipulations.
+need to be trained for each pair of videos, which is a time-
+consuming task.                                                    2. Related Work
+   In this work, we show that we can automatically and re-            The paper intersects several fields in computer vision and
+liably detect such manipulations, and thereby outperform           digital multimedia forensics. We cover the most important
+human observers by a significant margin. We leverage re-           related papers in the following paragraphs.
+cent advances in deep learning, in particular, the ability to
+learn extremely powerful image features with convolutional         Face Manipulation Methods: In the last two decades, in-
+neural networks (CNNs). We tackle the detection problem            terest in virtual face manipulation has rapidly increased. A
+by training a neural network in a supervised fashion. To           comprehensive state-of-the-art report has been published by
+this end, we generate a large-scale dataset of manipulations       Zollhöfer et al. [68]. In particular, Bregler et al. [13] pre-
+based on the classical computer graphics-based methods             sented an image-based approach called Video Rewrite to au-
+Face2Face [59] and FaceSwap [2] as well as the learning-           tomatically create a new video of a person with generated
+based approaches DeepFakes [1] and NeuralTextures [57].            mouth movements. With Video Face Replacement [20],
+   As the digital media forensics field lacks a benchmark          Dale et al. presented one of the first automatic face swap
+for forgery detection, we propose an automated benchmark           methods. Using single-camera videos, they reconstruct a
+that considers the four manipulation methods in a realistic        3D model of both faces and exploit the corresponding 3D
+scenario, i.e., with random compression and random                 geometry to warp the source face to the target face. Gar-
+dimensions. Using this benchmark, we evaluate the current          rido et al. [29] presented a similar system that replaces the
+state-of-the-art detection methods as well as our forgery          face of an actor while preserving the original expressions.
+detection pipeline that considers the restricted field of facial   VDub [30] uses high-quality 3D face capturing techniques
+manipulation methods.                                              to photo-realistically alter the face of an actor to match the
+                                                                   mouth movements of a dubber. Thies et al. [58] demon-
+Our paper makes the following contributions:                       strated the first real-time expression transfer for facial reen-
+  • an automated benchmark for facial manipulation de-             actment. Based on a consumer level RGB-D camera, they
+    tection under random compression for a standardized            reconstruct and track a 3D model of the source and the
+    comparison, including a human baseline,                        target actor. The tracked deformations of the source face
+                                                                   are applied to the target face model. As a final step, they
+  • a novel large-scale dataset of manipulated facial im-          blend the altered face on top of the original target video.
+    agery composed of more than 1.8 million images from            Face2Face, proposed by Thies et al. [59], is an advanced
+real-time facial reenactment system, capable of altering fa-     and DeepFakes [5, 44, 33]. For face manipulation detec-
+cial movements in commodity video streams, e.g., videos          tion, some approaches exploit specific artifacts arising from
+from the internet. They combine 3D model reconstruction          the synthesis process, such as eye blinking [44], or color,
+and image-based rendering techniques to generate their out-      texture and shape cues [24, 23]. Other works are more gen-
+put. The same principle can be also applied in Virtual Real-     eral and propose a deep network trained to capture the sub-
+ity in combination with eye-tracking and reenactment [60]        tle inconsistencies arising from low-level and/or high level
+or be extended to the full body [61]. Kim et al. [39] learn      features [50, 66, 38, 5, 33]. These approaches show im-
+an image-to-image translation network to convert computer        pressive results, however robustness issues often remain un-
+graphic renderings of faces to real images. Instead of a pure    addressed, although they are of paramount importance for
+image-to-image translation network, NeuralTextures [57]          practical applications. For example, operations like com-
+optimizes a neural texture in conjunction with a rendering       pression and resizing are known for laundering manipula-
+network to compute the reenactment result. In compari-           tion traces from the data. In real-world scenarios, these
+son to Deep Video Portraits [39], it shows sharper results,      basic operations are standard when images and videos are
+especially, in the mouth region. Suwajanakorn et al. [55]        for example uploaded to social media, which is one of the
+learned the mapping between audio and lip motions, while         most important application field for forensic analysis. To
+their compositing approach builds on similar techniques to       this end, our dataset is designed to cover such realistic sce-
+Face2Face [59]. Averbuch-Elor et al. [8] present a reen-         narios, i.e., videos from the wild, manipulated and com-
+actment method, Bringing Portraits to Life, which employs        pressed with different quality levels (see Section 3). The
+2D warps to deform the image to match the expressions of a       availability of such a large and varied dataset can help re-
+source actor. They also compare to the Face2Face technique       searchers to benchmark their approaches and develop better
+and achieve similar quality.                                     forgery detectors for facial imagery.
+   Recently, several face image synthesis approaches us-
+ing deep learning techniques have been proposed. Lu et
+al. [47] provide an overview. Generative adversarial net-        Forensic Analysis Datasets: Classical forensics datasets
+works (GANs) are used to apply Face Aging [7], to gener-         have been created with significant manual effort under very
+ate new viewpoints [34], or to alter face attributes like skin   controlled conditions, to isolate specific properties of the
+color [46]. Deep Feature Interpolation [62] shows impres-        data like camera artifacts. While several datasets were
+sive results on altering face attributes like age, mustache,     proposed that include image manipulations, only a few
+smiling etc. Similar results of attribute interpolations are     of them also address the important case of video footage.
+achieved by Fader Networks [43]. Most of these deep learn-       MICC F2000, for example, is an image copy-move manip-
+ing based image synthesis techniques suffer from low image       ulation dataset consisting of a collection of 700 forged im-
+resolutions. Recently, Karras et al. [37] have improved the      ages from various sources [6]. The First IEEE Image Foren-
+image quality using progressive growing of GANs, produc-         sics Challenge Dataset comprises a total of 1176 forged
+ing high-quality synthesis of faces.                             images; the Wild Web Dataset [64] with 90 real cases
+                                                                 of manipulations coming from the web and the Realistic
+                                                                 Tampering dataset [42] including 220 forged images. A
+Multimedia Forensics: Multimedia forensics aims to en-           database of 2010 FaceSwap- and SwapMe-generated im-
+sure authenticity, origin, and provenance of an image or         ages has been proposed by Zhou et al. [66]. Recently, Kor-
+video without the help of an embedded security scheme.           shunov and Marcel [41] constructed a dataset of 620 Deep-
+Focusing on integrity, early methods are driven by hand-         fakes videos created from multiple videos for each of 43
+crafted features that capture expected statistical or physics-   subjects. The National Institute of Standards and Technol-
+based artifacts that occur during image formation. Surveys       ogy (NIST) released the most extensive dataset for generic
+on these methods can be found in [26, 53]. More recent lit-      image manipulation comprising about 50, 000 forged im-
+erature concentrates on CNN-based solutions, through both        ages (both local and global manipulations) and around 500
+supervised and unsupervised learning [10, 17, 12, 9, 35, 67].    forged videos [32].
+For videos, the main body of work focuses on detecting ma-          In contrast, we construct a database containing more than
+nipulations that can be created with relatively low effort,      1.8 million images from 4000 fake videos – an order of
+such as dropped or duplicated frames [63, 31, 45], varying       magnitude more than existing datasets. We evaluate the im-
+interpolation types [25], copy-move manipulations [11, 21],      portance of such a large training corpus in Section 4.
+or chroma-key compositions [48].
+   Several other works explicitly refer to detecting manip-      3. Large-Scale Facial Forgery Database
+ulations related to faces, such as distinguishing computer
+generated faces from natural ones [22, 15, 51], morphed             A core contribution of this paper is our FaceForensics++
+faces [50], face splicing [24, 23], face swapping [66, 38]       dataset extending the preliminary FaceForensics dataset
+                                                                    target frames until one video ends. The implementation is
+                                                                    computationally lightweight and can be efficiently run on
+                                                                    the CPU.
+
+                                                                    DeepFakes The term Deepfakes has widely become a
+  (a) Gender     (b) Resolution   (c) Pixel Coverage of Faces       synonym for face replacement based on deep learning, but it
+                                                                    is also the name of a specific manipulation method that was
+Figure 3: Statistics of our sequences. VGA denotes 480p,            spread via online forums. To distinguish these, we denote
+HD denotes 720p, and FHD denotes 1080p resolution of                said method by DeepFakes in the following paper.
+our videos. The graph (c) shows the number of sequences                 There are various public implementations of DeepFakes
+(y-axis) with given bounding box pixel height (x-axis).             available, most notably FakeApp [3] and the faceswap
+                                                                    github [1]. A face in a target sequence is replaced by a
+                                                                    face that has been observed in a source video or image col-
+[52]. This new large-scale dataset enables us to train a state-     lection. The method is based on two autoencoders with a
+of-the-art forgery detector for facial image manipulation in        shared encoder that are trained to reconstruct training im-
+a supervised fashion (see Section 4). To this end, we lever-        ages of the source and the target face, respectively. A face
+age four automated state-of-the-art face manipulation meth-         detector is used to crop and to align the images. To create
+ods, which are applied to 1,000 pristine videos downloaded          a fake image, the trained encoder and decoder of the source
+from the Internet (see Fig. 3 for statistics). To imitate realis-   face are applied to the target face. The autoencoder output is
+tic scenarios, we chose to collect videos in the wild, specif-      then blended with the rest of the image using Poisson image
+ically from YouTube. However, early experiments with all            editing [49].
+manipulation methods showed that the target face had to                 For our dataset, we use the faceswap github implemen-
+be nearly front-facing to prevent the manipulation methods          tation. We slightly modify the implementation by replacing
+from failing or producing strong artifacts. Thus, we per-           the manual training data selection with a fully automated
+form a manual screening of the resulting clips to ensure a          data loader. We used the default parameters to train the
+high-quality video selection and to avoid videos with face          video-pair models. Since the training of these models is
+occlusions. We selected 1,000 video sequences containing            very time-consuming, we also publish the models as part of
+509, 914 images which we use as our pristine data.                  the dataset. This facilitates generation of additional manip-
+    To generate a large scale manipulation database, we             ulations of these persons with different post-processing.
+adapted state-of-the-art video editing methods to work fully
+automatically. In the following paragraphs, we briefly de-
+                                                                    Face2Face Face2Face [59] is a facial reenactment system
+scribe these methods.
+                                                                    that transfers the expressions of a source video to a target
+    For our dataset, we chose two computer graphics-based
+                                                                    video while maintaining the identity of the target person.
+approaches (Face2Face and FaceSwap) and two learning-
+                                                                    The original implementation is based on two video input
+based approaches (DeepFakes and NeuralTextures). All
+                                                                    streams, with manual keyframe selection. These frames are
+four methods require source and target actor video pairs as
+                                                                    used to generate a dense reconstruction of the face which
+input. The final output of each method is a video composed
+                                                                    can be used to re-synthesize the face under different illumi-
+of generated images. Besides the manipulation output, we
+                                                                    nation and expressions. To process our video database, we
+also compute ground truth masks that indicate whether a
+                                                                    adapt the Face2Face approach to fully-automatically cre-
+pixel has been modified or not, which can be used to train
+                                                                    ate reenactment manipulations. We process each video in
+forgery localization methods. For more information and
+                                                                    a preprocessing pass; here, we use the first frames in order
+hyper-parameters we refer to Appendix D.
+                                                                    to obtain a temporary face identity (i.e., a 3D model), and
+                                                                    track the expressions over the remaining frames. In order to
+FaceSwap FaceSwap is a graphics-based approach to                   select the keyframes required by the approach, we automat-
+transfer the face region from a source video to a target            ically select the frames with the left- and right-most angle
+video. Based on sparse detected facial landmarks the face           of the face. Based on this identity reconstruction, we track
+region is extracted. Using these landmarks, the method fits a       the whole video to compute per frame the expression, rigid
+3D template model using blendshapes. This model is back-            pose, and lighting parameters as done in the original im-
+projected to the target image by minimizing the difference          plementation of Face2Face. We generate the reenactment
+between the projected shape and the localized landmarks             video outputs by transferring the source expression param-
+using the textures of the input image. Finally, the rendered        eters of each frame (i.e., 76 Blendshape coefficients) to the
+model is blended with the image and color correction is ap-         target video. More details of the reenactment process can
+plied. We perform these steps for all pairs of source and           be found in the original paper [59].
+NeuralTextures Thies et al. [57] show facial reenactment         of time per image as is common on social media, we ran-
+as an example for their NeuralTextures-based rendering ap-       domly set a time limit of 2, 4 or 6 seconds after which we
+proach. It uses the original video data to learn a neu-          hide the image. Afterwards, the users were asked whether
+ral texture of the target person, including a rendering net-     the displayed image is ‘real’ or ‘fake’. To ensure that the
+work. This is trained with a photometric reconstruction          users spend the available time on inspection, the question is
+loss in combination with an adversarial loss. In our im-         asked after the image has been displayed and not during the
+plementation, we apply a patch-based GAN-loss as used            observation time. We designed the study to only take a few
+in Pix2Pix [36]. The NeuralTextures approach relies on           minutes per participant, showing 60 images per attendee,
+tracked geometry that is used during train and test times.       which results in a collection of 12240 human decisions.
+We use the tracking module of Face2Face to generate these
+information. We only modify the facial expressions corre-
+                                                                 Evaluation: In Fig. 4, we show the results of our study
+sponding to the mouth region, i.e., the eye region stays un-
+                                                                 on all quality levels, showing a correlation between video
+changed (otherwise the rendering network would need con-
+                                                                 quality and the ability to detect fakes. With a lower video
+ditional input for the eye movement similar to Deep Video
+                                                                 quality, the human performance decreases in average from
+Portraits [39]).
+                                                                 68.7% to 58.7%. The graph shows the numbers averaged
+                                                                 across all time intervals since the different time constraints
+Postprocessing - Video Quality To create a realistic set-        did not result in significantly different observations.
+ting for manipulated videos, we generate output videos with
+different quality levels, similar to the video processing of
+many social networks. Since raw videos are rarely found
+on the internet, we compress the videos using the H.264
+codec, which is widely used by social networks or video-
+sharing websites. To generate high quality videos, we use a
+light compression denoted by HQ (constant rate quantiza-
+tion parameter equal to 23) which is visually nearly lossless.
+Low quality videos (LQ ) are produced using a quantization
+of 40.
+                                                                 Figure 4: Forgery detection results of our user study with
+4. Forgery Detection                                             204 participants. The accuracy is dependent on the video
+                                                                 quality and results in a decreasing accuracy rate that is
+    We cast the forgery detection as a per-frame binary clas-    68.69% in average on raw videos, 66.57% on high quality,
+sification problem of the manipulated videos. The following      and 58.73% on low quality videos.
+sections show the results of manual and automatic forgery
+detection. For all experiments, we split the dataset into a          Note that the user study contained fake images of all four
+fixed training, validation, and test set, consisting of 720,     manipulation methods and pristine images. In this setting,
+140, and 140 videos respectively. All evaluations are re-        Face2Face and NeuralTextures were particularly difficult to
+ported using videos from the test set. For all graphs, we list   detect by human observers, as they do not introduce a strong
+the exact numbers in Appendix B.                                 semantic change, introducing only subtle visual artifacts in
+                                                                 contrast to the face replacement methods. NeuralTextures
+4.1. Forgery Detection of Human Observers
+                                                                 texture seems particularly difficult to detect as human de-
+    To evaluate the performance of humans in the task of         tection accuracy is below random chance and only increases
+forgery detection, we conducted a user study with 204 par-       in the challenging low quality task.
+ticipants consisting mostly of computer science university
+students. This forms the baseline for the automated forgery      4.2. Automatic Forgery Detection Methods
+detection methods.                                                  Our forgery detection pipeline is depicted in Fig. 5.
+                                                                 Since our goal is to detect forgeries of facial imagery, we
+Layout of the User Study: After a short introduction to          use additional domain-specific information that we can ex-
+the binary task, users are instructed to classify randomly se-   tract from input sequences. To this end, we use the state-
+lected images from our test set. The selected images vary        of-the-art face tracking method by Thies et al. [59] to track
+in image quality as well as manipulation method; we used         the face in the video and to extract the face region of the
+a 50:50 split of pristine and fake images. Since the amount      image. We use a conservative crop (enlarged by a factor of
+time for inspection of an image may be important, and to         1.3) around the center of the tracked face, enclosing the re-
+mimic scenario where a user only spends a limited amount         constructed face. This incorporation of domain knowledge
+Figure 5: Our domain-specific forgery detection pipeline
+for facial manipulations: the input image is processed by a
+robust face tracking method; we use the information to ex-
+tract the region of the image covered by the face; this region
+is fed into a learned classification network that outputs the
+prediction.
+
+improves the overall performance of a forgery detector in
+comparison to a naı̈ve approach that uses the whole image
+                                                                 Figure 6: Binary detection accuracy of all evaluated archi-
+as input (see Sec. 4.2.2). We evaluated various variants of
+                                                                 tectures on the different manipulation methods using face
+our approach by using different state-of-the-art classifica-
+                                                                 tracking when trained on our different manipulation meth-
+tion methods. We are considering learning-based methods
+                                                                 ods separately.
+used in the forensic community for generic manipulation
+detection [10, 17], computer-generated vs natural image de-
+tection [51] and face tampering detection [5]. In addition,
+we show that the classification based on XceptionNet [14]
+outperforms all other variants in detecting fakes.
+
+4.2.1   Detection based on Steganalysis Features:
+We evaluate detection from steganalysis features, follow-
+ing the method by Fridrich et al. [27] which employs hand-
+crafted features. The features are co-occurrences on 4 pixels
+patterns along the horizontal and vertical direction on the
+high-pass images for a total feature length of 162. These
+features are then used to train a linear Support Vector Ma-
+chine (SVM) classifier. This technique was the winning
+approach in the first IEEE Image Forensic Challenge [16].
+We provide a 128 × 128 central crop-out of the face as in-       Figure 7: Binary precision values of our baselines when
+put to the method. While the hand-crafted method outper-         trained on all four manipulation methods simulatenously.
+forms human accuracy on raw images by a large margin, it         See Table 1 for the average accuracy values. Aside from
+struggles to cope with compression, which leads to an accu-      the Full Image XceptionNet, we use the proposed pre-
+racy below human performance for low quality videos (see         extraction of the face region as input to the approaches.
+Fig. 6 and Table 1).
+
+4.2.2   Detection based on Learned Features:                     to suppress the high-level content of the image. Similar to
+For detection from learned features, we evaluate five net-       the previous methods, we use a centered 128 × 128 crop as
+work architectures known from the literature to solve the        input.
+classification task:                                                 (3) Rahmouni et al. [51] adopt different CNN architec-
+    (1) Cozzolino et al. [17] cast the hand-crafted Steganal-    tures with a global pooling layer that computes four statis-
+ysis features from the previous section to a CNN-based net-      tics (mean, variance, maximum and minimum). We con-
+work. We fine-tune this network on our large scale dataset.      sider the Stats-2L network that had the best performance.
+    (2) We use our dataset to train the convolutional neu-           (4) MesoInception-4 [5] is a CNN-based network in-
+ral network proposed by Bayar and Stamm [10] that uses           spired by InceptionNet [56] to detect face tampering in
+a constrained convolutional layer followed by two convo-         videos. The network has two inception modules and two
+lutional, two max-pooling and three fully-connected layers.      classic convolution layers interlaced with max-pooling lay-
+The constrained convolutional layer is specifically designed     ers. Afterwards, there are two fully-connected layers. In-
+stead of the classic cross-entropy loss, the authors propose          Compression                   Raw        HQ        LQ
+the mean squared error between true and predicted labels.             [14] XceptionNet Full Image   82.01     74.78     70.52
+We resize the face images to 256 × 256, the input of the
+                                                                      [27] Steg. Features + SVM     97.63     70.97     55.98
+network.
+    (5) XceptionNet [14] is a traditional CNN trained on Im-          [17] Cozzolino et al.         98.57     78.45     58.69
+ageNet based on separable convolutions with residual con-             [10] Bayar and Stamm          98.74     82.97     66.84
+nections. We transfer it to our task by replacing the final           [51] Rahmouni et al.          97.03     79.08     61.18
+fully connected layer with two outputs. The other layers are          [5] MesoNet                   95.23     83.10     70.47
+initialized with the ImageNet weights. To set up the newly
+                                                                      [14] XceptionNet              99.26     95.73     81.00
+inserted fully connected layer, we fix all weights up to the fi-
+nal layers and pre-train the network for 3 epochs. After this
+step, we train the network for 15 more epochs and choose           Table 1: Binary detection accuracy of our baselines when
+the best performing model based on validation accuracy.            trained on all four manipulation methods. Besides the naı̈ve
+    A detailed description of our training and hyper-              full image XceptionNet, all methods are trained on a con-
+parameters can be found in Appendix D.                             servative crop (enlarged by a factor of 1.3) around the center
+                                                                   of the tracked face.
+Comparison of our Forgery Detection Variants: Fig. 6
+shows the results of a binary forgery detection task using
+all network architectures evaluated separately on all four
+manipulation methods and at different video quality levels.
+All approaches achieve very high performance on raw input
+data. Performance drops for compressed videos, particu-
+larly for hand-crafted features and for shallow CNN archi-
+tectures [10, 17]. The neural networks are better at han-
+dling these situations, with XceptionNet able to achieve
+compelling results on weak compression while still main-
+taining reasonable performance on low quality images, as it
+benefits from its pre-training on ImageNet as well as larger
+network capacity.
+    To compare the results of our user study to the perfor-
+mance of our automatic detectors, we also tested the detec-
+tion variants on a dataset containing images from all ma-
+nipulation methods. Fig. 7 and Table 1 show the results on
+the full dataset. Here, our automated detectors outperform
+human performance by a large margin (cf. Fig. 4). We also
+evaluate a naı̈ve forgery detector operating on the full im-
+age (resized to the XceptionNet input) instead of using face
+tracking information (see Fig. 7, rightmost column). Due
+                                                                   Figure 8: The detection performance of our approach us-
+to the lack of domain-specific information, the XceptionNet
+                                                                   ing XceptionNet depends on the training corpus size. Espe-
+classifier has a significantly lower accuracy in this scenario.
+                                                                   cially, for low quality video data, a large database is needed.
+To summarize, domain-specific information in combination
+with a XceptionNet classifier shows the best performance
+in each test. We use this network to further understand the        ilar to the computer-based manipulation methods and thus
+influence of the training corpus size and its ability to distin-   has consistent artifacts.
+guish between the different manipulation methods.
+                                                                   Evaluation of the Training Corpus Size: Fig. 8 shows
+Forgery Detection of GAN-based methods The experi-                 the importance of the training corpus size. To this end,
+ments show that all detection approaches achieve a lower           we trained the XceptionNet classifier with different train-
+accuracy on the GAN-based NeuralTextures approach.                 ing corpus sizes on all three video quality level separately.
+NeuralTextures is training a unique model for every ma-            The overall performance increases with the number of train-
+nipulation which results in a higher variation of possible         ing images which is particularly important for low quality
+artifacts. While DeepFakes is also training one model per          video footage, as can be seen in the bottom of the figure.
+manipulation, it uses a fixed post-processing pipeline sim-
+5. Benchmark                                                       Accuracies           DF     F2F      FS      NT     Real    Total
+                                                                   Xcept. Full Image   74.55   75.91   70.87   73.33   51.00   62.40
+    In addition to our large-scale manipulation database, we
+publish a competitive benchmark for facial forgery detec-          Steg. Features      73.64   73.72   68.93   63.33   34.00   51.80
+tion. To this end, we collected 1000 additional videos             Cozzolino et al.    85.45   67.88   73.79   78.00   34.40   55.20
+and manipulated a subset of those in a similar fashion as          Rahmouni et al.     85.45   64.23   56.31   60.07   50.00   58.10
+in Section 3 for each of our four manipulation methods.            Bayar and Stamm     84.55   73.72   82.52   70.67   46.20   61.60
+As uploaded videos (e.g., to social networks) will be post-        MesoNet             87.27   56.20   61.17   40.67   72.60   66.00
+processed in various ways, we obscure all selected videos          XceptionNet         96.36   86.86   90.29   80.67   52.40   70.10
+multiple times (e.g., by unknown re-sizing, compression
+method and bit-rate) to ensure realistic conditions. This
+processing is directly applied on raw videos. Finally, we        Table 2: Results of the low quality trained model of each
+manually select a single challenging frame from each video       detection method on our benchmark. We report precision
+based on visual inspection. Specifically, we collect a set of    results for DeepFakes (DF), Face2Face (F2F), FaceSwap
+1000 images, each image randomly taken from either the           (FS), NeuralTextures (NT), and pristine images (Real) as
+manipulation methods or the original footage. Note that we       well as the overall total accuracy.
+do not necessarily have an equal split of pristine and fake
+images nor an equal split of the used manipulation meth-
+ods. The ground truth labels are hidden and are used on          the detectability of state-of-the-art manipulation methods,
+our host server to evaluate the classification accuracy of the   proposing a standardized benchmark for follow-up work.
+submitted models. The automated benchmark allows sub-            All image data, trained models, as well as our benchmark
+missions every two weeks from a single submitter to prevent      are publicly available and are already used by other re-
+overfitting (similar to existing benchmarks [19]).               searchers. In particular, transfer learning is of high inter-
+    As baselines, we evaluate the low quality versions of        est in the forensic community. As new manipulation meth-
+our previously trained models on the benchmark and report        ods appear by the day, methods must be developed that are
+the numbers for each detection method separately (see Ta-        able to detect fakes with little to no training data. Our
+ble 2). Aside from the Full Image XceptionNet, we use            database is already used for this forensic transfer learning
+the proposed pre-extraction of the face region as input to       task, where knowledge of one source manipulation domain
+the approaches. The relative performance of the classifica-      is transferred to another target domain, as shown by Coz-
+tion models is similar to our database test set (see Table 1).   zolino et al [18]. We hope that the dataset and benchmark
+However, since the benchmark scenario deviates from the          become a stepping stone for future research in the field of
+training database, the overall performance of the models         digital media forensics, and in particular with a focus on
+is lower, especially for the pristine image detection preci-     facial forgeries.
+sion; the major changes being the randomized quality level
+as well as possible tracking errors during test. Since our
+proposed method relies on face detections, we predict fake       7. Acknowledgement
+as default in case of a tracking failure.
+    The benchmark is already publicly available to the com-         We gratefully acknowledge the support of this research
+munity and we hope that it leads to a standardized compar-       by the AI Foundation, a TUM-IAS Rudolf Mößbauer Fel-
+ison of follow-up work.                                          lowship, the ERC Starting Grant Scan2CAD (804724), and
+                                                                 a Google Faculty Award. We would also like to thank
+6. Discussion & Conclusion                                       Google’s Chris Bregler for help with the cloud computing.
+                                                                 In addition, this material is based on research sponsored by
+   While current state-of-the-art facial image manipulation      the Air Force Research Laboratory and the Defense Ad-
+methods exhibit visually stunning results, we demonstrate        vanced Research Projects Agency under agreement num-
+that they can be detected by trained forgery detectors. It       ber FA8750-16-2-0204. The U.S. Government is authorized
+is particularly encouraging that also the challenging case       to reproduce and distribute reprints for Governmental pur-
+of low-quality video can be tackled by learning-based ap-        poses notwithstanding any copyright notation thereon. The
+proaches, where humans and hand-crafted features exhibit         views and conclusions contained herein are those of the au-
+difficulties. To train detectors using domain-specific knowl-    thors and should not be interpreted as necessarily represent-
+edge, we introduce a novel dataset of videos of manipulated      ing the official policies or endorsements, either expressed
+faces that exceeds all existing publicly available forensic      or implied, of the Air Force Research Laboratory and the
+datasets by an order of magnitude.                               Defense Advanced Research Projects Agency or the U.S.
+   In this paper, we focus on the influence of compression to    Government.
+References                                                          [15] Valentina Conotter, Ecaterina Bodnari, Giulia Boato, and
+                                                                         Hany Farid. Physiologically-based detection of computer
+ [1] Deepfakes github.               https://github.com/                 generated faces in video. In IEEE International Conference
+     deepfakes/faceswap. Accessed: 2018-10-29. 1,                        on Image Processing, pages 1–5, Oct 2014. 3
+     2, 4, 14
+                                                                    [16] Davide Cozzolino, Diego Gragnaniello, and Luisa Verdo-
+ [2] Faceswap.                       https://github.com/
+                                                                         liva. Image forgery detection through residual-based local
+     MarekKowalski/FaceSwap/. Accessed: 2018-10-29.
+                                                                         descriptors and block-matching. In IEEE International Con-
+     1, 2
+                                                                         ference on Image Processing, pages 5297–5301, October
+ [3] Fakeapp. https://www.fakeapp.com/. Accessed:
+                                                                         2014. 6
+     2018-09-01. 4
+                                                                    [17] Davide Cozzolino, Giovanni Poggi, and Luisa Verdoliva.
+ [4] Sami Abu-El-Haija, Nisarg Kothari, Joonseok Lee, Paul
+                                                                         Recasting residual-based local descriptors as convolutional
+     Natsev, George Toderici, Balakrishnan Varadarajan, and
+                                                                         neural networks: an application to image forgery detection.
+     Sudheendra Vijayanarasimhan. YouTube-8m: A large-
+                                                                         In ACM Workshop on Information Hiding and Multimedia
+     scale video classification benchmark.        arXiv preprint
+                                                                         Security, pages 1–6, 2017. 3, 6, 7, 13, 14
+     arXiv:1609.08675, 2016. 12
+                                                                    [18] Davide Cozzolino, Justus Thies, Andreas Rössler, Chris-
+ [5] Darius Afchar, Vincent Nozick, Junichi Yamagishi, and Isao
+                                                                         tian Riess, Matthias Nießner, and Luisa Verdoliva. Foren-
+     Echizen. Mesonet: a compact facial video forgery detection
+                                                                         sicTransfer: Weakly-supervised Domain Adaptation for
+     network. arXiv preprint arXiv:1809.00888, 2018. 3, 6, 7,
+                                                                         Forgery Detection. arXiv preprint arXiv:1812.02510, 2018.
+     13, 14
+                                                                         8
+ [6] Irene Amerini, Lamberto Ballan, Roberto Caldelli, Alberto
+     Del Bimbo, and Giuseppe Serra. A SIFT-based forensic           [19] Angela Dai, Angel X. Chang, Manolis Savva, Maciej Hal-
+     method for copy-move attack detection and transformation            ber, Thomas Funkhouser, and Matthias Nießner. ScanNet:
+     recovery. IEEE Transactions on Information Forensics and            Richly-annotated 3D Reconstructions of Indoor Scenes. In
+     Security, 6(3):1099–1110, Mar. 2011. 3                              IEEE Computer Vision and Pattern Recognition, 2017. 8
+ [7] Grigory Antipov, Moez Baccouche, and Jean-Luc Duge-            [20] Kevin Dale, Kalyan Sunkavalli, Micah K. Johnson, Daniel
+     lay. Face aging with conditional generative adversarial net-        Vlasic, Wojciech Matusik, and Hanspeter Pfister. Video face
+     works. In IEEE International Conference on Image Process-           replacement. ACM Trans. Graph., 30(6):130:1–130:10, Dec.
+     ing, 2017. 3                                                        2011. 2
+ [8] Hadar Averbuch-Elor, Daniel Cohen-Or, Johannes Kopf, and       [21] Luca D’Amiano, Davide Cozzolino, Giovanni Poggi, and
+     Michael F. Cohen. Bringing portraits to life. ACM Transac-          Luisa Verdoliva. A PatchMatch-based Dense-field Algo-
+     tions on Graphics (Proceeding of SIGGRAPH Asia 2017),               rithm for Video Copy-Move Detection and Localization.
+     36(4):to appear, 2017. 3                                            IEEE Transactions on Circuits and Systems for Video Tech-
+ [9] Jawadul H. Bappy, Amit K. Roy-Chowdhury, Jason Bunk,                nology, in press, 2018. 3
+     Lakshmanan Nataraj, and B.S. Manjunath. Exploiting spatial     [22] Duc-Tien Dang-Nguyen, Giulia Boato, and Francesco De
+     structure for localizing manipulated image regions. In IEEE         Natale. Identify computer generated characters by analysing
+     International Conference on Computer Vision, pages 4970–            facial expressions variation. In IEEE International Work-
+     4979, 2017. 3                                                       shop on Information Forensics and Security, pages 252–257,
+[10] Belhassen Bayar and Matthew C. Stamm. A deep learning               2012. 3
+     approach to universal image manipulation detection using a     [23] Tiago de Carvalho, Fabio A. Faria, Helio Pedrini, Ricardo
+     new convolutional layer. In ACM Workshop on Information             da S. Torres, and Anderson Rocha. Illuminant-Based Trans-
+     Hiding and Multimedia Security, pages 5–10, 2016. 3, 6, 7,          formed Spaces for Image Forensics. IEEE Transactions on
+     13, 14                                                              Information Forensics and Security, 11(4):720–733, 2016. 3
+[11] Paolo Bestagini, Simone Milani, Marco Tagliasacchi, and        [24] Tiago de Carvalho, Christian Riess, Elli Angelopoulou, He-
+     Stefano Tubaro. Local tampering detection in video se-              lio Pedrini, and Anderson Rocha. Exposing digital image
+     quences. In IEEE International Workshop on Multimedia               forgeries by illumination color classification. IEEE Trans-
+     Signal Processing, pages 488–493, October 2013. 3                   actions on Information Forensics and Security, 8(7):1182–
+[12] Luca Bondi, Silvia Lameri, David Güera, Paolo Bestagini,           1194, 2013. 3
+     Edward J. Delp, and Stefano Tubaro. Tampering Detection        [25] Xiangling Ding, Gaobo Yang, Ran Li, Lebing Zhang, Yue Li,
+     and Localization through Clustering of Camera-Based CNN             and Xingming Sun. Identification of Motion-Compensated
+     Features. In IEEE Computer Vision and Pattern Recognition           Frame Rate Up-Conversion Based on Residual Signal. IEEE
+     Workshops, 2017. 3                                                  Transactions on Circuits and Systems for Video Technology,
+[13] Christoph Bregler, Michele Covell, and Malcolm Slaney.              in press, 2017. 3
+     Video rewrite: Driving visual speech with audio. In 24th       [26] Hany Farid. Photo Forensics. The MIT Press, 2016. 3
+     Annual Conference on Computer Graphics and Interactive         [27] Jessica Fridrich and Jan Kodovský. Rich Models for Ste-
+     Techniques, SIGGRAPH ’97, pages 353–360, 1997. 2                    ganalysis of Digital Images. IEEE Transactions on Informa-
+[14] Francois Chollet. Xception: Deep Learning with Depthwise            tion Forensics and Security, 7(3):868–882, June 2012. 6, 7,
+     Separable Convolutions. In IEEE Conference on Computer              13
+     Vision and Pattern Recognition, 2017. 6, 7, 13, 14
+[28] Chris Frith. Role of facial expressions in social interactions.        tions on Information Forensics and Security, 12(4):809–824,
+     Philosophical Transactions of the Royal Society B: Biologi-            Apr. 2017. 3
+     cal Sciences, 364(1535), Dec. 2009. 1                             [43] Guillaume Lample, Neil Zeghidour, Nicolas Usunier, An-
+[29] Pablo Garrido, Levi Valgaerts, Ole Rehmsen, Thorsten Thor-             toine Bordes, and Marc’Aurelio Ranzato Ludovic Denoyer.
+     maehlen, Patrick Pérez, and Christian Theobalt. Automatic             Fader networks: Manipulating images by sliding attributes.
+     face reenactment. In IEEE Conference on Computer Vision                CoRR, abs/1706.00409, 2017. 3
+     and Pattern Recognition, pages 4217–4224, 2014. 2                 [44] Yuezun Li, Ming-Ching Chang, and Siwei Lyu. In Ictu
+[30] Pablo Garrido, Levi Valgaerts, Hamid Sarmadi, Ingmar                   Oculi: Exposing AI Created Fake Videos by Detecting Eye
+     Steiner, Kiran Varanasi, Patrick Pérez, and Christian                 Blinking. In IEEE WIFS, 2018. 3
+     Theobalt. Vdub: Modifying face video of actors for plau-          [45] Chengjiang Long, Eric Smith, Arslan Basharat, and Anthony
+     sible visual alignment to a dubbed audio track. Computer               Hoogs. A C3D-based Convolutional Neural Network for
+     Graphics Forum, 34(2):193–204, 2015. 2                                 Frame Dropping Detection in a Single Video Shot. In IEEE
+[31] A. Gironi, Marco Fontani, Tiziano Bianchi, Alessandro Piva,            Computer Vision and Pattern Recognition Workshops, pages
+     and Mauro Barni. A video forensic technique for detection              1898–1906, 2017. 3
+     frame deletion and insertion. In IEEE International Con-          [46] Yongyi Lu, Yu-Wing Tai, and Chi-Keung Tang. Conditional
+     ference on Acoustics, Speech and Signal Processing, pages              cyclegan for attribute guided face image generation. In Eu-
+     6226–6230, 2014. 3                                                     ropean Conference on Computer Vision, 2018. 3
+[32] Haiying Guan, Mark Kozak, Eric Robertson, Yooyoung Lee,           [47] Zhihe Lu, Zhihang Li, Jie Cao, Ran He, and Zhenan Sun.
+     Amy N. Yates, Andrew Delgado, Daniel Zhou, Timothee                    Recent progress of face image synthesis. In IAPR Asian Con-
+     Kheyrkhah, Jeff Smith, and Jonathan Fiscus. Mfc datasets:              ference on Pattern Recognition, 2017. 3
+     Large-scale benchmark datasets for media forensic challenge       [48] Patrick Mullan, Davide Cozzolino, Luisa Verdoliva, and
+     evaluation. In IEEE Winter Applications of Computer Vision             Christian Riess. Residual-based forensic comparison of
+     Workshops, pages 63–72, Jan 2019. 3                                    video sequences. In IEEE International Conference on Im-
+[33] David Güera and Edward J. Delp. Deepfake video detection              age Processing, 2017. 3
+     using recurrent neural networks. In IEEE International Con-       [49] Patrick Pérez, Michel Gangnet, and Andrew Blake. Pois-
+     ference on Advanced Video and Signal Based Surveillance,               son image editing. ACM Transactions on graphics (TOG),
+     2018. 3                                                                22(3):313–318, 2003. 4, 14
+[34] Rui Huang, Shu Zhang, Tianyu Li, and Ran He. Beyond face
+                                                                       [50] Ramachandra Raghavendra, Kiran B. Raja, Sushma
+     rotation: Global and local perception GAN for photorealis-
+                                                                            Venkatesh, and Christoph Busch. Transferable Deep-CNN
+     tic and identity preserving frontal view synthesis. In IEEE
+                                                                            features for detecting digital and print-scanned morphed face
+     International Conference on Computer Vision, 2017. 3
+                                                                            images. In IEEE Computer Vision and Pattern Recognition
+[35] Minyoung Huh, Andrew Liu, Andrew Owens, and Alexei A.                  Workshops, 2017. 3
+     Efros. Fighting fake news: Image splice detection via
+                                                                       [51] Nicolas Rahmouni, Vincent Nozick, Junichi Yamagishi, and
+     learned self-consistency. In European Conference on Com-
+                                                                            Isao Echizen. Distinguishing computer graphics from nat-
+     puter Vision, 2018. 3
+                                                                            ural images using convolution neural networks. In IEEE
+[36] Phillip Isola, Jun-Yan Zhu, Tinghui Zhou, and Alexei A.
+                                                                            Workshop on Information Forensics and Security, pages 1–6,
+     Efros. Image-to-image translation with conditional adver-
+                                                                            2017. 3, 6, 7, 13, 14
+     sarial networks. CVPR, 2017. 5, 14
+                                                                       [52] Andreas Rössler, Davide Cozzolino, Luisa Verdoliva, Chris-
+[37] Tero Karras, Timo Aila, Samuli Laine, and Jaakko Lehtinen.
+                                                                            tian Riess, Justus Thies, and Matthias Nießner. FaceForen-
+     Progressive Growing of GANs for Improved Quality, Stabil-
+                                                                            sics: A large-scale video dataset for forgery detection in hu-
+     ity, and Variation. In International Conference on Learning
+                                                                            man faces. arXiv, 2018. 3
+     Representations, 2018. 3
+                                                                       [53] Husrev T. Sencar and Nasir Memon. Digital Image Forensics
+[38] Ali Khodabakhsh, Raghavendra Ramachandra, Kiran Raja,
+                                                                            — There is More to a Picture than Meets the Eye. Springer,
+     Pankaj Wasnik, and Christoph Busch. Fake face detection
+                                                                            2013. 3
+     methods: Can they be generalized? In International Confer-
+     ence of the Biometrics Special Interest Group, 2018. 3            [54] Wenzhe Shi, Jose Caballero, Ferenc Huszár, Johannes Totz,
+                                                                            Andrew P Aitken, Rob Bishop, Daniel Rueckert, and Zehan
+[39] Hyeongwoo Kim, Pablo Garrido, Ayush Tewari, Weipeng
+                                                                            Wang. Real-time single image and video super-resolution
+     Xu, Justus Thies, Matthias Nießner, Patrick Pérez, Chris-
+                                                                            using an efficient sub-pixel convolutional neural network. In
+     tian Richardt, Michael Zollhöfer, and Christian Theobalt.
+                                                                            IEEE Conference on Computer Vision and Pattern Recogni-
+     Deep Video Portraits. ACM Transactions on Graphics 2018
+                                                                            tion, pages 1874–1883, 2016. 14
+     (TOG), 2018. 3, 5
+[40] Davis E. King. Dlib-ml: A machine learning toolkit. Journal       [55] Supasorn Suwajanakorn, Steven M. Seitz, and Ira
+     of Machine Learning Research, 10:1755–1758, 2009. 12                   Kemelmacher-Shlizerman. Synthesizing Obama: learning
+                                                                            lip sync from audio. ACM Transactions on Graphics (TOG),
+[41] Pavel Korshunov and Sebastien Marcel. Deepfakes: a new
+                                                                            36(4), 2017. 1, 3
+     threat to face recognition? assessment and detection. arXiv
+     preprint arXiv:1812.08685, 2018. 3                                [56] Christian Szegedy, Sergey Ioffe, Vincent Vanhoucke, and
+[42] Pawel Korus and Jiwu Huang. Multi-scale Analysis Strate-               Alexander A Alemi. Inception-v4, inception-resnet and the
+     gies in PRNU-based Tampering Localization. IEEE Transac-               impact of residual connections on learning. 2017. 6
+[57] Justus Thies, Michael Zollhöfer, and Matthias Nießner. De-     [63] Weihong Wang and Hany Farid. Exposing Digital Forgeries
+     ferred neural rendering: Image synthesis using neural tex-           in Interlaced and Deinterlaced Video. IEEE Transactions on
+     tures. ACM Transactions on Graphics 2019 (TOG), 2019. 1,             Information Forensics and Security, 2(3):438–449, 2007. 3
+     2, 3, 4, 14                                                     [64] Markos Zampoglou, Symeon Papadopoulos, , and Yiannis
+[58] Justus Thies, Michael Zollhöfer, Matthias Nießner, Levi Val-        Kompatsiaris. Detecting image splicing in the wild (Web).
+     gaerts, Marc Stamminger, and Christian Theobalt. Real-time           In IEEE International Conference on Multimedia & Expo
+     expression transfer for facial reenactment. ACM Transac-             Workshops (ICMEW), 2015. 3
+     tions on Graphics (TOG) - Proceedings of ACM SIGGRAPH           [65] Kaipeng Zhang, Zhanpeng Zhang, Zhifeng Li, and Yu Qiao.
+     Asia 2015, 34(6):Art. No. 183, 2015. 2                               Joint face detection and alignment using multitask cascaded
+[59] Justus Thies, Michael Zollhöfer, Marc Stamminger, Chris-            convolutional networks. IEEE Signal Processing Letters,
+     tian Theobalt, and Matthias Nießner. Face2Face: Real-Time            23(10):1499–1503, Oct 2016. 14
+     Face Capture and Reenactment of RGB Videos. In IEEE             [66] Peng Zhou, Xintong Han, Vlad I. Morariu, and Larry S.
+     Conference on Computer Vision and Pattern Recognition,               Davis. Two-stream neural networks for tampered face de-
+     pages 2387–2395, June 2016. 1, 2, 3, 4, 5, 12                        tection. In IEEE Computer Vision and Pattern Recognition
+[60] Justus Thies, Michael Zollhöfer, Marc Stamminger, Chris-            Workshops, pages 1831–1839, 2017. 3
+     tian Theobalt, and Matthias Nießner. FaceVR: Real-Time          [67] Peng Zhou, Xintong Han, Vlad I. Morariu, and Larry S.
+     Gaze-Aware Facial Reenactment in Virtual Reality. ACM                Davis. Learning rich features for image manipulation de-
+     Transactions on Graphics (TOG), 2018. 3                              tection. In CVPR, 2018. 3
+[61] Justus Thies, Michael Zollhöfer, Christian Theobalt, Marc
+                                                                     [68] Michael Zollhöfer, Justus Thies, Darek Bradley, Pablo
+     Stamminger, and Matthias Nießner. Headon: Real-time
+                                                                          Garrido, Thabo Beeler, Patrick Péerez, Marc Stamminger,
+     reenactment of human portrait videos. arXiv preprint
+                                                                          Matthias Nießner, and Christian Theobalt. State of the art
+     arXiv:1805.11729, 2018. 3
+                                                                          on monocular 3d face reconstruction, tracking, and applica-
+[62] Paul Upchurch, Jacob Gardner, Geoff Pleiss, Robert Pless,
+                                                                          tions. Computer Graphics Forum, 37(2):523–550, 2018. 1,
+     Noah Snavely, Kavita Bala, and Kilian Weinberger. Deep
+                                                                          2
+     feature interpolation for image content changes. In IEEE
+     Conference on Computer Vision and Pattern Recognition,
+     2017. 3
+                                                                  ments with all manipulation methods showed that the pris-
+                                                                  tine videos have to fulfill certain criteria. The target face
+                                                                  has to be nearly front-facing and without occlusions, to pre-
+                                                                  vent the methods from failing or producing strong artifacts
+                                                                  (see Fig. 9). We use the YouTube-8m dataset [4] to col-
+                                                                  lect videos with the tags “face”, “newscaster” or “newspro-
+                                                                  gram” and also included videos which we obtained from
+Figure 9: Automatic face editing tools rely on the ability to
+                                                                  the YouTube search interface with the same tags and ad-
+track the face in the target video. State-of-the-art tracking
+                                                                  ditional tags like “interview”, “blog”, or “video blog”. To
+methods like Thies et al. [59] fail in cases of profile imagery
+                                                                  ensure adequate video quality, we only downloaded videos
+of a face (left). Rotations larger than 45◦ (middle) and oc-
+                                                                  that offer a resolution of 480p or higher. For every video,
+clusions (right) lead to tracking errors.
+                                                                  we save its metadata to sort them by properties later on. In
+                                                                  order to match the above requirements, we first process all
+    Methods              Train      Validation     Test           downloaded videos with the Dlib face detector [40], which
+    Pristine            366,847      68,511       73,770          is based on Histograms of Oriented Gradients (HOG). Dur-
+    DeepFakes           366,835      68,506       73,768          ing this step, we track the largest detected face by ensur-
+                                                                  ing that the centers of two detections of consecutive frames
+    Face2Face           366,843      68,511       73,770
+                                                                  are pixel-wise close. The histogram-based face tracker was
+    FaceSwap            291,434      54,618       59,640          chosen to ensure that the resulting video sequences con-
+    NeuralTextures      291,834      54,630       59,672          tain little occlusions and, thus, contain easy-to-manipulate
+                                                                  faces.
+Table 3: Number of images per manipulation method.
+                                                                      Except FaceSwap, all methods need a sufficiently large
+DeepFakes manipulates every frame of the target sequence,
+                                                                  set of image in a target sequence to train on. We select
+whereas FaceSwap and NeuralTextures only manipulate the
+                                                                  sequences with at least 280 frames. To ensure a high quality
+minimum number of frames across the source and target
+                                                                  video selection and to avoid videos with face occlusions, we
+video. Face2Face, however, maps all source expressions to
+                                                                  perform a manual screening of the clips which resulted in
+the target sequence and rewinds the target video if neces-
+                                                                  1,000 video sequences containing 509, 914 images.
+sary. Number of manipulated frames can vary due to miss-
+                                                                      All examined manipulation methods need a source and
+detection in the respective face tracking modules of our ma-
+                                                                  a target video. In case of facial reenactment, the expres-
+nipulation methods.
+                                                                  sions of the source video are transferred to the target video
+                                                                  while retaining the identity of the target person. In contrast,
+Appendix                                                          face swapping methods replace the face in the target video
+                                                                  with the face in the source video. To ensure high quality
+   In FaceForensics++, we evaluate the performance of             face swapping, we select video pairs with similar large faces
+state-of-the-art facial manipulation detection approaches         (considering the bounding box sizes detected by DLib), the
+using a large-scale dataset that we generated with four dif-      same gender of the persons and similar video frame rates.
+ferent facial manipulation methods. In addition, we pro-              Table 3 lists the final numbers of our dataset for all ma-
+posed an automated benchmark to compare future detec-             nipulation methods and the pristine data.
+tion approaches as well as their robustness against unknown
+post-processing operations such as compression.                   B. Forgery Detection
+   This supplemental document reports details on our pris-
+tine data acquisition (Appendix A), ensuring suited input             In this section, we list all numbers from the graphs
+sequences. Appendix B lists the exact numbers of our bi-          of the main paper. Table 4 shows the accuracies of the
+nary classification experiments presented in the main paper.      manipulation-specific forgery detectors (i.e., the detectors
+Besides binary classification, the database is also interesting   are trained on the respective manipulation method). In con-
+for evaluating manipulation classification (Appendix C). In       trast, Table 5 shows the accuracies of the forgery detectors
+Appendix D, we list all chosen hyperparameters of both the        trained on the whole FaceForensics++ dataset. In Table 6,
+manipulation methods as well as the detection techniques.         we show the importance of a large-scale database. The
+                                                                  numbers of our user study are listed in Table 7 including
+A. Pristine Data Acquisition                                      the modality which is used to inspect the images.
+   For a realistic scenario, we chose to collect videos in
+the wild, more specifically from YouTube. Early experi-
+                                                              Raw                               Compressed 23                                      Compressed 40
+                                             DF         F2F         FS        NT        DF       F2F           FS           NT         DF           F2F          FS        NT
+      Steg. Features + SVM [27]             99.03      99.13       98.27     99.88     77.12     74.68      79.51        76.94        65.58        57.55        60.58     60.69
+      Cozzolino et al. [17]                 98.83      98.56       98.89     99.88     81.78     85.32      85.69        80.60        68.26        59.38        62.08     62.42
+      Bayar and Stamm [10]                  99.28      98.79       98.98     98.78     90.18     94.93      93.14        86.04        80.95        77.30        76.83     72.38
+      Rahmouni et al. [51]                  98.03      98.96       98.94     96.06     82.16     93.48      92.51        75.18        73.25        62.33        67.08     62.59
+      MesoNet [5]                           98.41      97.96       96.07     97.05     95.26     95.84      93.43        85.96        89.52        84.44        83.56     75.74
+      XceptionNet [14]                      99.59      99.61       99.14     99.36     98.85     98.36      98.23        94.5         94.28        91.56        93.7      82.11
+
+
+Table 4: Accuracy of manipulation-specific forgery detectors. We show the results for raw and the compressed datasets of all
+four manipulation methods (DF: DeepFakes, F2F: Face2Face, FS: FaceSwap and NT: NeuralTextures).
+
+
+                                                        Raw                                      Compressed 23                                            Compressed 40
+                                     DF        F2F          FS      NT        P       DF       F2F        FS        NT           P           DF         F2F        FS      NT          P
+ Steg. Features + SVM [27]          97.96      98.40    91.35      98.56    98.70    68.80     67.69     70.12      69.21    72.98        67.07      48.55      48.68     55.84    56.94
+ Cozzolino et al. [17]              97.24      98.51    95.93      98.74    99.53    75.51     86.34     76.81      75.34    78.41        75.63      56.01      50.67     62.15    56.27
+ Bayar and Stamm [10]               99.25      99.04    96.80      99.11    98.92    90.25     93.96     87.74      83.69    77.02        86.93      83.66      74.28     74.36    53.87
+ Rahmouni et al. [51]               94.83      98.25    97.59      96.21    97.34    79.66     87.87     84.34      62.65    79.52        80.36      62.04      59.90     59.99    56.79
+ MesoNet [5]                        99.24      98.35    98.15      97.96    92.04    89.55     88.60     81.24      76.62    82.19        80.43      69.06      59.16     44.81    77.58
+ XceptionNet [14]                   99.29      99.23    98.39      98.64    99.64    97.49     97.69     96.79      92.19    95.41        93.36      88.09      87.42     78.06    75.27
+ Full Image Xception [14]           87.73      83.22    79.29      79.97    81.46    88.00     84.98     82.23      79.60    65.85        84.06      77.56      76.12     66.03    65.09
+
+
+Table 5: Detection accuracies when trained on all manipulation methods at once and evaluated on specific manipulation
+methods or pristine data (DF: DeepFakes, F2F: Face2Face, FS: FaceSwap, NT: NeuralTextures, and P: Pristine). The average
+accuricies are listed in the main paper.
+
+
+                                       Raw                                              Compressed 23                                                Compressed 40
+                 DF         F2F           FS           NT         All       DF       F2F        FS        NT          All            DF           F2F         FS        NT         All
+ 10 videos      89.18       76.6       90.89        93.53        92.81     76.06     59.84     81.15     76.73       67.71       64.55        53.99        60.04        65.14     60.55
+ 50 videos      99.52       98.84      97.56        96.67        95.89     92.48     91.33     92.63     85.98       82.89       75.53        66.44        74.25        71.48     65.76
+ 100 videos     99.51       99.09      98.64        98.23        97.54     95.39     95.8      95.56     90.09       87.19       83.68        72.69        79.56        73.72     66.81
+ 300 videos     99.59       99.53      98.78        98.73        98.88     97.30     97.41     97.51      92.4       92.65       91.57        86.38        88.35        79.65     76.01
+
+
+Table 6: Analysis of the training corpus size. Numbers reflect the accuracies of the XceptionNet detector trained on single and
+all manipulation methods (DF: DeepFakes, F2F: Face2Face, FS: FaceSwap, NT: NeuralTextures and All: all manipulation
+methods).
+
+                                            Raw                                             Compressed 23                                            Compressed 40
+                    DF         F2F           FS         NT          P        DF       F2F        FS        NT            P           DF           F2F         FS        NT         P
+ Average            77.60     49.60         76.12      32.28       78.19    78.17     50.19     74.80      30.75      75.41          73.18        43.86       64.26     39.07     62.06
+ Desktop PC         80.41     53.73         75.10      34.36       80.12    81.17     51.57     79.51      29.50      78.10          71.71        44.09       62.99     35.71     64.32
+ Mobile Phone       74.80     44.96         77.11      30.58       76.40    75.47     48.95     70.08      31.97      72.84          74.62        43.62       65.50     41.85     60.00
+
+
+Table 7: User study result w.r.t. the used device to watch the images (DF: DeepFakes, F2F: Face2Face, FS: FaceSwap, NT:
+NeuralTextures and P: Pristine). 99 participants used a PC and 105 a mobile phone.
+C. Classification of Manipulation Method                          NeuralTextures: NeuralTextures is based on a U-Net ar-
+                                                                  chitecture. For data generation, we employ the original
+   To train the XceptionNet classification network to dis-        pipeline and network architecture (for details see [57]). In
+tinguish between all four manipulation methods and the            addition to the photo-metric consistency, we added an ad-
+pristine images, we adapted the final output layer to return
+                                                                  versarial loss. This adversarial loss is based on the patch-
+five class probabilities. The network is trained on the full
+                                                                  based discriminator used in Pix2Pix [36]. During training
+dataset containing all pristine and manipulated images. On
+                                                                  we weight the photo-metric loss with 1 and the adversarial
+raw data the network is able to achieve a 99.03% accuracy,        loss with 0.001. We train three models per manipulation for
+which slightly decreases for the high quality compression         a fixed 45 epochs using the Adam optimizer (with default
+to 95.42% and to 80.49% on low quality images.                    settings) and manually choose the best performing model
+                                                                  based on visual quality. All manipulations are created at
+D. Hyperparameters                                                a resolution of 512 × 512 as in the original paper, with a
+   For reproducibility, we detail the hyperparameters used        texture resolution of 512 × 512 and 16 feature per texel. In-
+for the methods in the main paper. We structured this sec-        stead of using the entire image, we only train and modify
+tion into two parts, one for the manipulation methods and         the cropped image containing the face bounding box ensur-
+the second part for the classification approaches used for        ing high resolution outputs even on higher resolution im-
+forgery detection.                                                ages. To do so, we enlarge the bounding box obtained by
+                                                                  the Face2Face tracker by a factor of 1.8.
+D.1. Manipulation Methods
+                                                                  D.2. Classification Methods
+   DeepFakes and NeuralTextures are learning-based, for
+the other manipulation methods we used the default param-             For our forgery detection pipeline proposed in the main
+eters of the approaches.                                          paper, we conducted studies with five classification ap-
+                                                                  proaches based on convolutional neural networks. The net-
+                                                                  works are trained using the Adam optimizer with different
+DeepFakes: Our DeepFakes implementation is based on
+                                                                  parameters for learning-rate and batch-size. In particular,
+the deepfakes faceswap github project [1]. MTCNN ([65])
+                                                                  for the network proposed in Cozzolino at al. [17] the used
+is used to extract and align the images for each video.
+                                                                  learning-rate is 10−5 with batch-size 16. For the proposal
+Specifically, the largest face in the first frame of a sequence
+                                                                  of Bayar and Stamm [10], we use a learning-rate equal to
+is detected and tracked throughout the whole video. This
+                                                                  10−5 with a batch-size of 64. The network proposed by
+tracking information is used to extract the training data for
+                                                                  Rahmouni [51] is trained with a learning-rate of 10−4 and a
+DeepFakes. The auto-encoder takes input images of 64 (de-
+                                                                  batch-size equal to 64. MesoNet [5] uses a batch-size of 76
+fault). It uses a shared encoder consisting of four convolu-
+                                                                  and the learning-rate is set to 10−3 . Our XceptionNet [14]-
+tional layers which downsizes the image to a bottleneck of
+                                                                  based approach is trained with a learning-rate of 0.0002 and
+4 × 4, where we flatten the input, apply a fully connected
+                                                                  a batch-size of 32. All detection methods are trained with
+layer, reshape the dense layer and apply a single upscaling
+                                                                  the Adam optimizer using the default values for the mo-
+using a convolutional layer as well as a pixel shuffle layer
+                                                                  ments (β1 = 0.9, β2 = 0.999,  = 10−8 ).
+(see [54]). The two decoders use three identical up-scaling
+                                                                      We compute validation accuracies ten times per epoch
+layers to attain full input image resolution. All layers use
+                                                                  and stop the training process if the validation accuracy does
+Leaky ReLus as non-linearities. The network is trained
+                                                                  not change for 10 consecutive checks. Validation and test
+using Adam with a learning rate of 10−5 , β1 = 0.5 and
+                                                                  accuracies are computed on 100 images per video, training
+β2 = 0.999 as well as a batch size of 64. In our experi-
+                                                                  is evaluated on 270 images per video to account for frame
+ments, we run the training for 200000 iterations on a cloud
+                                                                  count imbalance in our videos. Finally, we solve the imbal-
+platform. By exchanging the decoder of one person to an-
+                                                                  ance between real and fake images in the binary task (i.e.,
+other, we can generate an identity-swapped face region. To
+                                                                  the number of fake images being roughly four times as large
+insert the face into the target image, we chose Poisson Im-
+                                                                  as the number of pristine images) by weighing the training
+age Editing [49] to achieve a seamless blending result.
+                                                                  images correspondingly.
+

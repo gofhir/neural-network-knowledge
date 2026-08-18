@@ -1,0 +1,810 @@
+                                        Looking to Listen at the Cocktail Party:
+                                        A Speaker-Independent Audio-Visual Model for Speech Separation
+                                        ARIEL EPHRAT, Google Research and The Hebrew University of Jerusalem, Israel
+                                        INBAR MOSSERI, Google Research
+                                        ORAN LANG, Google Research
+                                        TALI DEKEL, Google Research
+                                        KEVIN WILSON, Google Research
+                                        AVINATAN HASSIDIM, Google Research
+                                        WILLIAM T. FREEMAN, Google Research
+
+
+
+
+arXiv:1804.03619v2 [cs.SD] 9 Aug 2018
+                                        MICHAEL RUBINSTEIN, Google Research
+
+
+
+
+                                        Fig. 1. We present a model for isolating and enhancing the speech of desired speakers in a video. (a) The input is a video (frames + audio track) with one or
+                                        more people speaking, where the speech of interest is interfered by other speakers and/or background noise. (b) Both audio and visual features are extracted
+                                        and fed into a joint audio-visual speech separation model. The output is a decomposition of the input audio track into clean speech tracks, one for each person
+                                        detected in the video (c). This allows us to then compose videos where speech of specific people is enhanced while all other sound is suppressed. Our model
+                                        was trained using thousands of hours of video segments from our new dataset, AVSpeech. The “Stand-Up” video (a) is courtesy of Team Coco.
+
+                                        We present a joint audio-visual model for isolating a single speech signal                  methods that are speaker-dependent (require training a separate model for
+                                        from a mixture of sounds such as other speakers and background noise.                       each speaker of interest).
+                                        Solving this task using only audio as input is extremely challenging and does
+                                        not provide an association of the separated speech signals with speakers                    Additional Key Words and Phrases: Audio-Visual, Source Separation, Speech
+                                        in the video. In this paper, we present a deep network-based model that                     Enhancement, Deep Learning, CNN, BLSTM
+                                        incorporates both visual and auditory signals to solve this task. The visual
+                                                                                                                                    ACM Reference Format:
+                                        features are used to “focus” the audio on desired speakers in a scene and
+                                                                                                                                    Ariel Ephrat, Inbar Mosseri, Oran Lang, Tali Dekel, Kevin Wilson, Avinatan
+                                        to improve the speech separation quality. To train our joint audio-visual
+                                                                                                                                    Hassidim, William T. Freeman, and Michael Rubinstein. 2018. Looking to
+                                        model, we introduce AVSpeech, a new dataset comprised of thousands of
+                                                                                                                                    Listen at the Cocktail Party: A Speaker-Independent Audio-Visual Model
+                                        hours of video segments from the Web. We demonstrate the applicability
+                                                                                                                                    for Speech Separation. ACM Trans. Graph. 37, 4, Article 112 (August 2018),
+                                        of our method to classic speech separation tasks, as well as real-world
+                                                                                                                                    11 pages. https://doi.org/10.1145/3197517.3201357
+                                        scenarios involving heated interviews, noisy bars, and screaming children,
+                                        only requiring the user to specify the face of the person in the video whose
+                                        speech they want to isolate. Our method shows clear advantage over state-                   1   INTRODUCTION
+                                        of-the-art audio-only speech separation in cases of mixed speech. In addition,              Humans are remarkably capable of focusing their auditory attention
+                                        our model, which is speaker-independent (trained once, applicable to any
+                                                                                                                                    on a single sound source within a noisy environment, while de-
+                                        speaker), produces better results than recent audio-visual speech separation
+                                                                                                                                    emphasizing (“muting”) all other voices and sounds. The way neural
+                                                                                                                                    systems achieve this feat, which is known as the cocktail party effect
+                                        Permission to make digital or hard copies of part or all of this work for personal or       [Cherry 1953], remains unclear. However, research has shown that
+                                        classroom use is granted without fee provided that copies are not made or distributed       viewing a speaker’s face enhances a person’s capacity to resolve
+                                        for profit or commercial advantage and that copies bear this notice and the full citation
+                                        on the first page. Copyrights for third-party components of this work must be honored.      perceptual ambiguity in a noisy environment [Golumbic et al. 2013;
+                                        For all other uses, contact the owner/author(s).                                            Ma et al. 2009]. In this paper we achieve this ability computationally.
+                                        © 2018 Copyright held by the owner/author(s).
+                                        0730-0301/2018/8-ART112
+                                        https://doi.org/10.1145/3197517.3201357                                                     The first author performed this work as an intern at Google.
+
+
+                                                                                                                                           ACM Trans. Graph., Vol. 37, No. 4, Article 112. Publication date: August 2018.
+112:2 •       Ephrat, A. et al
+
+
+   Automatic speech separation—separating an input audio signal                  study over the last decades. Wang and Chen [2017] give a com-
+into its individual speech sources—is well-studied in the audio pro-             prehensive overview of recent audio-only methods based on deep
+cessing literature. Since this problem is inherently ill-posed, it re-           learning that tackle both speech denoising [Erdogan et al. 2015;
+quires prior knowledge or special microphone configurations in                   Weninger et al. 2015] and speech separation tasks.
+order to obtain a reasonable solution [McDermott 2009]. In addition,                Two recent works have emerged which solve the aforementioned
+a fundamental problem with audio-only speech separation is the                   label permutation problem to perform speaker-independent, multi-
+label permutation problem [Hershey et al. 2016]: there is no easy                speaker separation in the single-channel case. Hershey et al. [2016]
+way to associate each separated audio source with its corresponding              propose a method called deep clustering in which discriminatively-
+speaker in the video [Hershey et al. 2016; Yu et al. 2017].                      trained speech embeddings are used to cluster and separate the
+   In this work, we present a joint audio-visual method for “focus-              different sources. Hershey et al. [2016] also introduced the idea
+ing” audio on a desired speaker in a video. The input video can                  of a permutation-free or permutation invariant loss function, but
+then be recomposed such that the audio corresponding to specific                 they did not find that it worked well. Isik et al. [2016] and Yu et al.
+people is enhanced while all other sound is suppressed (Fig. 1). More            [2017] subsequently introduced methods which successfully use a
+specifically, we design and train a neural network-based model that              permutation invariant loss function to train a DNN.
+takes the recorded sound mixture, along with tight crops of detected                The advantages of our approach over such audio-only methods
+faces in each frame in the video as input, and splits the mixture into           are threefold: First, we show that the separation results of our audio-
+separate audio streams for each detected speaker. The model uses                 visual model are of higher quality than those of a state-of-the-art-
+visual information both as a means to improve the source separation              inspired audio-only model. Second, our approach performs well
+quality (compared to audio-only results), as well as to associate the            in the setting of multiple speakers mixed with background noise,
+separated speech tracks with visible speakers in the video. All that             which, to our knowledge, no audio-only method has satisfactorily
+is required from the user is to specify which faces of the people in             solved. Third, we jointly solve two speech processing problems:
+the video they want to hear the speech from.                                     speech separation, and assignment of a speech signal to its corre-
+   To train our model, we collected 290,000 high-quality lectures,               sponding face, which, thus far, have been tackled separately [Hoover
+TED talks and how-to videos from YouTube, then automatically                     et al. 2017; Hu et al. 2015; Monaci 2011].
+extracted from these videos roughly 4700 hours of video clips with
+visible speakers and clean speech with no interfering sounds (Fig. 2).              Vision and speech. There is increased interest in using neural
+We call our new dataset AVSpeech. With this dataset in hand, we                  networks for multi-modal fusion of auditory and visual signals to
+then generated a training set of “synthetic cocktail parties”—mixtures           solve various speech-related problems. These include audio-visual
+of face videos with clean speech, and other speech audio tracks and              speech recognition [Feng et al. 2017; Mroueh et al. 2015; Ngiam
+background noise.                                                                et al. 2011], predicting speech or text from silent video (lipreading)
+   We demonstrate the benefits of our approach over recent speech                [Chung et al. 2016; Ephrat et al. 2017], and unsupervised learning
+separation methods in two ways. First, we show superior results                  of language from visual and speech signals [Harwath et al. 2016].
+compared to a state-of-the-art audio-only method on pure speech                  These methods leverage natural synchrony between simultaneously
+mixtures. Second, we demonstrate our model’s capability of pro-                  recorded visual and auditory signals.
+ducing enhanced sound streams from mixtures containing both                         Audio-visual (AV) methods have also been used for speech sepa-
+overlapping speech and background noise in real-world scenarios.                 ration and enhancement [Hershey et al. 2004; Hershey and Casey
+   To summarize, our paper makes two main contributions: (a) An                  2002; Khan 2016; Rivet et al. 2014]. Casanovas et al. [2010] perform
+audio-visual speech separation model that outperforms audio-only                 AV source separation using sparse representations, which is limited
+and audio-visual models on classic speech separation tasks, and is               due to dependence on active-alone regions to learn source char-
+applicable in challenging, natural scenes. To our knowledge, our                 acteristics, and the assumption that all the audio sources are seen
+paper is the first to propose a speaker-independent audio-visual                 on-screen. Recent methods have used neural networks to perform
+model for speech separation. (b) A new, large-scale audio-visual                 the task. Hou et al. [2018] propose a multi-task CNN-based model
+dataset, AVSpeech, carefully collected and processed, comprised of               which outputs a denoised speech spectrogram as well a reconstruc-
+video segments where the audible sound belongs to a single per-                  tion of the input mouth region. Gabbay et al. [2017] train a speech
+son, visible in the video, and no audio background interference.                 enhancement model on videos where other speech samples of the
+This dataset allows us to achieve state-of-the-art results on speech             target speaker are used as background noise, in a scheme they call
+separation and may be useful for the research community for fur-                 “noise-invariant training”. In concurrent work, Gabbay et al. [2018]
+ther studies. Our dataset, input and output videos, and additional               use a video-to-sound synthesis method to filter noisy audio.
+supplementary materials are all available on the project web page:                  The main limitation of these AV speech separation approaches
+http://looking-to-listen.github.io/.                                             is that they are speaker-dependent, meaning a dedicated model
+                                                                                 must be trained for each speaker separately. While these works
+                                                                                 make specific design choices that limit their applicability only to
+2    RELATED WORK                                                                the speaker-dependent case, we speculate that the main reason a
+We briefly review related work in the areas of speech separation                 speaker-independent AV model hasn’t been pursued widely so far
+and audio-visual signal processing.                                              is the lack of a sufficiently large and diverse dataset for training
+                                                                                 such models — a dataset like the one we construct and provide in
+  Speech separation. Speech separation is one of the fundamental                 this work. To the best of our knowledge, our paper is the first to
+problems in audio processing and has been the subject of extensive               address the problem of speaker-independent AV speech separation.
+
+ACM Trans. Graph., Vol. 37, No. 4, Article 112. Publication date: August 2018.
+                                                                                                                                        Looking to Listen at the Cocktail Party • 112:3
+
+
+
+
+                                                        (a) Online videos of talks and lectures we collected
+                                                                                                         Age of speaker                                                                    Language
+                                                                                 4.0e+5
+
+                                                                                 3.0e+5
+
+
+
+                                                                      # Videos
+                                                                                 2.0e+5
+
+
+                                                                                 1.0e+5
+
+                                                                                 0.0e+5
+                                                                                          0-10 10-20 20-30 30-40 40-50 50-60 60-70 70-80 80-90 90-100
+                                                                                                                     Age
+
+                                                                                                         Head pan angle                                                               Head tilt angle
+                                                                                6.0e+7                                                                             8.0e+7
+
+                                                                                5.0e+7
+                                                                                                                                                                   6.0e+7
+                                                                                4.0e+7
+
+                                                                     # Frames                                                                           # Frames
+                                                                                3.0e+7                                                                             4.0e+7
+
+                                                                                2.0e+7
+                                                                                                                                                                   2.0e+7
+                                                                                1.0e+7
+                                                                                0.0e+7                                                                             0.0e+7
+                                                                                          0-10 10-20 20-30 30-40 40-50 50-60 50-60 60-70 70-80
+          (b) Video segments with localized speakers                                                               Degrees
+                                                                                                                                                                            0-10   10-20    20-30   30-40
+                                                                                                                                                                                               Degrees
+                                                                                                                                                                                                            40-50   50-60
+
+
+         and clean speech (which comprise our dataset)                                                                                (c) Dataset statistics
+
+Fig. 2. AVSpeech dataset: We first gathered a large collection of 290,000 high-quality, online public videos of talks and lectures (a). From these videos we
+extracted segments with clean speech (e.g. no mixed music, audience sounds or other speakers), and with the speaker visible in the frame (see Section 3 and
+Figure 3, for details of the processing). This resulted in 4700 hours of video clips, each of a single person talking with no background interference (b). This data
+spans a wide variety of people, languages, and face poses, with distributions shown in (c) (age and head angles estimated with automatic classifiers; language
+based on YouTube metadata). For a detailed list of video sources in our dataset please refer to the project web page.
+
+Our model is capable of separating and enhancing speakers it has                                       dataset [Harte and Gillen 2015] consists of 60 volunteer speakers
+never seen before, speaking in languages that were not part of the                                     with around 200 videos each. The speakers recite various sentences
+training set. In addition, our work is unique in that we show high                                     from the TIMIT dataset [S Garofolo et al. 1992], and are recorded
+quality speech separation on real world examples, in settings that                                     using both front-facing and 30-degree cameras. We evaluate our
+previous audio-only and audio-visual speech separation work did                                        results on these three datasets in order to compare to previous work.
+not address.                                                                                              Recently, the large-scale Lip Reading Sentences (LRS) dataset
+   A number of independent and concurrent works have recently                                          was introduced by Chung et al. [2016], which includes both a wide
+emerged which address the problem of audio-visual sound source                                         variety of speakers and words from a larger vocabulary. However,
+separation using deep neural networks. [Owens and Efros 2018]                                          not only is that dataset not publicly available, but the speech in LRS
+train a network to predict whether audio and visual streams are tem-                                   videos is not guaranteed to be clean, which is crucial for training a
+porally aligned. Learned features extracted from this self-supervised                                  model for speech separation and enhancement.
+model are then used to condition an on/off screen speakers source
+separation model. Afouras et al. [2018] perform speech enhance-                                        3 AVSPEECH DATASET
+ment by using a network to predict both magnitude and phase                                           We introduce a new, large-scale audio-visual dataset comprising
+of denoised speech spectrograms. Zhao et al. [2018] and Gao et al.                                    speech clips with no interfering background signals. The segments
+[2018] addressed the closely related problem of separating the sound                                  are of varying length, between 3 and 10 seconds long, and in each clip
+of multiple on-screen objects (e.g. musical instruments).                                             the only visible face in the video and audible sound in the soundtrack
+                                                                                                      belong to a single speaking person. In total, the dataset contains
+   Audio-visual datasets. Most existing AV datasets comprise videos                                   roughly 4700 hours of video segments with approximately 150,000
+with only a small number of subjects, speaking words from a lim-                                      distinct speakers, spanning a wide variety of people, languages
+ited vocabulary. For example, the CUAVE dataset [Patterson et al.                                     and face poses. Representative frames, audio waveforms and some
+2002] contains 36 subjects saying each digit from 0 to 9 five times                                   dataset statistics are shown in Figure 2.
+each, with a total of 180 examples per digit. Another example is the                                     We collected the dataset automatically, since for assembling a
+Mandarin sentences dataset, introduced by Hou et al. [2018], which                                    corpus of this magnitude it was important not to rely on substantial
+contains video recordings of 320 utterances of Mandarin sentences                                     human feedback. Our dataset creation pipeline collected clips from
+spoken by a native speaker. Each sentence contains 10 Chinese                                         roughly 290,000 YouTube videos of lectures (e.g. TED talks) and
+characters with equally distributed phonemes. The TCD-TIMIT                                           how-to videos. For such channels, most of the videos comprise a
+
+                                                                                                                   ACM Trans. Graph., Vol. 37, No. 4, Article 112. Publication date: August 2018.
+112:4 •          Ephrat, A. et al
+
+                                         Speech Segments                           levels.2 These synthetic mixtures were fed into the denoising net-
+                                                                                   work and the estimated (denoised) SNR was compared to the ground
+                                                                                   truth SNR (see Figure. 3(b)).
+                                                                                      We found that at low SNRs, on average, the estimated SNR is very
+                                                                                   accurate, thus can be considered a good predictor of the original
+                                             Keep        Reject                    noise level. At higher SNRs (i.e. segments with little-to-no interfer-
+                                                                                   ence of the original speech signal), the accuracy of this estimator
+ a) Extracting speech segment candidates by tracking speakers’ faces
+                                                                                   diminishes because the noise signal is faint. The threshold at which
+                             20                                                    this occurs is at around 17 dB, as can be seen in Figure 3(b). We
+                                                                                   listened to a random sample of 100 clips which passed this filtering,
+               Predicted
+                                                                                   and found that none of them contained noticeable background noise.
+                             10                                                    We provide sample video clips from our dataset in the supplemen-
+           speech SNR (dB)
+                                                                                   tary material.
+                             0
+                                  0     10          20     30        40
+                                                                                   4     AUDIO-VISUAL SPEECH SEPARATION MODEL
+                                      Ground-truth speech SNR (dB)                 At a high-level, our model is comprised of a multi-stream architec-
+  b) Predicted vs. true speech SNR, using our speech SNR estimator                 ture which takes visual streams of detected faces and noisy audio
+                                                                                   as input, and outputs complex spectrogram masks, one for each
+Fig. 3. Video and audio processing for dataset creation: (a) We use face           detected face in the video (Figure 4). The noisy input spectrograms
+detection and tracking to extract speech segment candidates from videos            are then multiplied by the masks to obtain an isolated speech signal
+and reject frames in which faces are blurred or not sufficiently frontal-facing.   for each speaker, while suppressing all other interfering signals.
+(b) We discard segments with noisy speech by estimating speech SNR (see
+Section 3). The plot is intended to show the accuracy of our speech SNR            4.1    Video and Audio Representation
+estimator (and thus the quality of the dataset). We compare true speech
+SNR with our predicted SNR for synthetic mixtures of clean speech and non-            Input features. Our model takes both visual and auditory features
+speech noise at known SNR levels. Predicted SNR values (in dB) are averaged        as input. Given a video clip containing multiple speakers, we use
+over 60 generated mixtures per SNR bin, with error bars representing 1 std.        an off-the-shelf face detector (e.g. Google Cloud Vision API) to
+We discard segments for which the predicted speech SNR is below 17 dB              find faces in each frame (75 face thumbnails altogether per speaker,
+(marked by the gray dotted line in the plot).                                      assuming 3-second clips at 25 FPS). We use a pretrained face recog-
+                                                                                   nition model to extract one face embedding per frame for each of the
+single speaker, and both the video and audio are generally of high                 detected face thumbnails. We use the lowest layer in the network
+quality.                                                                           that is not spatially varying, similar to the one used by Cole et al.
+                                                                                   [2016] for synthesizing faces. The rationale for this is that these
+   Dataset creation pipeline. Our dataset collection process has two               embeddings retain information necessary for recognizing millions
+main stages, as illustrated in Figure 3. First, we used the speaker                of faces, while discarding irrelevant variation between images, such
+tracking method of Hoover et al. [2017] to detect video segments of                as illumination. In fact, recent work also demonstrated that it is
+a person actively speaking with their face visible. Face frames that               possible to recover facial expressions from such embeddings [Rudd
+were blurred, insufficiently illuminated or had extreme pose were                  et al. 2016]. We also experimented with raw pixels of the face images,
+discarded from the segments. If more than 15% of a segment’s face                  which did not lead to improved performance.
+frames were missing, it was discarded altogether. We used Google                      As for the audio features, we compute the short-time Fourier
+Cloud Vision API1 for the classifiers in this stage, and to compute                transform (STFT) of 3-second audio segments. Each time-frequency
+the statistics in Figure 2.                                                        (TF) bin contains the real and imaginary parts of a complex number,
+   The second step in building the dataset is refining the speech                  both of which we use as input. We perform power-law compression
+segments to include only clean, non-interfered speech. This is a                   to prevent loud audio from overwhelming soft audio. The same
+crucial component because such segments serve as ground truth                      processing is applied to both the noisy signal and the clean reference
+during training. We perform this refinement step automatically by                  signal.
+estimating the speech SNR (the log ratio of the main speech signal                    At inference time, our separation model can be applied to arbi-
+to the rest of the audio signal) of each segment as follows.                       trarily long segments of video. When more than one speaking face
+   We used a pre-trained audio-only speech denoising network to                    is detected in a frame, our model can accept multiple face streams
+predict the SNR of a given segment using the denoised output as                    as input, as we will discuss shortly.
+an estimation of the clean signal. The architecture of this network
+is the same as the one implemented for the audio-only speech en-                     Output. The output of our model is a multiplicative spectrogram
+hancement baseline in Section 5, and it was trained on speech from                 mask, which describes the time-frequency relationships of clean
+the LibriVox collection of public domain audio books. Segments                     speech to background interference. In previous work [Wang and
+for which the estimated SNR is below a threshold were rejected.                    Chen 2017; Wang et al. 2014], multiplicative masks have been ob-
+The threshold was set empirically using synthetic mixtures of clean                served to work better than alternatives such as direct prediction
+speech and non-speech interfering noise at different, known SNR                    2 Such mixtures simulate well the type of interference in our dataset, which typically
+                                                                                   involves a single speaker interfered by non-speech sounds like audience clapping or
+1 https://cloud.google.com/vision/
+                                                                                   intro music.
+
+
+ACM Trans. Graph., Vol. 37, No. 4, Article 112. Publication date: August 2018.
+                                                                                                                                                         Looking to Listen at the Cocktail Party • 112:5
+
+                                                                        Dilated convolution                             Audio-visual         Bidirectional       FC
+                                                                              network                                     fusion                LSTM           layers
+
+
+                                                         1024        256       256         256
+                                             Face
+                 Face #1                   Embedding                                     298                                                                               Complex        Separated speech Output
+                75 frames                              75
+                                                                                                                                                                           2
+                                                                                                                                                                            masks           spectrograms waveforms
+                                                            1        1         1                                                      256
+
+
+  Input video
+                                                                                               1
+                                                                                                                                                                                                      ISTFT
+                                                                     shared weights                                          256                                        298
+                                                                                                                                             400         600
+                                                                                           256                     8*257                                                       257
+                                                         1024        256       256
+                                             Face
+                 Face #N                   Embedding                                     298                                           298         298
+                                                                                                                                                                           2
+                75 frames                              75
+                                                                                                                                             1           1 1 1
+                                                            1        1         1                     1       298                                                                                      ISTFT
+                                                                                               1
+                                                                                                                                                                        298
+                                                  2             96            96               8                   1
+
+
+
+  Input audio       3 seconds
+                                                                                                                                                                                257
+                                        STFT
+                                                298
+
+
+                                                      257         257              257             257
+
+
+                                                      Visual streams                     Audio stream                      AV fused
+Fig. 4. Our model’s multi-stream neural network-based architecture: The visual streams take as input thumbnails of detected faces in each frame in
+the video, and the audio stream takes as input the video’s soundtrack, containing a mixture of speech and background noise. The visual streams extract face
+embeddings for each thumbnail using a pretrained face recognition model, then learn a visual feature using a dilated convolutional NN. The audio stream first
+computes the STFT of the input signal to obtain a spectrogram, and then learns an audio representation using a similar dilated convolutional NN. A joint,
+audio-visual representation is then created by concatenating the learned visual and audio features, and is subsequently further processed using a bidirectional
+LSTM and three fully connected layers. The network outputs a complex spectrogram mask for each speaker, which is multiplied by the noisy input, and
+converted back to waveforms to obtain an isolated speech signal for each speaker.
+
+                                                                  Table 1. Dilated convolutional layers comprising our model’s audio stream.
+
+                                conv1   conv2    conv3          conv4       conv5         conv6          conv7          conv8         conv9        conv10        conv11        conv12     conv13      conv14      conv15
+Num Filters                      96      96        96             96         96            96               96            96          96              96           96             96         96         96           8
+Filter Size                     1×7     7×1       5×5            5×5        5×5           5×5             5×5            5×5        5×5             5×5          5×5            5×5         5×5        5×5         1×1
+Dilation                        1×1     1×1       1×1            2×1        4×1           8×1             16 × 1        32 × 1       1×1            2×2          4×4            8×8       16 × 16     32 × 32      1×1
+Context                         1×7     7×7       9×9           13 × 11    21 × 13       37 × 15         69 × 17       133 × 19    135 × 21        139 × 25     147 × 33       163 × 49   195 × 81   259 × 145   259 × 145
+
+Table 2. Dilated convolutional layers comprising our model’s visual streams.                                                    use sigmoidal compression to bound these complex mask values
+                                                                                                                                between 0 and 1 [Wang et al. 2016].
+                                   conv1       conv2        conv3          conv4         conv5           conv6                     When masking with cRM, denoised waveforms are obtained by
+ Num Filters                        256         256          256            256           256             256                   performing inverse STFT (ISTFT) on the complex multiplication
+ Filter Size                        7×1         5×1          5×1           5×1           5×1              5×1                   of the predicted cRM and noisy spectrogram. When using RM, we
+ Dilation                           1×1         1×1          2×1           4×1            8×1            16 × 1                 perform ISTFT on the point-wise multiplication of the predicted
+ Context                            7×1         9×1         13 × 1         21 × 1        37 × 1          69 × 1                 RM and noisy spectrogram magnitude, combined with the noisy
+                                                                                                                                original phase [Wang and Chen 2017].
+of spectrogram magnitudes or direct prediction of time-domain                                                                      Given multiple detected speakers’ face streams as input, the net-
+waveforms. Many types of masking-based training targets exist in                                                                work outputs a separate mask for each speaker, and one for back-
+the source separation literature [Wang and Chen 2017], of which                                                                 ground interference. We perform most of our experiments using
+we experiment with two: ratio mask (RM) and complex ratio mask                                                                  cRM, as we found that output speech quality using it was signifi-
+(cRM).                                                                                                                          cantly better than RM. See Table 6 for a quantitative comparison of
+   The ideal ratio mask is defined as the ratio between the magni-                                                              the two methods.
+tudes of the clean and noisy spectrograms, and is assumed to lie
+between 0 and 1. The complex ideal ratio mask is defined as the
+ratio of the complex clean and noisy spectrograms. The cRM has                                                                  4.2     Network architecture
+a real component and an imaginary component, which are sepa-                                                                    Fig. 4 provides a high-level overview of the various modules in our
+rately estimated in the real domain. Real and imaginary parts of                                                                network, which we will now describe in detail.
+the complex mask will typically lie between -1 and 1, however, we
+
+                                                                                                                                        ACM Trans. Graph., Vol. 37, No. 4, Article 112. Publication date: August 2018.
+112:6 •       Ephrat, A. et al
+
+
+   Audio and visual streams. The audio stream part of our model                  is performed using the tools described by Cole et al. [2016]. When
+consists of dilated convolutional layers, the parameters of which                missing frames are encountered in a particular sample, we use a
+are specified in Table 1.                                                        vector of zeros in lieu of a face embedding.
+   The visual stream of our model is used to process the input face
+embeddings (see Section 4.1), and consists of dilated convolutions               5     EXPERIMENTS AND RESULTS
+as detailed in Table 2. Note that “spatial” convolutions and dilations           We tested our method in a variety of conditions and also compared
+in the visual stream are performed over the temporal axis (not over              our results to state-of-the-art audio-only (AO) and audio-visual
+the 1024-D face embedding channel).                                              (AV) speech separation and enhancement, both quantitatively and
+   To compensate for the sampling rate discrepancy between the                   qualitatively.
+audio and video signals, we upsample the output of the visual stream
+to match the spectrogram sampling rate (100 Hz). This is done using                 Comparison with Audio-Only. There are no publicly available
+simple nearest neighbor interpolation in the temporal dimension of               state-of-the-art audio-only speech enhancement/separation sys-
+each visual feature.                                                             tems, and relatively few publicly available datasets for training and
+                                                                                 evaluating audio-only speech enhancement. And although there
+   AV fusion. The audio and visual streams are combined by concate-              is extensive literature on “blind source separation” for audio-only
+nating the feature maps of each stream, which are subsequently fed               speech enhancement and separation [Comon and Jutten 2010], most
+into a BLSTM followed by three FC layers. The final output consists              of these techniques require multiple audio channels (multiple mi-
+of a complex mask (two-channels, real and imaginary) for each of                 crophones), and are therefore not applicable to our task. For these
+the input speakers. The corresponding spectrograms are computed                  reasons, we implemented an AO baseline for speech enhancement
+by complex multiplication of the noisy input spectrogram and the                 which has a similar architecture to the audio stream in our audio-
+output masks. The squared error (L2) between the power-law com-                  visual model (Fig. 4, when stripping out the visual streams). When
+pressed clean spectrogram and the enhanced spectrogram is used                   trained and evaluated on the CHiME-2 dataset [Vincent et al. 2013],
+as a loss function to train the network. The final output waveforms              which is widely used for speech enhancement work, our AO base-
+are obtained using ISTFT, as described in Section 4.1.                           line achieved a signal-to-distortion ratio of 14.6 dB, nearly as good
+                                                                                 as the state-of-the-art single channel result of 14.75 dB reported
+   Multiple speakers. Our model supports isolation of multiple vis-
+                                                                                 by Erdogan et al. [2015]. Our AO enhancement model is therefore
+ible speakers in a video, each represented by a visual stream, as
+                                                                                 deemed a near state-of-the-art baseline.
+illustrated in Fig. 4. A separate, dedicated model is trained for each
+                                                                                    In order to compare our separation results to those of a state-
+number of visible speakers, e.g. a model with one visual stream
+                                                                                 of-the-art AO model, we implemented the permutation-invariant
+for one visible speaker, double visual stream model for two, etc.
+                                                                                 training introduced by Yu et al. [2017]. Note that speech separation
+All the visual streams share the same weights across convolutional
+                                                                                 using this method requires a priori knowledge of the number of
+layers. In this case, the learned features from each visual stream are
+                                                                                 sources present in the recording, and also requires manual assign-
+concatenated with the learned audio features before continuing on
+                                                                                 ment of each output channel to the face of its corresponding speaker
+to the BLSTM. It should be noted that in practice, a model which
+                                                                                 in the video (which our AV method does automatically).
+takes a single visual stream as input can be used in the general case
+                                                                                    We use these AO methods in all our synthetic experiments in
+in which either the number of speakers is unknown, or a dedicated
+                                                                                 Section 5.1, and also show qualitative comparisons to it on real
+multi-speaker model is unavailable.
+                                                                                 videos in Section 5.2.
+4.3    Implementation details                                                       Comparison with Recent Audio-Visual Methods. Since existing AV
+Our network is implemented in TensorFlow, and its included opera-                speech separation and enhancement methods are speaker depen-
+tions are used for performing waveform and STFT transformations.                 dent, we could not easily compare to them in our experiments on
+ReLU activations follow all network layers except for last (mask),               synthetic mixtures (Section 5.1), or run them on our natural videos
+where a sigmoid is applied. Batch normalization [Ioffe and Szegedy               (Section 5.2). However, we show quantitative comparisons with
+2015] is performed after all convolutional layers. Dropout is not                those methods on existing datasets by running our model on videos
+used, as we train on a large amount of data and do not suffer from               from those papers. We discuss this comparison in more detail in
+overfitting. We use a batch size of 6 samples and train with Adam                Section 5.3. In addition, we show qualitative comparisons in our
+optimizer for 5 million steps (batches) with a learning rate of 3 · 10−5         supplementary material.
+which is reduced by half every 1.8 million steps.
+   All audio is resampled to 16kHz, and stereo audio is converted                5.1    Quantitative Analysis on Synthetic Mixtures
+to mono by taking only the left channel. STFT is computed using                  We generated data for several different single-channel speech sep-
+a Hann window of length 25ms, hop length of 10ms, and FFT size                   aration tasks. Each task requires its own unique configuration of
+of 512, resulting in an input audio feature of 257 × 298 × 2 scalars.            mixtures of speech and non-speech background noise. We describe
+Power-law compression is performed with p = 0.3 (A0.3 , where A                  below the generation procedure for each variant of training data, as
+is the input/output audio spectrogram).                                          well as the relevant models for each task, which were trained from
+   We resample the face embeddings from all videos to 25 frames-                 scratch.
+per-second (FPS) before training and inference by either removing or                In all cases, clean speech clips and corresponding faces are taken
+replicating embeddings. This results in an input visual stream of 75             from our AVSpeech (AVS) dataset. Non-speech background noise is
+face embeddings. Face detection, alignment and quality assessment                obtained from AudioSet [Gemmeke et al. 2017], a large-scale dataset
+
+ACM Trans. Graph., Vol. 37, No. 4, Article 112. Publication date: August 2018.
+                                                                                                                         Looking to Listen at the Cocktail Party • 112:7
+
+Table 3. Quantitative analysis and comparison with audio-only                                                 25
+                                                                                                                                                  Audio-visual (ours), 2-speaker model
+speech separation and enhancement: Quality improvement (in SDR,                                                                                   Audio-only
+
+
+
+
+                                                                                       SDR improvement (dB)
+                                                                                                              20
+
+see Section A in the Appendix) as function of the number of input visual
+                                                                                                              15
+streams using different network configurations. First row (audio-only) is our
+implementation of a state-of-the-art speech separation model, and shown                                       10
+
+
+as a baseline.                                                                                                5
+
+
+                                                                                                              0
+
+                        1S+Noise      2S clean    2S+Noise      3S clean
+                                                                                                              -5
+                                                                                                                   -15      -10   -5         0          5       10         15        20
+  AO [Yu et al. 2017]      16.0          8.6         10.0          8.6                                                                  Input SDR (dB)
+
+  AV - 1 face              16.0          9.9         10.1          9.1
+  AV - 2 faces              -           10.3         10.6          9.1          Fig. 5. Input SDR vs. output SDR improvement: A scatter plot showing
+  AV - 3 faces              -             -           -           10.0          separation performance (SDR improvement) as a function of original (noisy)
+                                                                                SDR for the task of separating two clean speakers (2S clean). Each point
+                                                                                corresponds to a single, 3-second audio-visual sample from the test set.
+of manually-annotated segments from YouTube videos. Separated                                                                            Speaker I                        Speaker II
+speech quality is evaluated using signal-to-distortion ratio (SDR)
+improvement from the BSS Eval toolbox [Vincent et al. 2006], a
+commonly used metric for evaluating speech separation quality (see
+Section A in the Appendix).
+   We extracted 3-second non-overlapping segments from the varying-
+length segments in our dataset (e.g. a 10-sec segment would con-
+tribute 3 3-second segments). We generated 1.5 million synthetic                         (a) Input                                (b) Ground truth                   (c) Ground truth
+                                                                                   (2 speakers + noise)
+mixtures for all the models and experiments. For each experiment,
+90% of the generated data was taken to be the training set, and the
+remaining 10% was used as the test set. We did not use any validation
+set as no parameter tuning or early stopping were performed.
+
+  One speaker + noise (1S+Noise). This is a classic speech enhance-
+ment task, for which the training data was generated by a linear
+combination of unnormalized clean speech and AudioSet noise:                        (d) Est. Mask:                                     (e) Our result                  (f) Our result
+                                                                                  speaker I speaker II
+Mix i = AV S j + 0.3 ∗ AudioSetk where AV S j is one utterance from
+AVS, AudioSetk is one segment from AudioSet with its amplitude
+                                                                                Fig. 6. Example of input and output audio: The top row shows the audio
+multiplied by 0.3, and Mix i is a sample in the generated dataset of
+                                                                                spectrogram for one segment in our training data, involving two speakers
+synthetic mixtures. Our audio only model performs quite well in this            and background noise (a), together with the ground truth, separate spec-
+case, because the characteristic frequencies of noise are typically             trograms of each speaker (b, c). In the bottom row we show our results: the
+well separated from the characteristic frequencies of speech. Our               masks our method estimates for that segment, superimposed on one spec-
+audio-visual (AV) model performs as well as the audio-only (AO)                 trogram with a different color for each speaker (d), and the corresponding
+baseline with SDR of 16 dB (first column of Table 3).                           output spectrograms for each speaker (e, f).
+
+   Two clean speakers (2S clean). The dataset for this two-speaker
+                                                                                provides the network with more information and imposes more
+separation scenario was generated by mixing clean speech of two
+                                                                                constraints on the separation task, hence improving the results.
+different speakers from our AVS dataset: Mix i = AV S j + AV Sk ,
+                                                                                   Fig. 5 shows the SDR improvement as a function of input SDR
+where AV S j and AV Sk are clean speech samples from different
+                                                                                for this task, for both the audio-only baseline and our two-speaker
+source videos in our dataset, and Mix i is a sample in the generated
+                                                                                audio-visual model.
+dataset of synthetic mixtures. We trained two different AV models
+on this task, in addition to our AO baseline:                                      Two speakers + noise (2S+Noise). Here, we consider the task of
+   (i) A model which takes only one visual stream as input, and                 isolating one speaker’s voice from a mixture of two speakers and
+outputs only its corresponding denoised signal. In this case, at infer-         non-speech background noise. To the best of our knowledge, this
+ence, the denoised signal of each speaker is obtained by two forward            audio-visual task has not been addressed before. The training data
+passes in the network (one for each speaker). Averaging the SDR                 was generated by mixing clean speech of two different speakers
+results of this model gives an improvement of 1.3 dB over our AO                (as generated for the 2S clean task) with background noise from
+baseline (second column of Table 3).                                            AudioSet: Mix i = AV S j + AV Sk + 0.3 ∗ AudioSetl .
+   (ii) A model which takes visual information from both speakers                  In this case we trained the AO network with three outputs, one for
+as input, in two separate streams (as explained in Section 4). In this          each speaker and one for background noise. In addition, we trained
+case, the output consists of two masks, one for each speaker, and               two different configurations of our model, with one and two visual
+inference is done with a single forward pass. An additional boost               streams received as input. The configuration of the one-stream AV
+of 0.4 dB is obtained using this model, resulting in a 10.3 dB total            model is the same as in model (i) in the previous experiment. The
+SDR improvement. Intuitively, jointly processing two visual streams             two-stream AV outputs three signals, one for each speaker and one
+
+                                                                                      ACM Trans. Graph., Vol. 37, No. 4, Article 112. Publication date: August 2018.
+112:8 •       Ephrat, A. et al
+
+ Table 4. Same-gender separation.                                                Table 5. Comparison with existing audio-visual speech separation
+                                                                         SDR
+ The results in this table, from the                                             work. We compare our speech separation and enhancement results on
+ 2S clean experiment, show that our                 Male-Male            9.7     several datasets to those of previous work, using the evaluation protocols
+ method is robust to separation of                  Female-Female        10.6    and objective scores reported in the original papers. Note that previous
+ speech from same-gender mixtures.                  Male-Female          10.5    approaches are speaker-dependent, whereas our results are obtained by
+                                                                                 using a general, speaker-independent model.
+for background noise. As can be seen in Table 3 (third column),
+the SDR gain of our one-stream AV model over the audio only                                            Mandarin (Enhancement)
+baseline is 0.1 dB, and 0.5 dB for two streams, bringing the total SDR
+improvement to 10.6 dB. Fig. 6 shows the inferred masks and output                                Gabbay et al. [2017]    Hou et al. [2018]   Ours
+spectrograms for a sample segment from this task, along with its                        PESQ              2.25                  2.42           2.5
+noisy input and ground truth spectrograms.                                              STOI                -                   0.66          0.71
+                                                                                        SDR                 -                   2.8            6.1
+   Three clean speakers (3S clean). The dataset for this task is cre-
+ated by mixing clean speech from three different speakers: Mix i =                                     TCD-TIMIT (Separation)
+AV S j + AV Sk + AV Sl . In a similar manner to the previous tasks, we                            Gabbay et al. [2017]          Ours
+trained our AV model with one, two and three visual streams as
+                                                                                        SDR               0.4                   4.1
+input, which output one, two and three signals, respectively.                           PESQ              2.03                  2.42
+   We found that even when using a single visual stream, the AV
+model performs better than the AO model, with a 0.5 dB improve-                                           CUAVE (Separation)
+ment over it. The two visual stream configuration gives the same                                Casanovas et al. [2010]    Pu et al. [2017]   Ours
+improvement over the AO model, while using three visual streams
+                                                                                        SDR                7                     6.2          12.6
+leads to a gain of 1.4 dB, attaining a total 10 dB SDR improvement
+(fourth column of Table 3).
+   Same-gender separation. Many previous speech separation meth-                 speech quality is noticeably degraded. Sun et al. [2017] observed that
+ods show a drop in performance when attempting to separate speech                this limitation stems from the use of a masking-based approach for
+mixtures containing same-gender speech [Delfarah and Wang 2017;                  separation, and that in this scenario, directly predicting the denoised
+Hershey et al. 2016]. Table 4 shows a breakdown of our separa-                   spectrogram could help overcome this problem. In cases of classic
+tion quality by the different gender combinations. Interestingly, our            speech enhancement, i.e. one speaker with non-speech background
+model performs best (by a small margin) on female-female mixtures,               noise, our AV model obtains similar results to those of our strong AO
+but performs well on the other combinations as well, demonstrating               baseline. We suspect this is because the characteristic frequencies of
+its gender robustness.                                                           noise are typically well separated from the characteristic frequencies
+                                                                                 of speech, and therefore incorporating visual information does not
+5.2    Real-World Speech Separation                                              provide additional discrimination capabilities.
+In order to demonstrate our model’s speech separation capabilities               5.3   Comparison with Previous Work in Audio-Visual
+in real-world scenarios, we tested it on an assortment of videos
+                                                                                       Speech Separation and Enhancement
+containing heated debates and interviews, noisy bars and screaming
+children (Fig. 7). In each scenario we use a trained model whose                 Our evaluation would not be complete without comparing our re-
+number of visual input streams matches the number of visible speak-              sults to those of previous work in AV speech separation and en-
+ers in the video. For example, for a video with two visible speakers,            hancement. Table 5 contains these comparisons on three different
+a two-speaker model was used. We performed separation using a                    AV datasets, Mandarin, TCD-TIMIT and CUAVE, mentioned in Sec-
+single forward pass per video, which our model supports, since our               tion 2, using the evaluation protocols and metrics described in the
+network architecture never enforces a specific temporal duration.                respective papers. The reported objective quality scores are PESQ
+This allows us to avoid the need to post-process and consolidate                 [Rix et al. 2001], STOI [Taal et al. 2010] and SDR from the BSS eval
+results on shorter chunks of the video. Because there is no clean                toolbox [Vincent et al. 2006]. Qualitative results of these compar-
+reference audio for these examples, these results and their compari-             isons are available on our project page.
+son to other methods are evaluated qualitatively; they are presented                It is important to note that these prior methods require training a
+in our supplementary material. It should be noted that our method                dedicated model for each speaker in their dataset (speaker dependent),
+does not work in real-time, and, in its current form, our speech                 whereas our evaluation on their data is done using a model trained
+enhancement is better suited for the post-processing stage of video              on our general AVS dataset (speaker independent). Despite having
+editing.                                                                         never encountered these particular speakers before, our results
+   The synthetic “Double Brady” video in our supplementary mate-                 are significantly better than those reported in the original papers,
+rial highlights the utilization of visual information by our model,              indicating the strong generalization capability of our model.
+as it is very difficult to perform speech separation in this scenario
+using only characteristic speech frequencies contained in the audio.             5.4   Application to Video Transcription
+   The “Noisy Bar” scene shows a limitation of our approach in                   While our focus in this paper is speech separation and enhance-
+separating speech from mixtures with low SNR. In this case, the                  ment, our method can also be useful for automatic speech recog-
+background noise is almost entirely suppressed, however output                   nition (ASR) and video transcription. As a proof of concept, we
+
+ACM Trans. Graph., Vol. 37, No. 4, Article 112. Publication date: August 2018.
+                                                                                                  Looking to Listen at the Cocktail Party • 112:9
+
+                                                                              Table 6. Ablation study: We investigate the contribution of different parts
+                                                                              of our model on the scenario of separating mixtures of two clean speakers.
+                                                                              SDR correlates well with noise suppression, and ViSQOL indicates level of
+                                                                              speech quality (see Section A in the Appendix)
+
+
+                                                                                                                              SDR      ViSQOL
+                                                                                                 Our full model (cRM)         10.3        3.0
+                                                                                                 - No FC                      10.0        2.3
+                                                                                                 - No BLSTM                    8.7        2.7
+                                                                                                 - Audio-only (input)          8.6        2.7
+                                                                                                 - No BLSTM or FC              0.6        1.8
+                                                                                                 - Visual-only (input)         1.4        2.0
+                                                                                             .
+                                                                                                 Magnitude mask (RM)           9.7        2.8
+                                                                                                 Bottleneck (cRM)              9.8        2.9
+                                                                                                 Early fusion (cRM)            8.1        2.5
+                                                                                                 Oracle RM + noisy ph.         9.7        3.4
+                                                                                                 Oracle cRM                   14.8        3.8
+                                                                                                 Oracle RM + oracle ph.       17.4        4.7
+
+                                                                              third spectrogram “channel” and processing them jointly throughout
+                                                                              the model.
+                                                                                 Table 6 shows the results of our ablation study. The table includes
+                                                                              evaluation using SDR and ViSQOL [Hines et al. 2015], an objective
+                                                                              measure intended to approximate human listener mean opinion
+Fig. 7. Speech separation in the wild: Representative frames from natural     scores (MOS) of speech quality. The ViSQOL scores were calculated
+videos demonstrating our method in various real-world scenarios. All videos   on a random 2000 sample subset of our testing data. We found that
+and results can be found in the supplementary material. The “Undisputed       SDR correlates well with the amount of noise left in the separated
+Interview” video is courtesy of Fox Sports.                                   audio, and ViSQOL is a better indicator of output speech quality. See
+                                                                              Section A in the Appendix for more details on these scores. “Oracle”
+performed the following qualitative experiment. We uploaded our               RMs and cRMs are masks obtained as described in Section 4.1, by us-
+speech-separated results for the “Stand-Up” video to YouTube, and             ing the ground truth real-valued and complex-valued spectrograms,
+compared the resulting captions produced by YouTube’s automatic               respectively.
+captioning3 with those it produced for the corresponding source                  The most interesting findings of this study are the drop in MOS
+videos with mixed speech. For parts of the original “Stand-Up” video,         when using a real-valued magnitude mask rather than a complex one,
+the ASR system was unable to generate any captions in mixed speech            and the surprising effectiveness of squeezing the visual information
+segments of the video. The results included speech from both speak-           into one scalar per timestep, described below.
+ers, resulting in hard-to-read sentences. However, captions produced
+on our separated speech results were noticeably more accurate. We               Bottleneck features. In our ablation analysis we found that a net-
+show the full captioned videos in our supplementary material.                 work which squeezes the visual information into a bottleneck of
+                                                                              one scalar per timestep (“Bottleneck (cRM)”) performs almost as
+5.5   Additional Analysis                                                     well (only 0.5 dB less) as our full model (“Full model (cRM)”) that
+We also conducted extensive experiments to better understand the              uses 64 scalars per timestep.
+model’s behavior and how its different components affect the results.            How does the model utilize the visual signal? Our model uses face
+   Ablation study. In order to better understand the contribution of          embeddings as the input visual representation (Section 4.1). We
+different parts of our model, we performed an ablation study on               want to gain insights on the information captured in these high-
+the task of speech separation from a mixture of two clean speakers            level features and to identify which regions of the input frames are
+(2S Clean). In addition to ablating several combinations of network           used by the model for separating the speech. To this end, we follow
+modules (visual and audio streams, BLSTM and FC layers), we also              a similar protocol as in [Zeiler and Fergus 2014; Zhou et al. 2014]
+investigated higher-level changes such as a different output mask             for visualizing receptive fields of deep networks. We extend that
+(magnitude), the effect of reducing the learned visual features to one        protocol from 2D images to 3D (space-time) video. More specifi-
+scalar per timestep, and a different fusion method (early fusion).            cally, we use a space-time patch occluder (11px × 11px × 200ms
+   In the early fusion model, we do not have separate visual and              patch4 ) in a sliding window fashion. For each space-time occluder,
+audio streams, but rather combine the two modalities at the input.            we feed-forward the occluded video into our model and compare
+This is done by first using two fully connected layers to reduce the          the speech separation result, Socc , with the one obtained on the
+dimensionality of each visual embedding to match the spectrogram              original (non-occluded) video, Sor iд . To quantify the difference be-
+dimension at each timestep, then stacking the visual features as a            tween the network outputs, we use SNR, treating the result without
+3 https://support.google.com/youtube/answer/6373554?hl=en                     4 We use 200ms length to cover the typical range of phoneme duration: 30-200 ms.
+
+
+
+                                                                                     ACM Trans. Graph., Vol. 37, No. 4, Article 112. Publication date: August 2018.
+112:10 •       Ephrat, A. et al
+
+
+
+
+                                                                                     Fig. 9. The effect of missing visual information: This graph shows the
+                                                                                     impact of the duration of the visual information on output SDR improvement
+                                                                                     in the 2S clean scenario. We test this by gradually zeroing-out input face
+                                                                                     embeddings from both ends of the sample. The results show that even a
+                                                                                     small number of visual frames are sufficient for high-quality separation.
+
+
+                                                                                     with background noise. To train the model, we created a new audio-
+                                                                                     visual dataset with thousands of hours of video segments containing
+                                                                                     visible speakers and clean speech we collected from the Web. We
+Fig. 8. How does the model utilize the visual signal? We show heat                   showed state-of-the-art results on speech separation as well as a
+maps overlaid on representative input frames from several videos, visu-              potential application to video captioning and speech recognition.
+alizing the contribution of different regions of the frames to our speech
+                                                                                     We also conducted extensive experiments to analyze the behavior
+separation result (in dB, see text), from blue (low contribution) to red (high
+contribution).
+                                                                                     of our model and its components.
+
+the occluder as the “signal”5 . That is, for each space-time patch, we               ACKNOWLEDGEMENTS
+compute:                                            !                                We would like to thank Yossi Matias and Google Research Israel
+                                       Sor iд 2                                      for their support for the project, and John Hershey for his valuable
+                  E = 10 · log                        .             (1)              feedback. We also thank Arkady Ziefman for his help with figure
+                                  (Socc − Sor iд )2
+                                                                                     design and video editing, and Rachel Soh for helping us procure
+Repeating this process for all space-time patches in a video results in              permissions for video content in our results.
+a heat map for each frame. For visualization purposes we normalize
+the heat maps by the maximum SNR for the video: Ẽ = Emax − E.                       REFERENCES
+In Ẽ, high values correspond to patches with high impact on the                     T. Afouras, J. S. Chung, and A. Zisserman. 2018. The Conversation: Deep Audio-Visual
+speech separation result.                                                                Speech Enhancement. In arXiv:1804.04121.
+   In Fig. 8 we show the resulting heat maps for representative                      Anna Llagostera Casanovas, Gianluca Monaci, Pierre Vandergheynst, and Rémi Gri-
+                                                                                         bonval. 2010. Blind audiovisual source separation based on sparse redundant repre-
+frames from several videos (the full heat map videos are available                       sentations. IEEE Transactions on Multimedia 12, 5 (2010), 358–371.
+on our project page). As expected, the facial regions that contribute                E Colin Cherry. 1953. Some experiments on the recognition of speech, with one and
+                                                                                        with two ears. The Journal of the acoustical society of America 25, 5 (1953), 975–979.
+the most are located around the mouth, yet the visualization reveals                 Joon Son Chung, Andrew W. Senior, Oriol Vinyals, and Andrew Zisserman. 2016. Lip
+that other areas such as the eyes and cheeks contribute as well.                         Reading Sentences in the Wild. CoRR abs/1611.05358 (2016).
+                                                                                     Forrester Cole, David Belanger, Dilip Krishnan, Aaron Sarna, Inbar Mosseri, and
+   Effect of missing visual information. We further tested the contri-                  William T Freeman. 2016. Synthesizing normalized faces from facial identity features.
+bution of visual information to the model by gradual elimination of                      In CVPR’17.
+                                                                                     Pierre Comon and Christian Jutten. 2010. Handbook of Blind Source Separation: Inde-
+visual embeddings. Specifically, we start by running the model and                       pendent component analysis and applications. Academic press.
+evaluating the speech separation quality using visual information                    Masood Delfarah and DeLiang Wang. 2017. Features for Masking-Based Monaural
+for the full 3 second video. We then gradually discard embeddings                        Speech Separation in Reverberant Conditions. IEEE/ACM Transactions on Audio,
+                                                                                         Speech, and Language Processing 25 (2017), 1085–1094.
+from both ends of the segment, and re-evaluate the separation qual-                  Ariel Ephrat, Tavi Halperin, and Shmuel Peleg. 2017. Improved Speech Reconstruction
+ity with visual durations of 2, 1, 0.5 and 0.2 seconds.                                  from Silent Video. In ICCV 2017 Workshop on Computer Vision for Audio-Visual
+                                                                                         Media.
+   The results are shown in Fig. 9. Interestingly, the speech separa-                Hakan Erdogan, John R. Hershey, Shinji Watanabe, and Jonathan Le Roux. 2015. Phase-
+tion quality is reduced by only 0.8 dB on average when dropping as                       sensitive and recognition-boosted speech separation using deep recurrent neural
+much as 2/3 of the visual embeddings in the segments. This shows                         networks. IEEE International Conference on Acoustics, Speech and Signal Processing
+                                                                                        (ICASSP) (2015).
+the robustness of the model to missing visual information, which                     Weijiang Feng, Naiyang Guan, Yuan Li, Xiang Zhang, and Zhigang Luo. 2017. Audio
+may occur in real world scenarios due to head motion or occlusions.                     visual speech recognition with multimodal recurrent neural networks. In Neural
+                                                                                         Networks (IJCNN), 2017 International Joint Conference on. IEEE, 681–688.
+                                                                                     Aviv Gabbay, Ariel Ephrat, Tavi Halperin, and Shmuel Peleg. 2018. Seeing Through
+6    CONCLUSION                                                                          Noise: Speaker Separation and Enhancement using Visually-derived Speech. IEEE
+We proposed an audio-visual neural network-based model for single-                       International Conference on Acoustics, Speech and Signal Processing (ICASSP) (2018).
+                                                                                     Aviv Gabbay, Asaph Shamir, and Shmuel Peleg. 2017. Visual Speech Enhancement
+channel, speaker-independent speech separation. Our model works                          using Noise-Invariant Training. arXiv preprint arXiv:1711.08789 (2017).
+well in challenging scenarios, including multi-speaker mixtures                      R. Gao, R. Feris, and K. Grauman. 2018. Learning to Separate Object Sounds by Watching
+                                                                                         Unlabeled Video. arXiv preprint arXiv:1804.01665 (2018).
+5 We refer the reader to the supplementary material to validate that our separated   Jort F. Gemmeke, Daniel P. W. Ellis, Dylan Freedman, Aren Jansen, Wade Lawrence,
+speech on the non-occluded video, which we treat as “correct” in this example, is        R. Channing Moore, Manoj Plakal, and Marvin Ritter. 2017. Audio Set: An ontology
+indeed accurate.                                                                         and human-labeled dataset for audio events. In Proc. IEEE ICASSP 2017.
+
+
+ACM Trans. Graph., Vol. 37, No. 4, Article 112. Publication date: August 2018.
+                                                                                                                 Looking to Listen at the Cocktail Party •                   112:11
+
+
+Elana Zion Golumbic, Gregory B Cogan, Charles E. Schroeder, and David Poeppel. 2013.              on. IEEE, 4214–4217.
+    Visual input enhances selective speech envelope tracking in auditory cortex at a          Emmanuel Vincent, Jon Barker, Shinji Watanabe, Jonathan Le Roux, Francesco Nesta,
+    "cocktail party". The Journal of neuroscience : the official journal of the Society for       and Marco Matassoni. 2013. The second ’chime’ speech separation and recognition
+    Neuroscience 33 4 (2013), 1417–26.                                                            challenge: Datasets, tasks and baselines. 2013 IEEE International Conference on
+Naomi Harte and Eoin Gillen. 2015. TCD-TIMIT: An audio-visual corpus of continuous                Acoustics, Speech and Signal Processing (2013), 126–130.
+    speech. IEEE Transactions on Multimedia 17, 5 (2015), 603–615.                            E. Vincent, R. Gribonval, and C. Fevotte. 2006. Performance Measurement in Blind Audio
+David F. Harwath, Antonio Torralba, and James R. Glass. 2016. Unsupervised Learning               Source Separation. Trans. Audio, Speech and Lang. Proc. 14, 4 (2006), 1462–1469.
+    of Spoken Language with Visual Context. In NIPS.                                          DeLiang Wang and Jitong Chen. 2017. Supervised Speech Separation Based on Deep
+John Hershey, Hagai Attias, Nebojsa Jojic, and Trausti Kristjansson. 2004. Audio-visual           Learning: An Overview. CoRR abs/1708.07524 (2017).
+    graphical models for speech processing. In IEEE International Conference on Acoustics,    Yuxuan Wang, Arun Narayanan, and DeLiang Wang. 2014. On training targets for
+    Speech and Signal Processing (ICASSP).                                                        supervised speech separation. IEEE/ACM Transactions on Audio, Speech and Language
+John R Hershey and Michael Casey. 2002. Audio-visual sound separation via hidden                  Processing (TASLP) 22, 12 (2014), 1849–1858.
+    Markov models. In Advances in Neural Information Processing Systems. 1173–1180.           Ziteng Wang, Xiaofei Wang, Xu Li, Qiang Fu, and Yonghong Yan. 2016. Oracle perfor-
+John R. Hershey, Zhuo Chen, Jonathan Le Roux, and Shinji Watanabe. 2016. Deep                     mance investigation of the ideal masks. In IWAENC.
+    clustering: Discriminative embeddings for segmentation and separation. IEEE               Felix Weninger, Hakan Erdogan, Shinji Watanabe, Emmanuel Vincent, Jonathan Le
+    International Conference on Acoustics, Speech and Signal Processing (ICASSP) (2016),          Roux, John R. Hershey, and Björn W. Schuller. 2015. Speech Enhancement with
+    31–35.                                                                                        LSTM Recurrent Neural Networks and its Application to Noise-Robust ASR. In
+Andrew Hines, Eoin Gillen, Damien Kelly, Jan Skoglund, Anil C. Kokaram, and Naomi                 LVA/ICA.
+    Harte. 2015. ViSQOLAudio: An objective audio quality metric for low bitrate codecs.       Dong Yu, Morten Kolbæk, Zheng-Hua Tan, and Jesper Jensen. 2017. Permutation
+    The Journal of the Acoustical Society of America 137 6 (2015), EL449–55.                      invariant training of deep models for speaker-independent multi-talker speech
+Andrew Hines and Naomi Harte. 2012. Speech Intelligibility Prediction Using a Neuro-              separation. IEEE International Conference on Acoustics, Speech and Signal Processing
+    gram Similarity Index Measure. Speech Commun. 54, 2 (Feb. 2012), 306–320. DOI:                (ICASSP) (2017), 241–245.
+    http://dx.doi.org/10.1016/j.specom.2011.09.004                                            Matthew D Zeiler and Rob Fergus. 2014. Visualizing and understanding convolutional
+Ken Hoover, Sourish Chaudhuri, Caroline Pantofaru, Malcolm Slaney, and Ian Sturdy.                networks. In European conference on computer vision. Springer, 818–833.
+    2017. Putting a Face to the Voice: Fusing Audio and Visual Signals Across a Video         Hang Zhao, Chuang Gan, Andrew Rouditchenko, Carl Vondrick, Josh McDermott, and
+    to Determine Speakers. CoRR abs/1706.00079 (2017).                                            Antonio Torralba. 2018. The Sound of Pixels. (2018).
+Jen-Cheng Hou, Syu-Siang Wang, Ying-Hui Lai, Jen-Chun Lin, Yu Tsao, Hsiu-Wen                  Bolei Zhou, Aditya Khosla, Agata Lapedriza, Aude Oliva, and Antonio Torralba. 2014.
+    Chang, and Hsin-Min Wang. 2018. Audio-Visual Speech Enhancement Using Multi-                  Object detectors emerge in deep scene cnns. arXiv preprint arXiv:1412.6856 (2014).
+    modal Deep Convolutional Neural Networks. IEEE Transactions on Emerging Topics
+    in Computational Intelligence 2, 2 (2018), 117–128.
+Yongtao Hu, Jimmy SJ Ren, Jingwen Dai, Chang Yuan, Li Xu, and Wenping Wang. 2015.             A  OBJECTIVE METRICS USED FOR EVALUATING
+    Deep multimodal speaker naming. In Proceedings of the 23rd ACM international                 SEPARATION QUALITY
+    conference on Multimedia. ACM, 1107–1110.
+Sergey Ioffe and Christian Szegedy. 2015. Batch Normalization: Accelerating Deep              A.1 SDR
+    Network Training by Reducing Internal Covariate Shift. In ICML.
+Yusuf Isik, Jonathan Le Roux, Zhuo Chen, Shinji Watanabe, and John R Hershey. 2016.           The signal-to-distortion ratio (SDR), introduced by Vincent et al.
+    Single-Channel Multi-Speaker Separation Using Deep Clustering. Interspeech (2016),        [2006], is one of a family of measures designed to evaluate Blind
+    545–549.
+Faheem Khan. 2016. Audio-visual speaker separation. Ph.D. Dissertation. University of
+                                                                                              Audio Source Separation (BASS) algorithms, where the original
+    East Anglia.                                                                              source signals are available as ground truth. The measures are based
+Wei Ji Ma, Xiang Zhou, Lars A. Ross, John J. Foxe, and Lucas C. Parra. 2009. Lip-Reading      on the decomposition of each estimated source signal into a true
+    Aids Word Recognition Most in Moderate Noise: A Bayesian Explanation Using
+    High-Dimensional Feature Space. PLoS ONE 4 (2009), 233 – 252.                             source part (st ar дet ) plus error terms corresponding to interferences
+Josh H McDermott. 2009. The cocktail party problem. Current Biology 19, 22 (2009),            (eint er f ), additive noise (enoise ) and algorithmic artifacts (ear t if ).
+    R1024–R1027.                                                                                 SDR is the most general score, commonly reported for speech
+Gianluca Monaci. 2011. Towards real-time audiovisual speaker localization. In Signal
+    Processing Conference, 2011 19th European. IEEE, 1055–1059.                               separation algorithms. It is measured in dB, and is defined as:
+Youssef Mroueh, Etienne Marcheret, and Vaibhava Goel. 2015. Deep multimodal learn-                                                                                 !
+    ing for audio-visual speech recognition. In Acoustics, Speech and Signal Processing                                                   ||st ar дet || 2
+    (ICASSP), 2015 IEEE International Conference on. IEEE, 2130–2134.                                    SDR := 10 · log10                                           . (2)
+Jiquan Ngiam, Aditya Khosla, Mingyu Kim, Juhan Nam, Honglak Lee, and Andrew Y.                                                ||eint er f + enoise + ear t if || 2
+    Ng. 2011. Multimodal Deep Learning. In ICML.
+Andrew Owens and Alexei A Efros. 2018. Audio-Visual Scene Analysis with Self-                 We refer the reader to the original paper for details on signal decom-
+    Supervised Multisensory Features. (2018).                                                 position into its components. We found this measure to correlate
+Eric K. Patterson, Sabri Gurbuz, Zekeriya Tufekci, and John N. Gowdy. 2002. Moving-           well with the amount of noise left in the separated audio.
+    Talker, Speaker-Independent Feature Study, and Baseline Results Using the CUAVE
+    Multimodal Speech Corpus. EURASIP J. Adv. Sig. Proc. 2002 (2002), 1189–1201.
+Jie Pu, Yannis Panagakis, Stavros Petridis, and Maja Pantic. 2017. Audio-visual object        A.2     ViSQOL
+    localization and separation using low-rank and sparsity. In Acoustics, Speech and
+    Signal Processing (ICASSP), 2017 IEEE International Conference on. IEEE, 2901–2905.       The Virtual Speech Quality Objective Listener (ViSQOL) is an ob-
+Bertrand Rivet, Wenwu Wang, Syed M. Naqvi, and Jonathon A. Chambers. 2014. Audio-             jective speech quality model, introduced by Hines et al. [2015]. The
+    visual Speech Source Separation: An overview of key methodologies. IEEE Signal            metric models human speech quality perception using a spectro-
+    Processing Magazine 31 (2014), 125–134.
+Antony W Rix, John G Beerends, Michael P Hollier, and Andries P Hekstra. 2001.                temporal measure of similarity between a reference (r ) and a de-
+    Perceptual evaluation of speech quality (PESQ)-a new method for speech quality            graded (d) speech signal, and is based on the Neurogram Similarity
+    assessment of telephone networks and codecs. In Acoustics, Speech, and Signal
+    Processing, 2001. Proceedings.(ICASSP’01). 2001 IEEE International Conference on,
+                                                                                              Index Measure (NSIM) [Hines and Harte 2012]. NSIM is defined as
+    Vol. 2. IEEE, 749–752.                                                                                                 2µ r µ + C 1    σ + C2
+Ethan M Rudd, Manuel Günther, and Terrance E Boult. 2016. Moon: A mixed objective                          N SIM(r , d) = 2 d2           · rd          ,        (3)
+    optimization network for the recognition of facial attributes. In European Conference                                 µ r + µd + C 1  σ r σd + C 2
+    on Computer Vision. Springer, 19–35.
+J S Garofolo, Lori Lamel, W M Fisher, Jonathan Fiscus, D S. Pallett, N L. Dahlgren, and       where the µs and σ s are mean and correlation coefficients, respec-
+    V Zue. 1992. TIMIT Acoustic-phonetic Continuous Speech Corpus. (11 1992).                 tively, calculated between reference and degraded spectrograms.
+Lei Sun, Jun Du, Li-Rong Dai, and Chin-Hui Lee. 2017. Multiple-target deep learning
+    for LSTM-RNN based speech enhancement. In HSCMA.
+                                                                                                 In ViSQOL, NSIM is calculated on spectrogram patches of the
+Cees H Taal, Richard C Hendriks, Richard Heusdens, and Jesper Jensen. 2010. A short-          reference signal and their corresponding patches from the degraded
+    time objective intelligibility measure for time-frequency weighted noisy speech. In       signal. The algorithm subsequently aggregates and translates the
+    Acoustics Speech and Signal Processing (ICASSP), 2010 IEEE International Conference
+                                                                                              NSIM scores into a mean opinion score (MOS) between 1 and 5.
+
+                                                                                                     ACM Trans. Graph., Vol. 37, No. 4, Article 112. Publication date: August 2018.
+

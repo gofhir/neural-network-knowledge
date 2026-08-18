@@ -1,0 +1,309 @@
+                                                           VID2SPEECH: SPEECH RECONSTRUCTION FROM SILENT VIDEO
+
+                                                                                             Ariel Ephrat and Shmuel Peleg
+
+                                                                                         The Hebrew University of Jerusalem
+                                                                                                 Jerusalem, Israel
+
+
+                                                                    ABSTRACT
+
+
+
+
+arXiv:1701.00495v2 [cs.CV] 9 Jan 2017
+                                        Speechreading is a notoriously difficult task for humans to
+                                        perform. In this paper we present an end-to-end model based
+                                        on a convolutional neural network (CNN) for generating an
+                                        intelligible acoustic speech signal from silent video frames
+                                        of a speaking person. The proposed CNN generates sound
+                                        features for each frame based on its neighboring frames.
+                                        Waveforms are then synthesized from the learned speech
+                                        features to produce intelligible speech. We show that by
+                                        leveraging the automatic feature learning capabilities of a
+                                        CNN, we can obtain state-of-the-art word intelligibility on
+                                        the GRID dataset, and show promising results for learning
+                                        out-of-vocabulary (OOV) words.
+                                            Index Terms— Speechreading, visual speech processing,                    Fig. 1. Our CNN-based model takes the frames of silent video
+                                        articulatory-to-acoustic mapping, speech intelligibility, neu-               as input, and predicts sound features which are converted into
+                                        ral networks                                                                 intelligible speech. Sound features are calculated by perform-
+                                                                                                                     ing 8th-order LPC analysis and LSP decomposition on half-
+                                                                                                                     overlapping audio frames of 40ms each. Concatenating ev-
+                                                              1. INTRODUCTION                                        ery two successive LSP vectors results in a feature vector
+                                                                                                                     Si ∈ R18 .
+                                        Speechreading is the task of obtaining reliable phonetic in-
+                                        formation from a speaker’s face during speech perception. It
+                                        has been described as “trying to grasp with one sense infor-                 are extracted from the frames and fed to a classifier. Wand et
+                                        mation meant for another”. Given the fact that often several                 al. [5], Assael et al. [6] and Chung et al. [7] have all recently
+                                        phonemes (phonetic units of speech) correspond to a single                   showed state-of-the-art word and sentence-level classification
+                                        viseme (visual unit of speech), it is a notoriously difficult task           results using neural network-based models.
+                                        for humans to perform.                                                           The second approach, and the one used in this work, is to
+                                             Several applications come to mind for automatic video-                  model speechreading as an articulatory-to-acoustic mapping
+                                        to-speech systems: Enabling videoconferencing from within                    problem in which the “label” of each short video segment is
+                                        a noisy environment; facilitating conversation at a party with               a corresponding feature vector representing the audio signal.
+                                        loud music between people having wearable cameras and ear-                   Kello and Plaut [8] and Hueber and Bailly [9] attempted this
+                                        pieces; maybe even using surveillance video as a long-range                  approach using various sensors to record mouth movements.
+                                        listening device.                                                            Le Cornu and Milner [10] took this direction in a recent work
+                                             Much work has been done in the area of automating                       where they used hand-crafted visual features to produce intel-
+                                        speechreading by computers [1, 2, 3]. There are two main                     ligible audio.
+                                        approaches to this task. The first, and the one most widely                      A major advantage of this model of learning is its non-
+                                        attempted in the past, consists of modeling speechreading as                 dependency on a particular segmentation of the input data into
+                                        a classification problem. In this approach, the input video                  words or sub-words. It does not either need to have explicit
+                                        is manually segmented into short clips which contain either                  manually-annotated labels, but rather uses “natural supervi-
+                                        whole words from a predefined dictionary, or parts of words                  sion” [11], in which the prediction target is derived from a
+                                        comprising phonemes or visemes [4]. Then, visual features                    natural signal in the world. A regression-based model is also
+                                              This research was supported by Israel Science Foundation, by DFG and   vocabulary-agnostic. Given a training set with a large enough
+                                        by Intel ICRI-CI.                                                            representation of the phonemes/visemes of a particular lan-
+                                                                   speech production [12]. LPC analysis is applied to overlap-
+                                                                   ping audio frames of the original speech signal, resulting in
+                                                                   an LPC coefficient vector whose order P can be tuned. Line
+                                                                   Spectrum Pairs (LSP) [13] are a representation of LPC coeffi-
+                                                                   cients which are more stable and robust to quantization and
+                                                                   small coefficient deviations. LSPs are therefore useful for
+                                                                   speech coding and transmission over a channel, and indeed
+                                                                   proved to be well suited to the task at hand.
+                                                                       We apply the following procedure to calculate audio fea-
+Fig. 2. This figure illustrates (1) the importance of allowing     tures suitable for use as neural network output: First, the au-
+the network to learn visual features from the speaker’s en-        dio from each video sequence is downsampled to 8kHz and
+tire face, as opposed to the mouth region only; (2) the disam-     split into audio frames of 40ms (320 samples) each, with an
+biguation effect of using temporal context. Green line (top) is    overlap of 20ms. 8th-order LPC analysis is applied to each
+test error as a function of input clip length K when using only    audio frame, as done by [10], followed by LSP decomposi-
+mouth region, and blue line (bottom) is test error when using      tion, resulting in a feature vector of length 9 per frame. While
+full face region. Face region error is 40% lower than mouth        8th-order LPC is relatively low for high-fidelity modeling of
+region in the best configuration.                                  the speech spectrum, we did so in order to isolate the effect
+                                                                   of using CNN-learned visual features versus the hand-crafted
+                                                                   ones of [10]. Each video frame has two successive corre-
+guage, it can reconstruct words that are not present in the        sponding feature vectors, which are concatenated to form a
+training set. Classification at the sub-word level can also have   sound vector, Si ∈ R18 . See Figure 1 for an illustration of
+the same effect. Another advantage to this model is its abil-      this procedure. Finally, the vectors are standardized element-
+ity to reconstruct the non-textual parts of human speech, e.g.     wise by subtracting the mean and dividing by the standard
+emotion, prosody, etc.                                             deviation of each element.
+     Researchers have spent much time and effort finding vi-
+sual features which accurately map facial movements to audi-
+tory signal. We bypass the need for feature crafting by utiliz-                    3. PREDICTING SPEECH
+ing CNNs, which have brought significant advances to com-
+                                                                   3.1. Regressing sound features
+puter vision in recent years. Given raw visual data as input,
+our network automatically learns optimal visual features for       Given a sequence of input frames I1 , I2 , ..., IN we would
+reconstructing an acoustic signal closest to the original.         like to estimate a corresponding sequence of sound features
+     In this paper, we: (1) Present an end-to-end CNN-based        S1 , S2 , ..., SN where Si ∈ R18 .
+model that predicts the speech audio signal of a silent video of
+a person speaking, significantly improving state-of-the-art re-
+                                                                   Input representation Our goal is to reconstruct a single
+constructed speech intelligibility; (2) demonstrate that allow-
+                                                                   audio representation vector Si which corresponds to the du-
+ing the model to learn from the speaker’s entire face instead
+                                                                   ration of a single video frame Ii . However, instantaneous
+of only the mouth region greatly improves performance; (3)
+                                                                   lip movements such as those in isolated video frames can
+show that modeling speechreading as a regression problem
+                                                                   be significantly disambiguated by using a temporal neighbor-
+allows us to reconstruct out-of-vocabulary words.
+                                                                   hood as context. Therefore, the input to our network is a clip
+                                                                   of K consecutive grayscale video frames, out of which the
+            2. SPEECH REPRESENTATION                               speaker’s face is cropped and scaled to 128 × 128 pixels. This
+                                                                   results in an input volume of size 128 × 128 × K scalars,
+The challenge of finding a suitable representation for an          which is then normalized by dividing by maximum pixel in-
+acoustic speech signal which can be estimated by a neural          tensity and subtracting the mean.
+network on one hand, and synthesized back into intelligible            Figure 2 illustrates the importance of allowing the net-
+audio on the other, is not trivial. Spectrogram magnitude, for     work to learn visual features from the entire face, as opposed
+example, can be used as network output, however the quality        to the mouth region only, as widely done in the past. The two
+of its resynthesis into speech is usually poor, as it does not     lines in the graph represent final network test error as a func-
+contain phase information. Use of raw waveform as network          tion of the length K of the clip used as input to the CNN. We
+output was ruled out for lack of a suitable loss function with     tested the values of K ∈ {1, 3, 5, 7, 9}, while the output Si
+which to train the network.                                        always remained the sound features of the center frame. Not
+     Linear Predictive Coding (LPC) is a powerful and widely       surprisingly, the largest gain in performance for both face and
+used technique for representing the spectral envelope of a dig-    mouth regions is when clip length is increased from K = 1
+ital speech signal, which assumes a source-filter model of         frame to K = 3 frames, highlighting the importance of con-
+Original
+
+
+
+
+Reconstructed
+
+                (a) LSP coefficients                    (b) Waveform                                    (c) Spectrogram
+
+
+
+Fig. 3. Examples of original (top) and reconstructed (bottom): (a) LSP coefficients, (b) waveform and (c) spectrogram. The
+vertical columns of (a) are the actual output of the CNN. Spectral envelope of reconstructed audio (c) is relatively accurate,
+however unvoiced excitation results in the lack of formants (horizontal lines inside spectral envelope, representing frequency of
+voiced speech).
+
+
+text. The advantage of learning features from the full facial          Command Color Preposition                 Letter   Digit Adverb
+information is also evident, with the best face region error
+40% lower than the best mouth region error (both at K = 9).                bin       blue         at             A-Z   0-9      again
+We hypothesize that this is as result of our CNN using the in-             lay       green        by           minus W           now
+creased amount of visual information to disambiguate similar              place       red         in                            please
+mouth movements.                                                           set       white       with                            soon
+
+
+Sound prediction model We use a convolutional neu-
+                                                                                    Table 1. GRID sentence grammar.
+ral network (CNN) that takes the aforementioned video
+clip of size 128 × 128 × K as input. Our network uses
+VGG-like [14] stacks of small 3 × 3 receptive fields in its            Implementation details Our network implementation is
+convolutional layers. The architecture comprises five con-             based on the Keras library [16] built on top of TensorFlow
+secutive conv3 − conv3 − maxpool blocks consisting of                  [17]. Network weights are initialized using the initialization
+32 − 32 − 64 − 128 − 128 kernels, respectively. These are fol-         procedure suggested by He et al. [18]. We use Leaky ReLU
+lowed by two fully connected layers with 512 neurons each.             [19] as the non-linear activation function in all layers but
+The last layer of our CNN is of size 18 which corresponds              the last two, in which we use the hyperbolic tangent (tanh)
+to the size of the sound representation vectors we wish to             function. Adam optimizer [20] is used with a learning rate
+predict. The network is trained with backpropagation using             of 0.003. Dropout [21] is used to prevent overfitting, with
+mean squared error (MSE) loss.                                         a rate of 0.25 after convolutional layers and 0.5 after fully
+                                                                       connected ones. We use mini-batches of 32 training samples
+3.2. Generating a waveform                                             each and stop training when the validation loss stops de-
+                                                                       creasing (around 80 epochs). Training is done using a single
+Source-filter speech synthesizers such as [15] use both fil-
+                                                                       Nvidia Titan Black GPU. We use a cascade-based face de-
+ter parameters as well as an excitation signal to construct an
+                                                                       tector from OpenCV [22], and crop out the mouth region for
+acoustic signal from LPC features. Predicting excitation pa-
+                                                                       the comparison in Figure 2 by using a hard-coded mask. For
+rameters is out of the scope of this work, and we therefore use
+                                                                       LPC analysis/resynthesis, as well as excitation generation, we
+Gaussian white noise as the excitation signal. This produces
+                                                                       used pysptk, a Python wrapper for Speech Signal Processing
+an unvoiced speech signal and results in unnatural sounding
+                                                                       Toolkit (SPTK) [23].
+speech. Although this method of generating a waveform is
+relatively simplistic, we found that it worked quite well for
+speech intelligibility purposes, which is the focus of our work.       4.1. GRID corpus
+                                                                       We performed our experiments on the GRID audiovisual sen-
+                                4. EXPERIMENTS                         tence corpus [24], a large dataset of audio and video (facial)
+                                                                       recordings of 1000 sentences spoken by 34 talkers (18 male,
+We applied our speech-reconstruction model to several tasks,           16 female). Each sentence consists of a six word sequence of
+and evaluated it with a human listening study.1                        the form shown in Table 1, e.g. “Place green at H 7 now”.
+   1 Examples of reconstructed speech can be found at                      A total of 51 different words are contained in the GRID
+http://www.vision.huji.ac.il/vid2speech                                corpus. Videos have a fixed duration of 3 seconds at a frame
+rate of 25 FPS with 720×576 resolution, resulting in se-                                                     Ours
+quences comprising 75 frames. These videos are prepro-                                          [10]       S4     S2
+cessed as described in Section 3.1 before feeding them into
+the network. The acoustic part of the GRID corpus is used as                  Audio-only       40.0%     82.6%      -
+described in Section 2.                                                       Audio-visual     51.9%     79.9%     79%
+    In order to accurately compare our results with [10], we
+performed our experiments on the 1000 videos of speaker four
+(S4, female) as done there. The training/testing split for each     Table 2. Our reconstructed speech is significantly more in-
+experiment will be described in the following sections.             telligible than the results of [10]. We tested our model on
+                                                                    videos from two different speakers in the GRID corpus, S2
+                                                                    (male) and S4 (female). Randomly guessing a word from
+4.2. Sound prediction tasks
+                                                                    each GRID category would result in 19% “intelligibility”.
+Reconstruction from full dataset The first task, proposed
+by [10], is designed to examine whether reconstructing audio                                 OOV       None out    Chance
+from visual features can produce intelligible speech. For this
+task we trained our model on a random 80/20 train/test split               Audio-visual      51.6%      93.4%       10.0%
+of the 1000 videos of S4 and made sure that all 51 GRID
+words were represented in each set. The resulting represen-
+tation vectors were converted back into waveform using un-          Table 3. Out-of-vocabulary (OOV) intelligibility results. We
+voiced excitation, and two different multimedia configura-          tested this by reconstructing spoken digits which were left
+tions were constructed: the predicted audio-only and the com-       out of the training set. Listeners were five times more likely
+bination of the original video with reconstructed audio.            to choose the correct digit than randomly guessing, however
+                                                                    only slightly more than half as likely compared to having all
+                                                                    digits represented in the training set.
+Reconstructing out-of-vocabulary words As cited earlier,
+regression-based models can be used to reconstruct out-of-
+vocabulary (OOV) words. To test this, we performed the fol-         testing our model on another speaker from the GRID corpus,
+lowing experiment: The videos in our dataset were sorted ac-        speaker two (S2, male), whose speech clarity is comparable
+cording to the digit uttered in each sentence, and our network      to S4, as reported by [24]. We used the same listening test
+was trained and tested on five different train/test splits - each   methodology described above, however this time only using
+with two distinct digits left out of the training set. For exam-    combined audio and video. Examples of original vs. recon-
+ple, the network was trained on all sequences with the num-         structed LSP coefficients, waveform and spectrogram for this
+bers 1 − 8 uttered, and tested only on sequences containing         task can be seen in Figure 3.
+the numbers 9 and 0.                                                    Results for the OOV task which appear in Table 3 were
+                                                                    obtained by averaging digit annotation accuracies of the five
+4.3. Evaluating the speech predictions                              train/test splits. The fact that human subjects were over five
+                                                                    times more likely than chance to choose the correct digit ut-
+We assessed the intelligibility of the reconstructed speech us-
+                                                                    tered after listening to the reconstructed audio shows that us-
+ing a human listening study done using Amazon Mechani-
+                                                                    ing regression to solve the OOV problem is a promising direc-
+cal Turk (MTurk). Each job consisted of transcribing one of
+                                                                    tion. Moreover, using a larger and more diversified training
+three types of 3-second clips: audio-only, audio-visual and
+                                                                    set vocabulary is likely to significantly increase OOV recon-
+OOV audio-visual. The listeners were unaware of the dif-
+                                                                    struction intelligibility.
+ferences between the clips. For each clip, they were given
+the GRID vocabulary and tasked with classifying each recon-
+structed word into one of its possible options. All together,                    5. CONCLUDING REMARKS
+over 400 videos containing 38 distinct sequences were tran-
+scribed by 23 different MTurk workers, which is comparable          This work has proven the feasibility of reconstructing an in-
+to the 20-listener study done by [10].                              telligible audio speech signal from silent videos frames. OOV
+                                                                    word reconstruction was also shown to hold promise by mod-
+                                                                    eling automatic speechreading as a regression problem, and
+4.4. Results
+                                                                    using a CNN to automatically learn relevant visual features.
+Table 2 shows the results of our first task, reconstruction from         The work described in this paper can serve as a basis for
+the full dataset, along with a comparison to [10]. Our recon-       several directions of further research. These include using a
+structed audio is significantly more intelligible than the best     less constrained video dataset to show real-world reconstruc-
+results of [10], as shown by both audio-only and audio-visual       tion viability and generalizing to speaker-independent and
+tests. The final column shows the result of retraining and          multiple speaker reconstruction.
+                     6. REFERENCES                                 [13] Fumitada Itakura, “Line spectrum representation of lin-
+                                                                        ear predictor coefficients of speech signals,” The Jour-
+ [1] Eric David Petajan, Automatic lipreading to enhance                nal of the Acoustical Society of America, vol. 57, no. S1,
+     speech recognition (speech reading), Ph.D. thesis, Uni-            pp. S35–S35, 1975.
+     versity of Illinois at Urbana-Champaign, 1984.
+                                                                   [14] Karen Simonyan and Andrew Zisserman, “Very deep
+ [2] Iain Matthews, Timothy F Cootes, J Andrew Bangham,                 convolutional networks for large-scale image recogni-
+     Stephen Cox, and Richard Harvey, “Extraction of visual             tion,” arXiv:1409.1556, 2014.
+     features for lipreading,” IEEE Transactions on Pattern
+     Analysis and Machine Intelligence, vol. 24, no. 2, pp.        [15] Dennis H Klatt and Laura C Klatt, “Analysis, synthesis,
+     198–213, 2002.                                                     and perception of voice quality variations among female
+                                                                        and male talkers,” the Journal of the Acoustical Society
+ [3] Ziheng Zhou, Guoying Zhao, Xiaopeng Hong, and                      of America, vol. 87, no. 2, pp. 820–857, 1990.
+     Matti Pietikäinen, “A review of recent advances in vi-
+                                                                   [16] François Chollet, “Keras,” https://github.com/
+     sual speech decoding,” Image and vision computing,
+                                                                        fchollet/keras, 2015.
+     vol. 32, no. 9, pp. 590–605, 2014.
+                                                                   [17] “Tensorflow,” Software available from http://
+ [4] Helen L Bear and Richard Harvey, “Decoding visemes:
+                                                                        tensorflow.org/.
+     Improving machine lip-reading,” in ICASSP’16, 2016,
+     pp. 2009–2013.                                                [18] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian
+                                                                        Sun, “Delving deep into rectifiers: Surpassing human-
+ [5] Michael Wand, Jan Koutn, et al., “Lipreading with long             level performance on imagenet classification,”     in
+     short-term memory,” in ICASSP’16, 2016, pp. 6115–                  ICCV’15, 2015.
+     6119.
+                                                                   [19] Andrew L Maas, Awni Y Hannun, and Andrew Y Ng,
+ [6] Yannis M Assael, Brendan Shillingford, Shimon                      “Rectifier nonlinearities improve neural network acous-
+     Whiteson, and Nando de Freitas,    “Lipnet: End-                   tic models,” in ICML’13, 2013.
+     to-end sentence-level lipreading,” arXiv preprint
+     arXiv:1611.01599, 2016.                                       [20] Diederik Kingma and Jimmy Ba, “Adam: A method for
+                                                                        stochastic optimization,” arXiv:1412.6980, 2014.
+ [7] Joon Son Chung, Andrew Senior, Oriol Vinyals, and
+     Andrew Zisserman, “Lip reading sentences in the wild,”        [21] Nitish Srivastava, Geoffrey E Hinton, Alex Krizhevsky,
+     arXiv preprint arXiv:1611.05358, 2016.                             Ilya Sutskever, and Ruslan Salakhutdinov, “Dropout:
+                                                                        a simple way to prevent neural networks from overfit-
+ [8] Christopher T Kello and David C Plaut, “A neural net-              ting.,” Journal of Machine Learning Research, vol. 15,
+     work model of the articulatory-acoustic forward map-               no. 1, pp. 1929–1958, 2014.
+     ping trained on recordings of articulatory parameters,”
+     The Journal of the Acoustical Society of America, vol.        [22] G. Bradski, “Opencv,” Dr. Dobb’s Journal of Software
+     116, no. 4, pp. 2354–2364, 2004.                                   Tools, 2000.
+                                                                   [23] “Speech signal processing toolkit,” Available from
+ [9] Thomas Hueber and Gérard Bailly, “Statistical conver-
+                                                                        http://sp-tk.sourceforge.net/readme.
+     sion of silent articulation into audible speech using full-
+                                                                        php.
+     covariance hmm,” Comput. Speech Lang., vol. 36, no.
+     C, pp. 274–293, Mar. 2016.                                    [24] Martin Cooke, Jon Barker, Stuart Cunningham, and
+                                                                        Xu Shao, “An audio-visual corpus for speech percep-
+[10] Thomas Le Cornu and Ben Milner, “Reconstructing
+                                                                        tion and automatic speech recognition,” The Journal of
+     intelligible audio speech from visual speech features,”
+                                                                        the Acoustical Society of America, vol. 120, no. 5, pp.
+     in Sixteenth Annual Conference of the International
+                                                                        2421–2424, 2006.
+     Speech Communication Association, 2015.
+
+[11] Andrew Owens, Phillip Isola, Josh McDermott, Antonio
+     Torralba, Edward H Adelson, and William T Freeman,
+     “Visually indicated sounds,” in CVPR’16, 2016.
+
+[12] Gunnar Fant, Acoustic theory of speech production:
+     with calculations based on X-ray studies of Russian ar-
+     ticulations, vol. 2, Walter de Gruyter, 1971.
+

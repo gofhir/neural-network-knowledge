@@ -1,0 +1,435 @@
+                                                                   Vocoder-Based Speech Synthesis from Silent Videos
+                                                   Daniel Michelsanti1 , Olga Slizovskaia2 , Gloria Haro2 , Emilia Gómez2 , Zheng-Hua Tan1 ,
+                                                                                       Jesper Jensen1,3
+                                                                                      1
+                                                                                       Aalborg University, Aalborg, Denmark
+                                                                                 2
+                                                                                     Universitat Pompeu Fabra, Barcelona, Spain
+                                                                                         3
+                                                                                           Oticon A/S, Smørum, Denmark
+                                                 {danmi, zt, jje}@es.aau.dk                  {olga.slizovskaia, gloria.haro, emilia.gomez}@upf.edu
+
+
+                                                                     Abstract                                   ity. This is achieved by estimating spectral envelope (SP) audio
+                                           Both acoustic and visual information influence human percep-         features from visual features and then reconstructing the time-
+                                           tion of speech. For this reason, the lack of audio in a video        domain signal with the STRAIGHT vocoder [12]. Since the
+
+
+
+
+arXiv:2004.02541v2 [eess.AS] 15 Aug 2020
+                                           sequence determines an extremely low speech intelligibility for      vocoder also requires other audio features, i.e. the fundamen-
+                                           untrained lip readers. In this paper, we present a way to synthe-    tal frequency (F0) and the aperiodic parameter (AP), these are
+                                           sise speech from the silent video of a talker using deep learning.   artificially created independently of the visual features.
+                                           The system learns a mapping function from raw video frames                Ephrat and Peleg [13] treated speech reconstruction as a re-
+                                           to acoustic features and reconstructs the speech with a vocoder      gression problem using a neural network which takes as input
+                                           synthesis algorithm. To improve speech reconstruction perfor-        raw visual data and predicts a line spectrum pairs (LSP) rep-
+                                           mance, our model is also trained to predict text information in      resentation of linear predictive coding (LPC) coefficients com-
+                                           a multi-task learning fashion and it is able to simultaneously       puted from the audio signal. The waveform is reconstructed
+                                           reconstruct and recognise speech in real time. The results in        from the estimated audio features using Gaussian white noise
+                                           terms of estimated speech quality and intelligibility show the ef-   as excitation, producing unnatural speech. This issue is tackled
+                                           fectiveness of our method, which exhibits an improvement over        in a subsequent work [14], where a neural network estimates the
+                                           existing video-to-speech approaches.                                 mel-scale spectrogram of the audio from video frames and opti-
+                                           Index Terms: Speech synthesis, lip reading, deep learning,           cal flow information derived from the visual input. The time-
+                                           vocoder                                                              domain speech signal is reconstructed using either example-
+                                                                                                                based synthesis, in which estimated audio features are replaced
+                                                                                                                with their closest match in the training set, or speech synthesis
+                                                                1. Introduction                                 from predicted linear-scale spectrograms.
+                                           Most of the events that we experience in our life consist of vi-          Akbari et. al. [15] tried to reconstruct natural sounding
+                                           sual and acoustic stimuli. Recordings of such events may lack        speech using a neural network that takes as input the face re-
+                                           the acoustic component, for example due to limitations of the        gion of the talker and estimates bottleneck features extracted
+                                           recording equipment or technical issues in the transmission of       from the auditory spectrogram by a pre-trained autoencoder.
+                                           the information. Since acoustic and visual modalities are often      The time-domain signal is obtained with the algorithm in [16].
+                                           correlated, methods to reconstruct audio signals using videos        This approach shows its effectiveness when compared to [13].
+                                           have been proposed [1, 2, 3].                                             All the methods reported until now have a major limitation:
+                                                In this paper, we focus on one particular case of the afore-    they estimate either a magnitude spectrogram, SPs or LSPs,
+                                           mentioned problem: speech reconstruction (or synthesis) from         which do not contain all the information of a speech signal.
+                                           a silent video. Solving this task might be useful to automatically   Vougioukas et al. [17] addressed this issue and proposed an end-
+                                           generate speech for surveillance videos and for extremely chal-      to-end model that can directly synthesise audio waveforms from
+                                           lenging speech enhancement applications, e.g. hearing assistive      videos using a generative adversarial network (GAN). However,
+                                           devices, where noise completely dominates the target speech,         their direct estimation of a time-domain signal causes artefacts
+                                           making the acoustic signal worth less than its video counterpart.    in the reconstructed speech.
+                                                A possible way to tackle the problem is to decompose it              In this work, we propose an approach, vid2voc, to esti-
+                                           into two steps: first, a visual speech recognition (VSR) system      mate WORLD vocoder [18] features from the silent video of
+                                           [4, 5, 6] predicts the spoken sentences from the video; then, a      a speaker1 . We trained the systems using either the whole face
+                                           text-to-speech (TTS) model [7, 8, 9] synthesises speech based        or the mouth region only, since previous work [13] shows a ben-
+                                           on the output of the VSR system. However, at least two draw-         efit in using the entire face. Our method differs from the work
+                                           backs can be identified when such an approach is used. In order      in [10, 11], because we predict all the vocoder features (not only
+                                           to generate speech from text, each word should be spoken in          SP) directly from raw video frames. The estimation of F0 and
+                                           its entirety to be processed by the VSR and the TTS systems,         AP, alongside with SP, allows to have a framework with a fo-
+                                           imposing great limitations for real-time applications. Further-      cus on speech intelligibility (as in [10, 11]) and speech quality,
+                                           more, when the TTS method is applied, useful information that        able to outperform even the recently proposed GAN-based ap-
+                                           should be captured by the system, such as emotion and prosody,       proach in [17] in several conditions. In addition, we train a
+                                           gets lost, making the synthesised speech unnatural. For these        system that can simultaneously perform speech reconstruction
+                                           reasons, approaches that estimate speech from a video, without
+                                           using text as an intermediate step, have been proposed.                  1 Although this paper aims at synthesising speech from frontal-view
+                                                Le Cornu and Miller [10, 11] developed a video-to-speech        silent videos, it is worth mentioning that some methods using multi-
+                                           method with a focus on speech intelligibility rather than qual-      view video feeds have also been developed [19, 20, 21, 22].
+                                                                                                                                                                                                             Decoders
+
+                                                                                                                                                                                                     x3
+
+
+
+                                                                                                                                                                                                                                          Spectral
+
+                                                                                                                                                                              ConvT2D                     Dropout   ConvT2D
+                                                                                                                                                                                                  ReLU                        ReLU
+                                                                                                                                                                                                                                          Envelope
+                                                                                                                                                                                        BN
+                                                                               Recursive
+                                               Video Encoder                    Module
+
+
+
+                                                                                                                                                                                                                     Aperiodic
+
+                                                                                                                                             ConvT2D               Dropout              ConvT2D
+                                                                                                                                                            ReLU
+                                                                                                                                                                                                                                             WORLD
+                                                                                                                                                                                                   ReLU
+                                                                                                                                                                                                                     Parameter
+
+                                                                                                    Dropout
+                                                                                                                                                       BN
+                                                                         GRU             ReLU
+                          Conv3D               Dropout   Conv3D
+                                                                               BN                                                                                                                                                           Vocoder
+                                   BN   ReLU                      Tanh                                                                                                                                                                      Synthesis
+
+                                                                                                                                                         x2
+                                                                                                                          Linear   Sigmoid
+                                                                                                                                                                   VUV State
+                                    x4
+
+
+                                                                                                                                                                             Fundamental
+                                                                                                          Linear   ReLU                                                       Frequency
+
+
+
+
+                                                                                          Softmax
+                                                                                                                                               CTC
+                                                                                Linear
+                                                                                                                                                                                                    CTC
+                                                                                                                                             Character                                            Decoding
+                                                                                                                                                                                                                                     “BIN BLUE AT F TWO NOW”
+
+
+
+
+Figure 1: Pipeline of our system. Conv3D: 3-D convolution. BN: Batch normalisation. GRU: Gated recurrent unit. ConvT2D: 2-D
+transposed convolution. VUV: Voiced-unvoiced. CTC: Connectionist temporal classification.
+
+
+(our main goal) and VSR, in a multi-task learning fashion. This                                                                                        2.2. Audio and Video Preprocessing
+can be useful in all the applications that require video caption-
+                                                                                                                                                       The acoustic model used in this work is based on the WORLD
+ing without adding considerable extra complexity to the system.
+                                                                                                                                                       vocoder [18], with a sample frequency of 50 kHz and a hop
+Although Kumar et al. [21] incorporate a text-prediction model
+                                                                                                                                                       size of 250 samples2 . WORLD consists of three analysis al-
+in their multi-view speech reconstruction pipeline, this model is
+                                                                                                                                                       gorithms to determine SP, F0 and AP features, and a synthesis
+trained separately from the main system and it is quite simple:
+                                                                                                                                                       algorithm which incorporates these three features. Here, we
+it classifies encoded audio features estimated with a pre-trained
+                                                                                                                                                       use SWIPE [25] and D4C [26] to estimate F0 and AP, respec-
+network into 10 text classes. This makes the method dependent
+                                                                                                                                                       tively. As done in [27], a dimensionality reduction of the fea-
+on the number of different sentences of the specific database
+                                                                                                                                                       tures is applied: SP is reduced to 60 log mel-frequency spectral
+used for training and not suitable for real-time applications. In-
+                                                                                                                                                       coefficients (MFSCs) and AP is reduced to 5 coefficients ac-
+stead, we make use of the more flexible connectionist temporal
+                                                                                                                                                       cording to the D4C band-aperiodicity estimation. In addition,
+classification (CTC) [23] sequence modelling which has already
+                                                                                                                                                       a voiced-unvoiced (VUV) state is obtained by thresholding the
+shown its success in VSR [4].
+                                                                                                                                                       F0 obtained with SWIPE. All the acoustic features are min-max
+    Additional material, including samples of reconstructed                                                                                            normalised using the statistics of the training set as in [28].
+speech that the reader is encouraged to listen to for a better un-                                                                                          As in [17], videos are preprocessed as follows: first, the
+derstanding of the effectiveness of our approach, can be found                                                                                         faces are aligned to the canonical face3 ; then, the video frames
+in https://danmic.github.io/vid2voc/.                                                                                                                  are normalised in the range [−1, 1], resized to 128×96 pixels
+                                                                                                                                                       and, for the models that use only the mouth region as input,
+                                                                                                                                                       cropped preserving the bottom half; finally, the videos are mir-
+  2. Methodology and Experimental Setup                                                                                                                rored with a probability of 0.5 during training.
+
+2.1. Audio-Visual Speech Corpus                                                                                                                        2.3. Architecture and Training Procedure
+                                                                                                                                                       As shown in Figure 1, our network maps video frames of a
+Experiments are conducted on the GRID corpus [24], which                                                                                               speaker to vocoder features and consists of a video encoder, a
+consists of audio and video recordings from 34 speakers                                                                                                recursive module and five decoders: SP decoder, AP decoder,
+(s1−34), 18 males and 16 females, each of them uttering 1000                                                                                           VUV decoder, F0 decoder and VSR decoder. We also tried not
+six-word sentences with the following structure: <command>                                                                                             to use the VSR decoder, to see whether it has any impact on the
+<color> <preposition> <letter> <digit> <adverb>. Each                                                                                                  performance.
+video has a resolution of 720×576 pixels, a duration of 3 s and                                                                                             The video encoder is inspired by [17]: it takes as input one
+a frame rate of 25 frames per second. The audio tracks have the                                                                                        video frame concatenated with the three previous and the three
+same duration as the videos and a sample frequency of 50 kHz.                                                                                          next frames and applies five 3-D convolutions (conv3D). Each
+In addition, text transcription for every utterance is provided.                                                                                       of the first four convolutional layers is followed by batch nor-
+                                                                                                                                                       malisation (BN) [30], ReLU activation and dropout [31], while
+    As in [17], we evaluate our systems in speaker dependent                                                                                           the last one is followed by Tanh activation.
+and speaker independent settings. Regarding the speaker de-
+                                                                                                                                                            To model the sequential nature of video data, a recursive
+pendent scenario, the data from 4 speakers (s1, s2, s4, s29) is
+                                                                                                                                                       module is used: it consists of a single-layer gated recurrent unit
+pooled together, then 90% of the data is used for training, 5%
+                                                                                                                                                       (GRU) [32], BN, ReLU activation and dropout.
+for validation and 5% for testing. Regarding the speaker inde-
+                                                                                                                                                            Each decoder takes the GRU features as input. For ev-
+pendent scenario, the data from 15 speakers (s1, s3, s5−8, s10,
+s12, s14, s16, s17, s22, s26, s28, s32) is used for training, the                                                                                         2 The window length is automatically determined by the WORLD
+data from 7 speakers (s9, s20, s23, s27, s29, s30, s34) for vali-                                                                                      algorithm.
+dation and the data from 10 speakers (s2, s4, s11, s13, s15, s18,                                                                                         3 We use the face processor library in https://github.com/
+s19, s25, s31, s33) for testing.                                                                                                                       DinoMan/face-processor, which makes use of [29].
+ery video frame the SP decoder produces an eight-frame-long          Table 1: Architecture and training hyperparameters. Activa-
+estimate Wcse ∈ IR60×8 of the normalised dimensionality-             tion, batch normalisation and dropout omitted for brevity.
+reduced SP, Wse , through three 2-D transposed convolu-
+tions (convT2D), each followed by BN, ReLU activation and                                         Input Size
+dropout, and another convT2D followed by ReLU activation.                                      B×S×C×F ×H×W
+     The VUV decoder consists of a linear layer followed by                                      Video Encoder
+ReLU activation. A threshold of 0.2 is applied to the output                         Input        Output   Kernel
+                                                                         Layer                                                  Stride     Padding
+          cvuv ∈ IR8 , an estimate of the VUV state, Wvuv .
+obtaining W                                                                         Channels     Channels   Size
+     The AP decoder has a structure similar to the SP decoder,          Conv3D          3           64         (7,4,4)          (1,2,2)    (0,1,1)
+with a total of three convT2D in this case. Its output, Onap ∈          Conv3D          64          128        (1,4,4)          (1,2,2)    (0,1,1)
+                                                                        Conv3D         128          256        (1,4,4)         (1,d1 ,2)   (0,1,1)
+IR5×8 , together with Wcvuv is used to get Wcnap , an estimate
+                                                                        Conv3D         256          512        (1,4,4)          (1,2,2)    (0,1,1)
+of Wnap = I5,8 − Wap , where I5,8 indicates an all-ones ma-             Conv3D         512          128       (1,d2 ,6)         (1,1,1)    (0,0,0)
+trix with 5 rows and 8 columns, and Wap is the normalised                                       Recursive Module
+dimensionality-reduced AP:                                               Layer            Input Size          Hidden Size
+
+      (W
+       cnap )i = (Onap )i      cvuv for i ∈ {1, . . . , 5}
+                               W                              (1)        GRU                 128                       128
+                                                                                       Spectral Envelope (SP) Decoder
+where (A)i indicates the i-th row of A and            denotes the                    Input      Output     Kernel
+element-wise product.                                                    Layer                                      Stride                 Padding
+                                                                                    Channels Channels       Size
+     The F0 decoder has a linear layer followed by a sigmoid           ConvT2D         128          256        (1,6)            (1,1)          (0,0)
+activation function. Its output, Of 0 ∈ IR8 , is point-wise multi-     ConvT2D         256          128        (2,4)            (1,2)          (0,0)
+plied with Wcvuv to obtain W cf 0 , an estimate of the normalised      ConvT2D         128           64        (4,4)            (1,2)          (0,0)
+                                                                       ConvT2D          64            1        (4,2)            (1,2)          (0,0)
+F0, Wf 0 :
+                                                                                      Aperiodic Parameter (AP) Decoder
+                     W
+                     cf 0 = Of 0     W
+                                     cvuv .                   (2)                    Input      Output    Kernel
+                                                                         Layer                                      Stride                 Padding
+                                                                                    Channels Channels      Size
+     Finally, the VSR decoder, consisting of a linear and a soft-
+                                                                       ConvT2D         128          128        (4,1)            (1,1)          (0,0)
+max layers, outputs a CTC character that will be used to predict       ConvT2D         128           64        (3,3)            (1,1)          (0,0)
+the text transcription of the utterance.                               ConvT2D          64            1        (3,3)            (1,1)          (0,0)
+     The system is trained to minimise the following loss:                              Voiced-Unvoiced (VUV) Decoder
+                                                                         Layer           Input Size          Output Size
+        λ1      λ2     λ3     λ4     λ5
+  J=       Jse + Jnap + Jf 0 + Jvuv + Jvsr                    (3)        Linear              128                          8a
+        λ       λ      λ      λ      λ
+                                                                                     Fundamental Frequency (F0) Decoder
+wherePλ1 = 600, λ2 = 50, λ3 = 10, λ4 = 10, λ5 = 1,                       Layer           Input Size         Output Size
+λ = 5i=1 λi and:
+                                                                         Linear              128                          8a
+    • Jse : mean squared error (MSE) between Wse and W
+                                                     cse .                         Visual Speech Recognition (VSR) Decoder
+    • Jnap : MSE between Wnap and W  cnap .                              Layer            Input Size          Output Size
+                                                                         Linear              128                       28b
+    • Jf 0 : MSE between Wf 0 and W
+                                  cf 0 .
+                                                                                                   Extra Information
+    • Jvuv : MSE between Wvuv and W cvuv .
+                                                                       The system is implemented in Pytorch [33] and trained for N
+    • Jvsr : CTC loss [23] between the target text transcription       iterations using the Adam optimizer [34] with a learning rate
+                                                                       of 0.0001, β1 =0.5 and β2 =0.9. The model that performs the
+       and the estimated one.                                          best in terms of PESQ on the validation set is used for testing.
+    Details regarding architecture and training hyperparameters        S=75 (sequence length). C=3 (image channels).
+can be found in Table 1.                                               F =7 (consecutive video frames). W =96 (video frame width).
+                                                                       If the full face is used as input:
+                                                                       B=16 (batch size). H=128 (video frame height). d1 =3. d2 =5.
+2.4. Waveform Reconstruction and Lipreading                            If only the mouth is used as input:
+                                                                       B=24 (batch size). H=64 (video frame height). d1 =2. d2 =4.
+The network outputs are used to reconstruct the speech wave-           In the speaker dependent case, the dropout probability of each
+form with the WORLD synthesis algorithm [18] and to get a text         dropout layer is pd =0.2. N =300000.
+transcription adopting the best path CTC decoding scheme [23].         In the speaker independent case, pd =0.5 for the video encoder
+                                                                       and the GRU, and pd =0.2 for the rest. N =185000.
+                                                                       a
+2.5. Evaluation Metrics                                                  Eight is the number of the output audio frames corresponding
+                                                                       to the video frame used as input (together with its context).
+The system is evaluated in terms of perceptual evaluation of           b
+                                                                         The 28 CTC characters consist of the 26 letters of the English
+speech quality (PESQ) [35] and extended short-time objective           alphabet, one space character and one blank token.
+intelligibility (ESTOI) [36], two of the most used measures that
+provide estimates of speech quality and speech intelligibility,                     Table 2: Systems used in this study.
+respectively. PESQ scores are in the range from −0.5 to 4.5
+and ESTOI scores practically lie between 0 and 1. In both cases,                                                    Input
+higher values correspond to better performance.
+     For the systems having the VSR decoder, we also provide                                           Mouth                            Face
+the word error rate (WER), a standard metric for automatic             w/o VSR Decoder              vid2voc-M                     vid2voc-F
+speech recognition systems. In this case, lower values corre-          w/ VSR Decoder            vid2voc-M-VSR                 vid2voc-F-VSR
+spond to better performance.
+Table 3: Results for the speaker dependent and the speaker in-
+dependent cases. Best performance (except WORLD) in bold.
+
+                            Speaker Dependent                Speaker Independent
+  Mean Scores          PESQ ↑     ESTOI ↑    WER ↓      PESQ ↑     ESTOI ↑     WER ↓
+  Approach in [15]a     1.82         -           -          -          -           -
+  Approach in [17]      1.71       0.329         -        1.24       0.198         -
+  vid2voc-M             1.89       0.448        -         1.20       0.214       -
+  vid2voc-M-VSR         1.90       0.455      15.1%       1.23       0.227     51.6%
+  vid2voc-F             1.85       0.439         -        1.19       0.202       -
+  vid2voc-F-VSR         1.88       0.447      14.4%       1.25       0.210     69.3%   Figure 2: Results of the vid2voc-M-VSR models for the speaker
+  WORLDb                  3.06         0.759       -       3.03        0.759      -    dependent (SD) and the speaker independent (SI) cases. Each
+  a
+    Value taken from the experiments in [17].
+  b
+    WORLD indicates the reconstruction retrieved from the vocoder features of the
+                                                                                       marker indicates the mean score of a speaker.
+  clean speech signals and it is a performance upper bound of our systems.
+
+
+                                                                                       ing similar facial characteristics (e.g. due to gender, age etc.)
+                  3. Results and Discussion                                            have similar speech characteristics (cf. [37], where the face of
+                                                                                       a person was predicted from a speech signal), we expect that
+As shown in Table 2, four systems are trained based on the input
+                                                                                       training a network with a dataset that includes more speakers
+(mouth or full face) and the presence of the VSR decoder (only
+                                                                                       might be beneficial: such a network can produce an average
+speech synthesis or speech synthesis and VSR).
+                                                                                       voice of speakers from the training set that share similar facial
+     The systems are compared with the recently proposed                               traits with an unseen talking face.
+GAN-based approach in [17]. As an additional baseline, we
+                                                                                            Among the systems we developed, the presence of the VSR
+also report the PESQ score for [15], since this method, which
+                                                                                       decoder still gives an advantage for speech reconstruction. Un-
+makes use of bottleneck features extracted from auditory spec-
+                                                                                       like the speaker dependent case, the WER for the model that
+trograms, outperforms [17] in terms of estimated speech quality
+                                                                                       uses the whole face as input is higher than the system using only
+for the speaker dependent case.
+                                                                                       the mouth. This is due to the early stopping technique that we
+                                                                                       adopt, which tends to favour speech reconstruction over VSR,
+3.1. Speaker Dependent Case                                                            indicating again the trade-off between these two tasks.
+Table 3 (left part) shows the speaker dependent results. We ob-                             Finally, Figure 2 shows the results for the vid2voc-M-VSR
+serve that our models outperform the approach in [17] in terms                         models by speaker. We can see that the spread of the scores
+of both PESQ and ESTOI by a considerable margin. Vou-                                  is much higher for the speaker independent case in particu-
+gioukas et al. [17] mention that their system produces low-                            lar for WER. This is in line with the observations reported in
+power hum artefacts that affect the performance. They tried                            [17], suggesting the different performance between the esti-
+to solve the issue by applying average filtering to the output of                      mated speech of subjects whose facial traits substantially differ
+their network, experiencing a rise of the PESQ score from 1.71                         from the speakers in the training set and the others.
+to 1.80 (not shown in Table 3), comparable to [15], but still
+appreciably lower than the results we achieve. However, this                                                4. Conclusion
+filtering negatively affected the intelligibility of the produced
+speech signals, and was not used in the final system.                                  In this study, we reconstructed speech from silent videos using a
+     Among the systems we developed (cf. Table 2), we observe                          deep model that estimates WORLD vocoder features. We tested
+that including the VSR decoder in the pipeline is beneficial for                       our approach in both speaker dependent and speaker indepen-
+the speech reconstruction task (see Table 3). Moreover, the use                        dent scenarios. In both cases, we were able to obtain speech
+of the mouth as input not only is sufficient to synthesise speech,                     signals with estimated speech quality and intelligibility gener-
+but it also allows to achieve higher estimated speech quality and                      ally higher if compared to a recently proposed GAN-based ap-
+intelligibility if compared to the models that use the whole face                      proach. In addition, we designed our system to simultaneously
+of the speaker as input. This might be explained by the fact that                      perform visual speech recognition by using a decoder that esti-
+handling an input with a larger dimensionality is harder if we                         mates CTC characters from a given video sequence.
+want to keep roughly the same deep architecture with a sim-                                 Future work includes: (a) the adoption of self-paced multi-
+ilar number of parameters. However, when the whole face is                             task learning techniques; (b) the improvement of the visual
+used as input, the WER is slightly lower, indicating that there                        speech recognition performance, e.g. with a beam search de-
+might be a performance trade-off between VSR and speech re-                            coding scheme; (c) the design of a system that can generalise
+construction that should be further investigated in future work                        well to unseen speakers in noncontrolled environments.
+in relation with other multi-task learning techniques.
+                                                                                                        5. Acknowledgment
+3.2. Speaker Independent Case
+                                                                                       The authors would like to thank Konstantinos Vougioukas,
+Regarding the speaker independent scenario (cf. right part of                          Stavros Petridis, Pritish Chandna and Merlijn Blaauw.
+Table 3), we observe that the performance gap between the                                  This research is partially funded by: the William De-
+approach in [17] and our systems is not as large as for the                            mant Foundation; the TROMPA H2020 project (770376); the
+speaker dependent case. Although our models appear to per-                             Spanish Ministry of Economy and Competitiveness under the
+form slightly better than [17] in terms of ESTOI, the PESQ                             Marı́a de Maeztu Units of Excellence Program (MDM-2015-
+scores are similar. This can be explained by the fact that some                        0502) and the Social European Funds; the MICINN/FEDER UE
+speech characteristics, e.g. F0, cannot be easily estimated for                        project (PGC2018-098625-B-I00); the H2020-MSCA-RISE-
+unseen speakers. Since it is reasonable to think that people hav-                      2017 project (777826 NoMADS).
+                        6. References                                      [22] S. Uttam, Y. Kumar, D. Sahrawat, M. Aggarwal, R. R. Shah,
+                                                                                D. Mahata, and A. Stent, “Hush-hush speak: Speech reconstruc-
+ [1] A. Davis, M. Rubinstein, N. Wadhwa, G. J. Mysore, F. Durand,               tion using silent videos,” in Proc. of Interspeech, 2019.
+     and W. T. Freeman, “The visual microphone: Passive recovery of
+     sound from video,” ACM Transactions on Graphics, vol. 33, no. 4,      [23] A. Graves, S. Fernández, F. Gomez, and J. Schmidhuber, “Con-
+     pp. 79–, 2014.                                                             nectionist temporal classification: Labelling unsegmented se-
+                                                                                quence data with recurrent neural networks,” in Proc. of ICML.
+ [2] A. Owens, P. Isola, J. McDermott, A. Torralba, E. H. Adelson, and
+                                                                                ACM, 2006.
+     W. T. Freeman, “Visually indicated sounds,” in Proc. of CVPR,
+     2016.                                                                 [24] M. Cooke, J. Barker, S. Cunningham, and X. Shao, “An audio-
+                                                                                visual corpus for speech perception and automatic speech recog-
+ [3] Y. Zhou, Z. Wang, C. Fang, T. Bui, and T. L. Berg, “Visual to
+                                                                                nition,” The Journal of the Acoustical Society of America, vol.
+     sound: Generating natural sound for videos in the wild,” in Proc.
+                                                                                120, no. 5, pp. 2421–2424, 2006.
+     of CVPR, 2018.
+                                                                           [25] A. Camacho, “SWIPE: A sawtooth waveform inspired pitch es-
+ [4] Y. M. Assael, B. Shillingford, S. Whiteson, and N. De Freitas,
+                                                                                timator for speech and music,” Ph.D. dissertation, University of
+     “Lipnet: End-to-end sentence-level lipreading,” in Proc. of GTC,
+                                                                                Florida Gainesville, 2007.
+     2017.
+                                                                           [26] M. Morise, “D4C, a band-aperiodicity estimator for high-quality
+ [5] T. Stafylakis and G. Tzimiropoulos, “Combining residual net-
+                                                                                speech synthesis,” Speech Communication, vol. 84, pp. 57–65,
+     works with LSTMs for lipreading,” in Proc. of Interspeech, 2017.
+                                                                                2016.
+ [6] J. S. Chung, A. Senior, O. Vinyals, and A. Zisserman, “Lip read-
+                                                                           [27] M. Blaauw and J. Bonada, “A neural parametric singing synthe-
+     ing sentences in the wild,” in Proc. of CVPR, 2017.
+                                                                                sizer modeling timbre and expression from natural songs,” Ap-
+ [7] J. Sotelo, S. Mehri, K. Kumar, J. F. Santos, K. Kastner,                   plied Sciences, vol. 7, no. 12, p. 1313, 2017.
+     A. Courville, and Y. Bengio, “Char2wav: End-to-end speech syn-
+     thesis,” in Proc. of ICLR Workshop, 2017.                             [28] P. Chandna, M. Blaauw, J. Bonada, and E. Gomez, “A vocoder
+                                                                                based method for singing voice extraction,” in Proc. of ICASSP,
+ [8] W. Ping, K. Peng, A. Gibiansky, S. O. Arik, A. Kannan,                     2019.
+     S. Narang, J. Raiman, and J. Miller, “Deep voice 3: 2000-speaker
+     neural text-to-speech,” in Proc. of ICLR, 2018.                       [29] A. Bulat and G. Tzimiropoulos, “How far are we from solving the
+                                                                                2D & 3D face alignment problem? (and a dataset of 230,000 3D
+ [9] J. Shen, R. Pang, R. J. Weiss, M. Schuster, N. Jaitly, Z. Yang,            facial landmarks),” in Proc. of ICCV, 2017.
+     Z. Chen, Y. Zhang, Y. Wang, R. Skerrv-Ryan et al., “Natural TTS
+     synthesis by conditioning wavenet on mel spectrogram predic-          [30] S. Ioffe and C. Szegedy, “Batch normalization: Accelerating deep
+     tions,” in Proc. of ICASSP, 2018.                                          network training by reducing internal covariate shift,” in Proc. of
+                                                                                ICML, 2015, pp. 448–456.
+[10] T. Le Cornu and B. Milner, “Reconstructing intelligible audio
+     speech from visual speech features,” in Proc. of Interspeech, 2015.   [31] N. Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever, and
+                                                                                R. Salakhutdinov, “Dropout: A simple way to prevent neural net-
+[11] ——, “Generating intelligible audio speech from visual speech,”             works from overfitting,” The Journal of Machine Learning Re-
+     IEEE/ACM Transactions on Audio, Speech, and Language Pro-                  search, vol. 15, no. 1, pp. 1929–1958, 2014.
+     cessing, vol. 25, no. 9, pp. 1751–1761, 2017.
+                                                                           [32] K. Cho, B. Van Merriënboer, C. Gulcehre, D. Bahdanau,
+[12] H. Kawahara, I. Masuda-Katsuse, and A. De Cheveigne, “Re-                  F. Bougares, H. Schwenk, and Y. Bengio, “Learning phrase rep-
+     structuring speech representations using a pitch-adaptive time–            resentations using RNN encoder-decoder for statistical machine
+     frequency smoothing and an instantaneous-frequency-based F0                translation,” in Proc. of EMNLP, 2014.
+     extraction: Possible role of a repetitive structure in sounds,”
+     Speech Communication, vol. 27, no. 3-4, pp. 187–207, 1999.            [33] A. Paszke, S. Gross, F. Massa, A. Lerer, J. Bradbury, G. Chanan,
+                                                                                T. Killeen, Z. Lin, N. Gimelshein, L. Antiga, A. Desmaison,
+[13] A. Ephrat and S. Peleg, “Vid2speech: Speech reconstruction from            A. Kopf, E. Yang, Z. DeVito, M. Raison, A. Tejani, S. Chil-
+     silent video,” in Proc. of ICASSP, 2017.                                   amkurthy, B. Steiner, L. Fang, J. Bai, and S. Chintala, “Pytorch:
+[14] A. Ephrat, T. Halperin, and S. Peleg, “Improved speech recon-              An imperative style, high-performance deep learning library,” in
+     struction from silent video,” in ICCV Workshop on Computer Vi-             Advances in NeurIPS, 2019.
+     sion for Audio-Visual Media, 2017.                                    [34] D. P. Kingma and J. Ba, “Adam: A method for stochastic opti-
+[15] H. Akbari, H. Arora, L. Cao, and N. Mesgarani, “Lip2audspec:               mization,” in Proc. of ICLR, 2015.
+     Speech reconstruction from silent lip movements video,” in Proc.      [35] A. W. Rix, J. G. Beerends, M. P. Hollier, and A. P. Hekstra, “Per-
+     of ICASSP, 2018.                                                           ceptual evaluation of speech quality (PESQ) - a new method for
+[16] T. Chi, P. Ru, and S. A. Shamma, “Multiresolution spectrotem-              speech quality assessment of telephone networks and codecs,” in
+     poral analysis of complex sounds,” The Journal of the Acoustical           Proc. of ICASSP, 2001.
+     Society of America, vol. 118, no. 2, pp. 887–906, 2005.               [36] J. Jensen and C. H. Taal, “An algorithm for predicting the in-
+[17] K. Vougioukas, P. Ma, S. Petridis, and M. Pantic, “Video-driven            telligibility of speech masked by modulated noise maskers,”
+     speech reconstruction using generative adversarial networks,” in           IEEE/ACM Transactions on Audio, Speech, and Language Pro-
+     Proc. of Interspeech, 2019.                                                cessing, vol. 24, no. 11, pp. 2009–2022, 2016.
+[18] M. Morise, F. Yokomori, and K. Ozawa, “WORLD: A vocoder-              [37] T.-H. Oh, T. Dekel, C. Kim, I. Mosseri, W. T. Freeman, M. Rubin-
+     based high-quality speech synthesis system for real-time applica-          stein, and W. Matusik, “Speech2face: Learning the face behind a
+     tions,” IEICE Transactions on Information and Systems, vol. 99,            voice,” in Proc. of CVPR, 2019.
+     no. 7, pp. 1877–1884, 2016.
+[19] Y. Kumar, M. Aggarwal, P. Nawal, S. Satoh, R. R. Shah, and
+     R. Zimmermann, “Harnessing AI for speech reconstruction using
+     multi-view silent video feed,” in Proc. of ACM-MM, 2018.
+[20] Y. Kumar, R. Jain, M. Salik, R. R. Shah, R. Zimmermann, and
+     Y. Yin, “Mylipper: A personalized system for speech reconstruc-
+     tion using multi-view visual feeds,” in Proc. of ISM, 2018.
+[21] Y. Kumar, R. Jain, K. M. Salik, R. R. Shah, Y. Yin, and R. Zim-
+     mermann, “Lipper: Synthesizing thy speech using multi-view
+     lipreading,” in Proc. of AAAI, 2019.
+
