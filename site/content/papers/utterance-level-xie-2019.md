@@ -90,3 +90,33 @@ Es el paper de la segunda mitad de la clase, y la fuente de todo lo que aparece 
 Lo que la clase no destaca —y es lo más instructivo— es la **comparación interna TAP contra NetVLAD**. Presentada así, VLAD parece una elección arquitectónica entre varias razonables. La tabla muestra que es la elección que decide el resultado: el mismo backbone, con el mismo entrenamiento, rinde 10,48 % o 3,57 % según cómo se resuman los frames.
 
 Es también el ejemplo más nítido de un patrón que atraviesa el curso: **una técnica de un dominio trasplantada a otro**. VLAD nació en 2010 para [búsqueda de imágenes](/papers/vlad-jegou-2010), se volvió diferenciable en 2016 para [reconocimiento de lugares](/papers/netvlad-arandjelovic-2016), y en 2019 resulta ser lo que le faltaba al reconocimiento de hablante. La estructura del problema —un conjunto de descriptores locales de cardinalidad variable que hay que resumir en un vector fijo— es la misma; el dominio es incidental.
+
+---
+
+## Tres cosas que el paper dice y su propio código desmiente
+
+El [Lab 41](/laboratorios/lab-41) reimplementa este modelo, carga el checkpoint oficial y **reproduce el resultado**: 3,19 % de EER contra el 3,22 % publicado, sobre la misma lista de 37.720 pares. Con el número replicado, tres afirmaciones del paper resultan verificables — y las tres fallan.
+
+**1. La resolución temporal no es `T/32`, es `T/16`.** La Tabla 1 declara `max pool 3×1, stride (2,2)` → `7 × T/32 × 512`, y el cuerpo del texto escribe `R^{1×T/32×512}` e indexa la suma de VLAD hasta `T/32`. Pero el código oficial de los autores dice:
+
+```python
+y = MaxPooling2D((3, 1), strides=(2, 1), name='mpool2')(x5)   # backbone.py del repo
+```
+
+`strides=(2,1)`: 2 en frecuencia, **1 en tiempo**. Verificado ejecutando el modelo con tres largos de entrada — la salida es siempre `T/16`. Cada descriptor cubre un paso de **160 ms**, no de 320. El error es invisible porque `MaxPool` no tiene parámetros: cargar los pesos funciona igual con cualquier stride. Y es numéricamente inconsecuente (coseno 0,9993 entre ambas variantes, porque la intra-normalización absorbe el cambio de escala), pero cambia cuál es la unidad de análisis.
+
+**2. La ventana no es Hamming.** El paper dice *"using a hamming window of width 25ms"*; el código llama a `librosa.stft` sin especificar ventana, y el valor por defecto es **Hann**.
+
+**3. El eje de normalización contradice a VoxCeleb.** Este paper normaliza *"by subtracting the mean and dividing by the standard deviation of all frequency components in a single time step"* — es decir, **por frame**. Dos años antes, el mismo grupo escribía en [VoxCeleb](/papers/voxceleb-nagrani-2017): *"Mean and variance normalisation is performed on **every frequency bin** of the spectrum. **This normalisation is crucial**, leading to an almost 10% increase in classification accuracy."* Es el eje contrario, y ninguno de los dos papers menciona el cambio.
+
+La consecuencia práctica de haber invertido el eje: normalizar por frame **elimina toda la información de energía** y **amplifica el silencio 37×** hasta ponerlo en la misma escala que la voz. Lo cual, combinado con que el paper declara explícitamente que *"no voice activity detection (VAD), or automatic silence removal is applied"*, explica por qué [GhostVLAD](/papers/ghostvlad-zhong-2018) aporta 0,35 puntos: los clusters fantasma son el VAD que el preprocesamiento no hace.
+
+### Y lo que hay dentro del checkpoint
+
+| Lo que dice el paper | Lo que hay en los 46 MB de pesos |
+|---|---|
+| *"trainable discriminative clustering"*, 8 centroides | 8 centroides con **coseno 0,9983** entre sí: el mismo vector |
+| Thin ResNet-34 de 3 M de parámetros | **50,2 %** de los canales con filtros encogidos a 10⁻³³ (70,9 % en `block5`) |
+| Entrenado en VoxCeleb2, **5.994** hablantes | la capa de clasificación tiene **8.631** salidas (las identidades de VGGFace2) |
+
+Ninguna de las tres impide que el modelo funcione. Pero el «clustering discriminativo» degeneró en *attention pooling* de 8 cabezas, el «thin» ResNet es la mitad de lo que declara, y la cabeza de clasificación —que además nunca se ejecuta en inferencia— arrastra un default heredado de un proyecto de caras. **El resultado es reproducible; la explicación de por qué funciona no describe a este modelo.**

@@ -61,3 +61,16 @@ La clase llega a NetVLAD por necesidad argumental. Después de exponer los cinco
 Lo que conviene retener es **por qué** el problema era difícil: no es que a nadie se le hubiera ocurrido entrenar VLAD, es que el `argmin` bloquea el gradiente. Toda la contribución cabe en cambiar una función indicadora por un softmax — y en darse cuenta de que al hacerlo se puede desacoplar el peso de asignación del centroide.
 
 El salto del dominio visual al del audio es directo porque la estructura del problema es la misma: **un conjunto de descriptores locales de cardinalidad variable que hay que resumir en un vector fijo**. En imágenes, las posiciones de un mapa de activaciones; en habla, los frames de un espectrograma. [Xie et al. (2019)](/papers/utterance-level-xie-2019) hacen exactamente esa traducción. Ver [Agregación VLAD](/fundamentos/agregacion-vlad) para el mecanismo completo.
+
+---
+
+## Qué le pasó a esta capa después
+
+**En 2018, [GhostVLAD](/papers/ghostvlad-zhong-2018)** —de dos de los mismos autores— la extiende con la modificación más económica posible: añadir G clusters que **compiten en el softmax pero cuyos residuos se descartan**. Como el denominador suma 1, un descriptor de baja calidad puede gastar su masa en un fantasma y con eso atenuar su contribución a los clusters reales. Es un mecanismo de descarte aprendido que no requiere supervisión de qué descartar. Y el paper es explícito en una asimetría que las implementaciones suelen ignorar: `{a_k}` y `{b_k}` tienen K+G elementos, pero `{c_k}` **sigue teniendo K** — los fantasmas no tienen centroide.
+
+**En 2019 se verifica el desacople de forma numérica.** El [Lab 41](/laboratorios/lab-41) comprueba que el softmax de distancias negativas y el softmax lineal de esta capa son **algebraicamente idénticos** (error ≤ 10⁻⁴ en `float32` para tres valores de α), porque el término `−α‖x_i‖²` es común a todos los clusters y se cancela. Y mide qué controla el α que la reparametrización absorbe: con α = 0,01 la asignación es uniforme (entropía 2,302 de un máximo de 2,303) y con α = 100 es prácticamente dura (99,4 % de la masa en el centroide más cercano). **NetVLAD aprende dónde ubicarse en ese continuo a través de la magnitud de `w_k`.**
+
+Dos observaciones más de ese lab, sobre un modelo entrenado con esta capa:
+
+- **El desacople puede ir más lejos de lo previsto.** En la implementación de Xie, la rama que calcula el soft assignment parte de un tensor **distinto** del que se agrega, así que `w_k` y `c_k` no solo son parámetros independientes: **viven en espacios diferentes**. La lectura geométrica de «a qué celda de Voronoi pertenece este descriptor» deja de aplicar.
+- **Los centroides pueden colapsar sin que el modelo se degrade.** Los 8 centroides entrenados tienen coseno **0,9983** entre sí. Al no haber partición efectiva del espacio, lo único que distingue un cluster de otro es su distribución de asignación — la capa opera como *attention pooling* multi-cabeza más un sesgo común, y sigue rindiendo 3,19 % de EER.

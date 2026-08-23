@@ -137,9 +137,24 @@ Tres advertencias que conviene enunciar:
 
 ---
 
+## Lo que se mide al desplegar un sistema real
+
+Cuatro observaciones del [Lab 41](/laboratorios/lab-41), que verifica un sistema entrenado sobre los 37.720 pares de VoxCeleb1 y llega a **3,19 % de EER**:
+
+**1. El score de dos voces no relacionadas no está en cero.** La ReLU previa a la L2-normalización confina los embeddings al ortante positivo, y además el entrenamiento les deja una **dirección común**: la norma de la media global es 0,8088 sobre vectores unitarios, o sea **65,4 % de energía compartida** por todas las grabaciones. Solo el 34,6 % restante distingue hablantes. Consecuencia práctica: los pares de hablantes distintos promedian **0,647** y los del mismo hablante **0,876**, así que el umbral de decisión cae en **0,776** — no cerca de 0. Cualquier intuición sobre «qué es un score alto» tiene que calibrarse con datos, no con la geometría del coseno.
+
+**2. Quitar esa dirección común no ayuda automáticamente.** El centrado (restar la media y renormalizar) es el primer paso del andamiaje estándar de [x-vectors](/papers/x-vectors-snyder-2018), y aquí **no mejora nada**: 3,192 % → 3,266 %, un cambio de 0,58 σ del error de estimación. La razón es que este modelo se entrena con softmax sobre embeddings **ya L2-normalizados**, así que el coseno es la métrica en la que se optimizó; la dirección común es parte de su sistema de coordenadas, no un artefacto a remover. El centrado importa cuando el embedding sale de una capa afín sin normalizar.
+
+**3. Mejorar la separabilidad no es mejorar el error.** El mismo centrado **sube d′ de 3,910 a 4,021 y empeora el EER**. No es contradicción: d′ solo usa medias y varianzas, mientras el EER depende de dónde se cruzan las colas — y la relación $\text{EER} = \Phi(-d'/2)$ solo vale para gaussianas de **igual** varianza, supuesto que aquí no se cumple (0,050 contra 0,066, y tras centrar 0,150 contra 0,176). Con d′ = 4,021 el EER gaussiano sería 2,2 %; el real es 3,27 %.
+
+**4. El solape no es una franja estrecha.** Con el umbral óptimo, el peor par legítimo puntúa 0,670 y el peor impostor 0,860: la **zona de ambigüedad contiene el 33,7 % de todos los pares**. El sistema acierta el 96,8 % porque dentro de esa zona la densidad se inclina hacia el lado correcto, no porque las distribuciones estén separadas. Y el p99 de los impostores (0,802) supera al p5 de los legítimos (0,800).
+
+---
+
 ## Referencias
 
 - Fundamentos relacionados: [Agregación VLAD](/fundamentos/agregacion-vlad) · [Reconocimiento de voz](/fundamentos/reconocimiento-de-voz) · [Metric learning](/fundamentos/metric-learning) · [Triplet loss](/fundamentos/triplet-loss) · [Representación de audio](/fundamentos/representacion-de-audio) · [Datasets de audio](/fundamentos/datasets-de-audio).
-- Papers: [Utterance-level Aggregation (2019)](/papers/utterance-level-xie-2019) · [x-vectors (2018)](/papers/x-vectors-snyder-2018) · [VoxCeleb (2017)](/papers/voxceleb-nagrani-2017) · [VoxCeleb2 (2018)](/papers/voxceleb2-chung-2018) · [NetVLAD (2016)](/papers/netvlad-arandjelovic-2016) · [FaceNet (2015)](/papers/facenet-schroff-2015).
+- Papers: [Utterance-level Aggregation (2019)](/papers/utterance-level-xie-2019) · [x-vectors (2018)](/papers/x-vectors-snyder-2018) · [VoxCeleb (2017)](/papers/voxceleb-nagrani-2017) · [VoxCeleb2 (2018)](/papers/voxceleb2-chung-2018) · [NetVLAD (2016)](/papers/netvlad-arandjelovic-2016) · [GhostVLAD (2018)](/papers/ghostvlad-zhong-2018) · [FaceNet (2015)](/papers/facenet-schroff-2015).
 - Clases: [Clase 41](/clases/clase-41).
+- Laboratorios: [Lab 41](/laboratorios/lab-41), donde el sistema completo se implementa, se mide y se abre.
 - Dominio: [Audio](/dominios/audio).

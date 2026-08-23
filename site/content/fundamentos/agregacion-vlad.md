@@ -154,13 +154,24 @@ En todos, el diagnóstico previo es el mismo: se estaba usando promedio o máxim
 - **Normalización.** La práctica estándar es normalizar en L2 **dentro de cada cluster** y después globalmente, lo que evita que un cluster muy poblado domine el vector.
 - **Inicialización.** Arrancar los centroides con k-means sobre descriptores de un backbone preentrenado funciona mucho mejor que inicializar al azar.
 - **Robustez al número de clusters.** En el caso del habla, el barrido entre 8 y 14 clusters mueve el EER entre 3,22 % y 3,37 %: el método no es sensible a ese hiperparámetro.
-- **Memoria en entrenamiento.** Hay que materializar los residuos de todos los descriptores contra todos los clusters, un tensor de $N \times K \times d$.
+- **Memoria en entrenamiento.** Hay que materializar los residuos de todos los descriptores contra todos los clusters, un tensor de $N \times K \times d$. Es evitable: como $c_k$ no depende de $i$, la suma se distribuye en $\sum_i a_{ik}x_i - (\sum_i a_{ik})c_k$ — un producto matricial más un producto exterior, sin tensor de tres ejes. Medido en el [Lab 41](/laboratorios/lab-41): idéntico numéricamente y hasta **32× más rápido** con 4.000 descriptores, ahorrando un tensor de 78 MB.
+
+## Qué pasa con los centroides en un modelo ya entrenado
+
+La teoría describe los centroides como un vocabulario que particiona el espacio. Al abrir el checkpoint entrenado del [Lab 41](/laboratorios/lab-41) —Thin ResNet + GhostVLAD sobre VoxCeleb2— aparece algo distinto:
+
+- **Los 8 centroides tienen coseno 0,9983 entre sí.** Normas casi idénticas (14,03–14,11) y distancia media entre ellos de 0,82. No hay 8 regiones de Voronoi: hay un punto y ocho perturbaciones diminutas. Como $v_k = \sum_i a_{ik}x_i - (\sum_i a_{ik})c_k$, con todos los $c_k$ iguales lo único que distingue un cluster de otro es **la distribución de asignación**. El *trainable discriminative clustering* degeneró en **attention pooling de 8 cabezas** con un sesgo común.
+- **Los 2 centroides fantasma conservan su inicialización** (norma exactamente 1,000, ortogonales entre sí) y perturbarlos ×1000 no mueve la salida. Su gradiente es cero porque sus residuos se descartan antes de la pérdida. El paper de [GhostVLAD](/papers/ghostvlad-zhong-2018) ya lo había especificado: *"$\{a_k\}$ y $\{b_k\}$ tienen K+G elementos, mientras que $\{c_k\}$ sigue teniendo K"*. Los fantasmas viven solo en la asignación.
+- **Lo que sí se entrena de los fantasmas son sus compuertas.** Sesgo **positivo** (+0,55 y +0,47) contra el sesgo negativo de los 8 reales, y $\|w_k\|$ 3–5× mayor: ganan el softmax por defecto y absorben la masa que de otro modo contaminaría los clusters reales.
+
+La lección transversal: **la intra-normalización por cluster** —que es lo que vuelve al descriptor invariante al número de descriptores agregados, verificado con factor de escala exactamente 2,000000 al duplicar el conjunto— hace que buena parte de la geometría del vocabulario deje de importar. Lo que discrimina es cómo se reparte la atención, no dónde están los prototipos.
 
 ---
 
 ## Referencias
 
 - Fundamentos relacionados: [Reconocimiento de hablante](/fundamentos/reconocimiento-de-hablante) · [Metric learning](/fundamentos/metric-learning) · [Bag of words](/fundamentos/bag-of-words) (el análogo textual del *bag of features*) · [Representación de datos](/fundamentos/representacion-datos).
-- Papers: [VLAD (2010)](/papers/vlad-jegou-2010) · [NetVLAD (2016)](/papers/netvlad-arandjelovic-2016) · [Utterance-level Aggregation (2019)](/papers/utterance-level-xie-2019) · [x-vectors (2018)](/papers/x-vectors-snyder-2018).
+- Papers: [VLAD (2010)](/papers/vlad-jegou-2010) · [NetVLAD (2016)](/papers/netvlad-arandjelovic-2016) · [GhostVLAD (2018)](/papers/ghostvlad-zhong-2018) · [Utterance-level Aggregation (2019)](/papers/utterance-level-xie-2019) · [x-vectors (2018)](/papers/x-vectors-snyder-2018).
 - Clases: [Clase 41](/clases/clase-41) y su [práctica](/clases/clase-41/practica/02-agregacion-vlad), donde el ejemplo de la sección 3 se implementa y se extiende en triple framework.
+- Laboratorios: [Lab 41](/laboratorios/lab-41), donde la capa se desarma línea por línea y los centroides entrenados se abren y se miden.
 - Dominio: [Audio](/dominios/audio).
