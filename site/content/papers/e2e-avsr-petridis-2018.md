@@ -112,6 +112,14 @@ Es el segundo paper de la [Clase 43](/clases/clase-43) y su contrapunto exacto. 
 
 Para la trayectoria del diplomado, esta es la clase donde confluyen los dos hilos que venían alternándose: video ([36](/clases/clase-36), [38](/clases/clase-38), [40](/clases/clase-40), [42](/clases/clase-42)) y audio ([35](/clases/clase-35), [37](/clases/clase-37), [39](/clases/clase-39), [41](/clases/clase-41)). Y aparecen componentes de casi todas: ResNet, convoluciones 3D, GRU bidireccionales, onda cruda, aumentación con ruido.
 
+## El paper ejecutado
+
+El [Laboratorio 43](/laboratorios/lab-43) corre este modelo sobre el test set completo de LRW y lo reproduce con **98,84 %** contra el 98,0 % reportado. Tres cosas que la ejecución hace visibles y el texto no menciona:
+
+- **El recorte de audio de 19.456 muestras es 29 × 672**, el largo exacto que hace que la cadena de convoluciones produzca un frame cada 42 ms — la cadencia de 25 fps del video. La sincronización entre modalidades está horneada en la aritmética de los strides, sin ningún módulo de alineamiento.
+- **Los checkpoints publicados conservan el backend temporal-convolucional de la fase 1** —el que el paper dice haber "removido"— más un BiLSTM completo de una versión anterior del código. Son 34,9 M de parámetros inertes, el 39 % del archivo: el registro material del entrenamiento por etapas descrito en la sección 4.3.
+- **Los 29 errores del sistema son todos vecinos fonológicos**, sin una sola confusión arbitraria. `THERE → THEIR` es irreducible —son homófonos perfectos en inglés británico—, lo que implica que LRW tiene un techo teórico bajo el 100 % por construcción del vocabulario.
+
 ---
 
-**Ver también:** [SoundNet (2016)](/papers/soundnet-aytar-2016) · [Stafylakis y Tzimiropoulos (2017)](/papers/lipreading-resnet-stafylakis-2017) · [LipNet (2016)](/papers/lipnet-assael-2016) · [AV-HuBERT (2022)](/papers/av-hubert-shi-2022) · [Lectura de Labios](/fundamentos/lectura-de-labios) · [Aprendizaje Audiovisual](/fundamentos/aprendizaje-audiovisual) · [Clase 41 - ASR](/clases/clase-41)
+**Ver también:** [Laboratorio 43](/laboratorios/lab-43) · [SoundNet (2016)](/papers/soundnet-aytar-2016) · [Stafylakis y Tzimiropoulos (2017)](/papers/lipreading-resnet-stafylakis-2017) · [LipNet (2016)](/papers/lipnet-assael-2016) · [AV-HuBERT (2022)](/papers/av-hubert-shi-2022) · [Lectura de Labios](/fundamentos/lectura-de-labios) · [Aprendizaje Audiovisual](/fundamentos/aprendizaje-audiovisual) · [Clase 41 - ASR](/clases/clase-41)

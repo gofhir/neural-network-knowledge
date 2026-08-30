@@ -73,6 +73,7 @@ La salida es la misma que en [reconocimiento de voz](/fundamentos/reconocimiento
 
 ## Ver también
 
+- [Laboratorio 43](/laboratorios/lab-43) — el techo de los visemas, medido: de los 29 errores de un sistema audiovisual al 98,84 %, **ninguno es arbitrario**. Todos son vecinos fonológicos, y `THERE → THEIR` es irreducible porque son homófonos perfectos.
 - [E2E-AVSR (2018)](/papers/e2e-avsr-petridis-2018) · [Stafylakis y Tzimiropoulos (2017)](/papers/lipreading-resnet-stafylakis-2017) · [LipNet (2016)](/papers/lipnet-assael-2016) · [AV-HuBERT (2022)](/papers/av-hubert-shi-2022)
 - [Aprendizaje Audiovisual](/fundamentos/aprendizaje-audiovisual) — por qué combinar con audio resuelve justamente lo que el video no puede.
 - [Reconocimiento de Voz](/fundamentos/reconocimiento-de-voz) y [CTC Loss](/fundamentos/ctc-loss) — la maquinaria del paso a oraciones.
