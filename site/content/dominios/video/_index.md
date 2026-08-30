@@ -267,6 +267,7 @@ Las apuestas activas en video: **coherencia física genuina** (más allá de Sor
 - [Lab 36 - Introducción al Análisis de Video](/laboratorios/lab-36) — el baseline honesto: ResNet-34 + average temporal pooling sobre UCF11. Reducir de 8 a 4 frames no perjudica (85,9 % contra 84,6 %), lo que prueba que el modelo no usa el orden temporal.
 - [Lab 38 - Action Recognition con I3D](/laboratorios/lab-38) — I3D pre-entrenado en Kinetics-400 en inferencia pura. Un bug de preproceso del tutorial oficial de TF Hub invierte una predicción, y el video invertido en el tiempo no cambia la respuesta: el sesgo de apariencia de Kinetics, medido.
 - [Lab 40 - Reconocimiento de acciones con TSM](/laboratorios/lab-40) — el modelo opuesto sobre los mismos videos de UCF-101. Como el módulo de desplazamiento no tiene parámetros, se puede anular, intensificar o volver causal sobre el checkpoint entrenado: anularlo cuesta 82,76 puntos en un salto alto y 0,42 en una guitarra, y el modo online iguala al offline a igual proporción de canales desplazados.
+- [Lab 42 - Tracking en video](/laboratorios/lab-42) — la otra mitad del campo, en la práctica: YOLO26 + BoT-SORT y YOLO-World + SAM 2 sobre cinco videos. El único ID switch del trabajo se rastrea hasta una **caja duplicada con IoU 0,976** que funda un track paralelo; cuatro ajustes del asociador fallan —incluida la re-identificación, que `proximity_thresh` confina a pares con IoU ≥ 0,5— y un solo parámetro de admisión de tracks lo elimina. Además: submuestrear de 60 a 15 fps **mejora** el seguimiento, y restringir el vocabulario a tres prompts lleva a cero los nacimientos espurios, los duplicados y los errores de clase que un detector de 80 clases produce en la misma escena.
 
 **Dominios relacionados:**
 - [Visión](/dominios/vision) — donde nacieron las CNN y ViT, transferidos a video.
@@ -275,4 +276,4 @@ Las apuestas activas en video: **coherencia física genuina** (más allá de Sor
 
 ---
 
-*Última actualización: 2026-05-05.*
+*Última actualización: 2026-08-23.*
