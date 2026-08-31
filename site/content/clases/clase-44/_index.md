@@ -24,6 +24,7 @@ Eso convierte la pregunta interesante en una sola, y sirve para las siete: **¿q
   {{< card link="teoria" title="Teoria" subtitle="Las 46 diapositivas: la recapitulación del diplomado mapeada clase por clase, las siete aplicaciones con sus papers, y el método de First Order Motion Model paso a paso hasta el laboratorio" icon="academic-cap" >}}
   {{< card link="profundizacion" title="Profundizacion" subtitle="Cuánto vale el jacobiano y por qué a igual presupuesto no siempre gana, el informed guess hecho preciso, la asimetría entre generar y detectar, y la factorización que unifica toda la clase" icon="beaker" >}}
   {{< card link="practica" title="Practica desde 0" subtitle="El campo de movimiento de primer orden con warping diferenciable, y la aritmética del informed guess — en triple framework, con los cuatro backends coincidiendo a 2,8e−16" icon="code" >}}
+  {{< card link="/laboratorios/lab-44" title="Laboratorio 44 - Deep Fakes" subtitle="Los tres notebooks, que no ejecutan SV2TTS ni FOMM sino TorToise-TTS y Wan2.2-Animate: el mismo classifier-free guidance pagado en inferencia por uno y destilado en los pesos por el otro" icon="beaker" >}}
   {{< card link="/clases/clase-43" title="Clase anterior: Aplicaciones para Audio y Video" subtitle="SoundNet y E2E-AVSR: la correspondencia audiovisual usada para entrenar y para decidir" icon="sparkles" >}}
   {{< card link="/clases/clase-29" title="Relacionada: Modelos Generativos en Visión" subtitle="VAE, GAN y difusión — la maquinaria generativa que esta clase aplica" icon="photograph" >}}
   {{< card link="/clases/clase-41" title="Relacionada: Speech y Speaker Recognition" subtitle="La misma factorización identidad/contenido, usada para analizar en vez de generar" icon="adjustments" >}}
@@ -48,6 +49,8 @@ Eso convierte la pregunta interesante en una sola, y sirve para las siete: **¿q
   {{< card link="/papers/fomm-siarohin-2019" title="First Order Motion Model (2019)" subtitle="Siarohin et al. — puntos clave aprendidos sin supervisión más jacobianos locales. Es reenactment, no face swap, y su máscara de oclusión es la pieza que la clase omite" icon="document-text" >}}
   {{< card link="/papers/sv2tts-jia-2018" title="SV2TTS (2018)" subtitle="Jia et al. — la clonación de voz del lado del audio: timbre del hablante más contenido del texto" icon="document-text" >}}
   {{< card link="/papers/faceforensics-rossler-2019" title="FaceForensics++ (2019)" subtitle="Rössler et al. — el contrapeso que la clase no incluye: 1,8 millones de imágenes manipuladas, y el resultado de que detectar generaliza mal" icon="document-text" >}}
+  {{< card link="/papers/tortoise-tts-betker-2023" title="TorToise-TTS (2023)" subtitle="Betker — lo que el laboratorio ejecuta en lugar de SV2TTS: DALL·E aplicado a voz, con re-ranking contrastivo sobre tokens y un detector de deep fakes incluido" icon="document-text" >}}
+  {{< card link="/papers/wan-animate-2025" title="Wan-Animate (2025)" subtitle="Tongyi Lab — lo que el laboratorio ejecuta en lugar de FOMM: un DiT de 14B con esqueleto explícito para el cuerpo y features implícitas para el rostro" icon="document-text" >}}
 {{< /cards >}}
 
 ### Las siete aplicaciones

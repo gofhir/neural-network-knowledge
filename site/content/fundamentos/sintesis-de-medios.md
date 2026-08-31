@@ -17,8 +17,16 @@ Acompaña a la [Clase 44](/clases/clase-44), el cierre del diplomado.
 | **Face swap** | reemplaza el rostro de A por el de B dentro de un video existente | muchas imágenes de ambos | DeepFaceLab, FaceSwap |
 | **Reenactment / animación** | transfiere expresión y pose de un video a **una sola imagen** | una imagen del objetivo | [First Order Motion Model](/papers/fomm-siarohin-2019) |
 | **Lip sync** | modifica solo la boca para que coincida con otro audio | video + audio objetivo | Wav2Lip, Synthesizing Obama |
-| **Clonación de voz (TTS)** | sintetiza habla nueva con el timbre de una persona | segundos de audio de referencia | [SV2TTS](/papers/sv2tts-jia-2018), VALL-E |
+| **Clonación de voz (TTS)** | sintetiza habla nueva con el timbre de una persona | segundos de audio de referencia | [SV2TTS](/papers/sv2tts-jia-2018), [TorToise](/papers/tortoise-tts-betker-2023), VALL-E |
 | **Generación completa** | crea la persona y la escena desde cero | nada del objetivo | Sora, Veo |
+
+{{< concept-alert type="atencion" >}}
+**La barrera de entrada bajó otra vez entre 2019 y 2025.** El [Laboratorio 44](/laboratorios/lab-44) ejecuta la generación siguiente de ambas mitades: [TorToise-TTS](/papers/tortoise-tts-betker-2023) en lugar de SV2TTS y [Wan-Animate](/papers/wan-animate-2025) en lugar de FOMM.
+
+Lo que cambió no es solo la calidad. Del lado del audio, el modelo usa **18 segundos efectivos** de voz de referencia —el resto se descarta en el recorte— y produce habla que copia timbre *y* prosodia. Del lado del video, un modelo de 14B parámetros corre sobre una GPU de consumo gracias a cuantización GGUF, con **una sola imagen** de referencia y un video de control grabado con la webcam.
+
+El insumo humano necesario para producir un deep fake convincente hoy es: una foto, medio minuto de voz y diez segundos de grabación propia.
+{{< /concept-alert >}}
 
 {{< concept-alert type="clave" >}}
 La [Clase 44](/clases/clase-44) presenta [FOMM](/papers/fomm-siarohin-2019) bajo el rótulo de deep fakes, y conviene precisar: **FOMM hace animación de imágenes, no face swap**. No reemplaza un rostro dentro de un video existente; anima una imagen fija con el movimiento de un video conductor. La salida tiene la identidad, el fondo y el encuadre de la **imagen fuente**, no del video.
@@ -83,6 +91,9 @@ Para el ámbito clínico, donde varios de estos métodos tienen usos genuinos �
 - [First Order Motion Model (2019)](/papers/fomm-siarohin-2019) — el método de la clase, en detalle.
 - [FaceForensics++ (2019)](/papers/faceforensics-rossler-2019) — el benchmark de detección y su resultado incómodo.
 - [SV2TTS (2018)](/papers/sv2tts-jia-2018) — la clonación de voz que la clase usa para el audio.
+- [TorToise-TTS (2023)](/papers/tortoise-tts-betker-2023) — la generación siguiente del lado del audio, que publica **su propio detector** junto al generador: el caso raro donde el mismo autor entrega las dos mitades.
+- [Wan-Animate (2025)](/papers/wan-animate-2025) — la generación siguiente del lado del video, con esqueleto explícito y features faciales implícitas.
+- [Laboratorio 44](/laboratorios/lab-44) — los dos ejecutados de punta a punta, con lo que cuesta cada uno medido.
 - [Modelos Generativos](/fundamentos/modelos-generativos) y [Modelos de Difusión](/fundamentos/modelos-de-difusion) — la maquinaria de generación.
 - [Super-resolución](/fundamentos/super-resolucion) — otra técnica donde el modelo aporta información que no estaba.
 - [Clase 44](/clases/clase-44) · [Clase 29 - Modelos Generativos en Visión](/clases/clase-29)
