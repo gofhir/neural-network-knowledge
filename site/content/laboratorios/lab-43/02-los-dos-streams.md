@@ -82,6 +82,12 @@ Con stride temporal 1 y padding 2, entran 29 frames y salen 29. El `MaxPool3d` q
 
 Lo que sí hace es dar a cada unidad de salida un campo receptivo de **5 frames consecutivos** = **200 ms** a 25 fps, aproximadamente la duración de una sílaba. La capa no aprende cómo *se ve* una boca; aprende cómo **se mueve** una boca en 200 ms.
 
+La diferencia absoluta entre frames consecutivos hace visible qué información hay ahí:
+
+![Diferencias absolutas entre frames consecutivos del clip, mostrando el movimiento concentrado en los labios](/laboratorios/lab-43/movimiento.jpg)
+
+Toda la energía se concentra en **el contorno de los labios y el borde de los dientes**; las mejillas y la barbilla quedan casi negras. Eso es lo que la Conv3D recibe: no una boca, sino la derivada temporal de una boca. Y su kernel de 5 frames abarca cinco de estos paneles a la vez.
+
 > *"A spatiotemporal convolutional layer is capable of capturing the short-term dynamics of the mouth region and is proven to be advantageous, **even when recurrent networks are deployed for back-end**."*
 
 Ese "even when" es el argumento: no basta con poner un BiGRU al final. La recurrente modela la dinámica de la palabra completa, pero opera sobre vectores de 256 números por frame — cuando la información del movimiento rápido ya se perdió. Hay que capturarla **antes**, mientras todavía hay píxeles.

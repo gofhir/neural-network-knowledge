@@ -86,13 +86,31 @@ Los frames de LRW son 256×256 (cara completa). El recorte:
 | Filas | `115:211` | 96 px | 163 — **bajo el centro**, la zona de la boca |
 | Columnas | `79:175` | 96 px | 127 — centrado |
 
+![El frame completo de LRW con el recuadro del recorte fijo, la ROI de 96x96 guardada en disco, y los 88x88 en escala de grises que entran a la red](/laboratorios/lab-43/roi-de-la-boca.jpg)
+
 Está centrado horizontalmente y desplazado hacia abajo, y es **el mismo para todos los videos**: no hay detección de landmarks ni tracking facial. El paper apuesta a que LRW ya viene alineado:
 
 > *"Since the mouth ROIs are already centered, a fixed bounding box of 96 by 96 is used for all videos."*
 
 **Esa apuesta tiene un precio medido.** La Tabla 1 compara el stream visual con ROI fija (**82,0 %**) contra el trabajo de [Stafylakis y Tzimiropoulos](/papers/lipreading-resnet-stafylakis-2017), que calcula la ROI con landmarks faciales trackeados (**83,0 %**). Es la única línea de la tabla que E2E-AVSR no logra superar, y la nota al pie del paper lo reconoce explícitamente. **Un punto entero de accuracy es lo que cuesta no trackear la boca.**
 
+Y en la imagen de arriba se ve por qué. El recuadro captura la boca, sí, pero **descentrada**: el labio queda desplazado hacia el borde derecho del recorte, y un tercio del área es barbilla, cuello y camisa. Un crop guiado por landmarks pondría la boca en el centro y dedicaría los 96×96 a lo que importa. El punto de diferencia entre 82,0 y 83,0 es, literalmente, ese margen desperdiciado.
+
 Los 96 píxeles guardados en disco frente a los 88 que consume la red dejan un margen de ±4 px: es el espacio para el *random crop* de la augmentación de entrenamiento. En evaluación se toma el centro.
+
+## Lo que la red ve, de principio a fin
+
+![Los 29 frames de EXAMPLE_00001 en escala de grises a 88x88, con su marca de tiempo](/laboratorios/lab-43/29-frames.jpg)
+
+Un clip completo son estos 29 fotogramas: **1,16 segundos de una boca, en escala de grises, a 88 × 88 píxeles**. De ahí sale una palabra entre 500. Vale detenerse en la modestia de la entrada — no hay color, no hay contexto de la cara, no hay audio en este flujo, y la resolución es la de un ícono.
+
+Midiendo el brillo máximo en la banda de la boca —los dientes son lo más claro del recorte— y la fracción de píxeles oscuros —la cavidad oral abierta— aparece la estructura temporal del clip:
+
+![Curva del brillo de los dientes y de la fracción oscura a lo largo de los 29 frames](/laboratorios/lab-43/apertura-de-la-boca.jpg)
+
+Hay un **régimen central de 11 frames (560–960 ms) donde los dientes dejan de verse**: el brillo máximo cae de una media de 202 a 178. Dentro de ese tramo, la apertura de la cavidad oral toca su mínimo en los frames 16–17, a los **640–680 ms**. Es compatible con la oclusión bilabial del clúster `/mp/` de *exa**mp**le* —labios cerrados, sin dientes ni cavidad visible— aunque una caída de brillo tan sostenida podría deberse también a un cambio de pose o de iluminación; con un solo clip no se puede separar.
+
+Lo que sí queda claro es la escala: **el evento articulatorio que distingue la palabra dura del orden de 200 ms**, exactamente el campo receptivo de la Conv3D del frontend. La barra gris de la figura marca esos 5 frames.
 
 ## La asimetría de normalización
 

@@ -24,6 +24,10 @@ Bajo azar, la probabilidad de que un error caiga justo sobre el pariente morfol�
 
 La tesis del laboratorio, en una línea: **el 1,16 % de error residual no es error de percepción sino de información ausente en la señal**. El sistema oye y ve bien; lo que no puede resolver es una `/s/` final de 50 ms, una diferencia de sonoridad invisible en los labios, o dos palabras que son físicamente el mismo evento acústico y articulatorio.
 
+![Los 29 frames de un clip de LRW en escala de grises a 88x88: la entrada completa del stream de video](/laboratorios/lab-43/29-frames.jpg)
+
+Eso es un clip entero para el stream visual: **1,16 segundos de una boca, sin color, sin el resto de la cara, a la resolución de un ícono**. De ahí sale una palabra entre 500 — y acierta el 82 % de las veces trabajando solo.
+
 ## Resultados consolidados (medidos)
 
 ### Evaluación sobre el test set completo de LRW
