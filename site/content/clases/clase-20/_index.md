@@ -49,6 +49,23 @@ La clase se complementa con la [Clase 14 (Transformers)](/clases/clase-14) — q
   {{< card link="/papers/instructgpt-ouyang-2022" title="InstructGPT (2022)" subtitle="Ouyang et al. -- RLHF formalizado: precursor directo de ChatGPT" icon="document-text" >}}
 {{< /cards >}}
 
+## Papers del laboratorio
+
+{{< cards >}}
+  {{< card link="/papers/xlnet-yang-2019" title="XLNet (2019)" subtitle="Yang et al. -- permutar el orden de factorizacion, no la secuencia. Los dos flujos de atencion resuelven un problema que la propia idea crea" icon="document-text" >}}
+  {{< card link="/papers/roberta-liu-2019" title="RoBERTa (2019)" subtitle="Liu et al. -- ninguna arquitectura nueva y aun asi supera a XLNet: BERT estaba subentrenado" icon="document-text" >}}
+  {{< card link="/papers/beto-canete-2020" title="BETO (2020)" subtitle="Canete et al. -- el BERT en espanol de la Universidad de Chile, con tres precisiones sobre lo que el paper declara" icon="document-text" >}}
+  {{< card link="/papers/whole-word-masking-cui-2019" title="Whole Word Masking (2019)" subtitle="Cui et al. -- el wwm del nombre de BETO: enmascarar la palabra completa convierte una tarea morfologica en una semantica" icon="document-text" >}}
+  {{< card link="/papers/sentencepiece-kudo-2018" title="SentencePiece (2018)" subtitle="Kudo y Richardson -- tratar el espacio como un simbolo mas, y la dependencia que el lab descubre a la mala" icon="document-text" >}}
+  {{< card link="/papers/swag-zellers-2018" title="SWAG (2018)" subtitle="Zellers et al. -- Adversarial Filtering, y el dataset que BERT supero en tres meses" icon="document-text" >}}
+{{< /cards >}}
+
+## Laboratorio
+
+{{< cards >}}
+  {{< card link="/laboratorios/lab-20" title="Laboratorio 20 - Modelos de lenguaje" subtitle="Cinco modelos, cuatro convenciones de tokenizacion incompatibles y las trece preguntas. Casi todos los errores del lab salen de la tabla de tokens especiales, no de la arquitectura" icon="beaker" >}}
+{{< /cards >}}
+
 ## Dominio relacionado
 
 {{< cards >}}
